@@ -46,11 +46,19 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
-		<exense-commons.version>0.0.0-SNAPSHOT</exense-commons.version>
+		<exense-commons.version>2021.05.28-ID1bc072c</exense-commons.version>
 		<junit.version>4.13.1</junit.version>
 		<mongodb.version>4.0.5</mongodb.version>
 		<jackson.version>2.10.0</jackson.version>
 	</properties>
+
+	<repositories>
+		<!-- staging nexus -->
+		<repository>
+			<id>nexus-staging</id>
+			<url>https://nexus-enterprise.exense.ch/repository/staging-maven/</url>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>
