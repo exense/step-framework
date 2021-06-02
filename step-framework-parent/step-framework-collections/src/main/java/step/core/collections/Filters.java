@@ -88,8 +88,10 @@ public class Filters {
 		return new Gte(field, value);
 	}
 	
-	public static In in(String field, List<String> values) {
-		return new In(field, values);
+	public static Or in(String field, List<String> values) {
+		List<Filter> filters = new ArrayList<>();
+		values.stream().map(v -> filters.add(Filters.equals(field,v)));
+		return Filters.or(filters);
 	}
 	
 	public static Regex regex(String field, String expression, boolean caseSensitive) {
