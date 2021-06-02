@@ -126,7 +126,9 @@ public abstract class AbstractCollectionTest {
 		// Document collection
 		Collection<Document> documentCollection = collectionFactory.getCollection(COLLECTION, Document.class);
 		documentCollection.remove(Filters.empty());
-		Document document = documentCollection.save(new Document());
+		Document document = new Document();
+		document.put("_class", Bean.class.getName());
+		document = documentCollection.save(document);
 		assertNotNull(document.get(AbstractIdentifiableObject.ID));
 	}
 

@@ -26,18 +26,19 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
+
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.Filters.And;
 import step.core.collections.Filters.Equals;
 import step.core.collections.Filters.FilterFactory;
+import step.core.collections.Filters.Gt;
+import step.core.collections.Filters.Gte;
+import step.core.collections.Filters.Lt;
+import step.core.collections.Filters.Lte;
 import step.core.collections.Filters.Not;
 import step.core.collections.Filters.Or;
 import step.core.collections.Filters.Regex;
 import step.core.collections.Filters.True;
-import step.core.collections.Filters.Lt;
-import step.core.collections.Filters.Lte;
-import step.core.collections.Filters.Gt;
-import step.core.collections.Filters.Gte;
 
 public class PojoFilters {
 
@@ -143,10 +144,20 @@ public class PojoFilters {
 	public static class EqualsPojoFilter<T> implements PojoFilter<T> {
 
 		private final Equals equalsFilter;
+		private final Object expectedValue;
 
 		public EqualsPojoFilter(Equals equalsFilter) {
 			super();
 			this.equalsFilter = equalsFilter;
+			String field = equalsFilter.getField();
+			Object expectedValue = equalsFilter.getExpectedValue();
+			if ((field.equals(AbstractIdentifiableObject.ID)
+					|| field.endsWith("." + AbstractIdentifiableObject.ID))
+					&& expectedValue instanceof String) {
+				this.expectedValue = new ObjectId((String) expectedValue);
+			} else {
+				this.expectedValue = expectedValue;
+			}
 		}
 
 		@Override
@@ -154,11 +165,7 @@ public class PojoFilters {
 			try {
 				String field = equalsFilter.getField();
 				Object beanProperty = getBeanProperty(t, field);
-				Object expectedValue = equalsFilter.getExpectedValue();
 				if(expectedValue != null) {
-					if (field.equals(AbstractIdentifiableObject.ID) && expectedValue instanceof String){
-						expectedValue = new ObjectId((String) expectedValue);
-					}
 					if(expectedValue instanceof Number) {
 						if(beanProperty != null) {
 							return new BigDecimal(expectedValue.toString()).compareTo(new BigDecimal(beanProperty.toString()))==0;
@@ -172,7 +179,7 @@ public class PojoFilters {
 					return beanProperty == null; 
 				}
 			} catch (NoSuchMethodException e) {
-				return (equalsFilter.getExpectedValue() == null);
+				return (expectedValue == null);
 			} catch (IllegalAccessException | InvocationTargetException e) {
 				return false;
 			}
