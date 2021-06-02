@@ -37,6 +37,31 @@ public abstract class AbstractCollectionTest {
 	}
 
 	@Test
+	public void testCounts() throws Exception {
+		// Bean collection
+		Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
+		beanCollection.remove(Filters.empty());
+		
+		long count = beanCollection.count(Filters.empty());
+		assertEquals(0, count);
+		
+		count = beanCollection.count(Filters.regex("dummy", "dummy", false));
+		assertEquals(0, count);
+		
+		count = beanCollection.estimatedCount();
+		assertEquals(0, count);
+		
+		Bean bean1 = new Bean(VALUE1);
+		beanCollection.save(bean1);
+
+		count = beanCollection.estimatedCount();
+		assertEquals(1, count);
+		
+		count = beanCollection.count(Filters.empty());
+		assertEquals(1, count);
+	}
+	
+	@Test
 	public void testGetById() throws Exception {
 		// Bean collection
 		Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);

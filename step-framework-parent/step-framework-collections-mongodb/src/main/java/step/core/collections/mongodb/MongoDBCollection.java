@@ -71,6 +71,17 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 				.withSerializationOptions(SerializationOptions.builder().withSimpleFilterSerialization(true).build())
 				.build(mongoClientSession.getMongoDatabase(), collectionName, entityClass, UuidRepresentation.JAVA_LEGACY);
 	}
+	
+	@Override
+	public long count(Filter filter) {
+		Bson query = filterToQuery(filter);
+		return collection.countDocuments(query);
+	}
+
+	@Override
+	public long estimatedCount() {
+		return collection.estimatedDocumentCount();
+	}
 
 	/**
 	 * @param columnName the name of the column (field)

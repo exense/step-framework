@@ -88,6 +88,16 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	private Stream<FileAndEntity<T>> entityStream() {
 		return Arrays.asList(repository.listFiles(f -> f.getName().endsWith(FILE_EXTENSION))).stream().map(f->new FileAndEntity<>(f, readFile(f)));
 	}
+
+	@Override
+	public long count(Filter filter) {
+		return find(filter, null, null, null, 0).count();
+	}
+
+	@Override
+	public long estimatedCount() {
+		return repository.list().length;
+	}
 	
 	@Override
 	public Stream<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {

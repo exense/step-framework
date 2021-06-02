@@ -57,6 +57,16 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 		return null;
 	}
 	
+	@Override
+	public long count(Filter filter) {
+		return find(filter, null, null, null, 0).count();
+	}
+
+	@Override
+	public long estimatedCount() {
+		return entities.size();
+	}
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public Stream<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {

@@ -24,6 +24,21 @@ import java.util.stream.Stream;
 public interface Collection<T> {
 
 	/**
+	 * Counts the number of entities matching the provided filter
+	 * 
+	 * @param filter
+	 * @return the number of entities matching the provided filter
+	 */
+	long count(Filter filter);
+	
+	/**
+	 * Provide an estimation of the total number of entities of the collection
+	 * 
+	 * @return
+	 */
+	long estimatedCount();
+	
+	/**
 	 * @param filter
 	 * @param order
 	 * @param skip
