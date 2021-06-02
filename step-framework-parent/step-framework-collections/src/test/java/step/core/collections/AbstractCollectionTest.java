@@ -42,10 +42,10 @@ public abstract class AbstractCollectionTest {
 		Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
 		beanCollection.remove(Filters.empty());
 		
-		long count = beanCollection.count(Filters.empty());
+		long count = beanCollection.count(Filters.empty(), 10);
 		assertEquals(0, count);
 		
-		count = beanCollection.count(Filters.regex("dummy", "dummy", false));
+		count = beanCollection.count(Filters.regex("dummy", "dummy", false), 10);
 		assertEquals(0, count);
 		
 		count = beanCollection.estimatedCount();
@@ -57,7 +57,16 @@ public abstract class AbstractCollectionTest {
 		count = beanCollection.estimatedCount();
 		assertEquals(1, count);
 		
-		count = beanCollection.count(Filters.empty());
+		count = beanCollection.count(Filters.empty(), 10);
+		assertEquals(1, count);
+		
+		Bean bean2 = new Bean(VALUE1);
+		beanCollection.save(bean2);
+		
+		count = beanCollection.count(Filters.empty(), 10);
+		assertEquals(2, count);
+		
+		count = beanCollection.count(Filters.empty(), 1);
 		assertEquals(1, count);
 	}
 	

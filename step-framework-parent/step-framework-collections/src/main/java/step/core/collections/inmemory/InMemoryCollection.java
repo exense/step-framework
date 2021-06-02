@@ -58,8 +58,12 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	}
 	
 	@Override
-	public long count(Filter filter) {
-		return find(filter, null, null, null, 0).count();
+	public long count(Filter filter, Integer limit) {
+		Stream<T> stream = find(filter, null, null, null, 0);
+		if(limit != null) {
+			stream = stream.limit(limit);
+		}
+		return stream.count();
 	}
 
 	@Override

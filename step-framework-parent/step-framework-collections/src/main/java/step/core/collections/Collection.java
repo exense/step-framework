@@ -27,9 +27,10 @@ public interface Collection<T> {
 	 * Counts the number of entities matching the provided filter
 	 * 
 	 * @param filter
+	 * @param limit the maximum number of documents to count. Nullable.
 	 * @return the number of entities matching the provided filter
 	 */
-	long count(Filter filter);
+	long count(Filter filter, Integer limit);
 	
 	/**
 	 * Provide an estimation of the total number of entities of the collection

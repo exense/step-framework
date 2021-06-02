@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import com.mongodb.client.model.CountOptions;
 import com.mongodb.client.model.Projections;
 import org.bson.Document;
 import org.bson.UuidRepresentation;
@@ -73,9 +74,13 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	}
 	
 	@Override
-	public long count(Filter filter) {
+	public long count(Filter filter, Integer limit) {
 		Bson query = filterToQuery(filter);
-		return collection.countDocuments(query);
+		CountOptions countOptions = new CountOptions();
+		if(limit != null) {
+			countOptions.limit(limit);
+		}
+		return collection.countDocuments(query, countOptions);
 	}
 
 	@Override
