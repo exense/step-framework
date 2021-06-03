@@ -47,6 +47,10 @@ public class Filters {
 	public static True empty() {
 		return new True();
 	}
+
+	public static False falseFilter() {
+		return new False();
+	}
 	
 	public static Equals equals(String field, boolean expectedValue) {
 		return new Equals(field, expectedValue);
@@ -88,10 +92,12 @@ public class Filters {
 		return new Gte(field, value);
 	}
 	
-	public static Or in(String field, List<String> values) {
+	public static Filter in(String field, List<String> values) {
 		List<Filter> filters = new ArrayList<>();
-		values.stream().map(v -> filters.add(Filters.equals(field,v)));
-		return Filters.or(filters);
+		for (String v : values) {
+			filters.add(Filters.equals(field, v));
+		}
+		return (filters.isEmpty()) ? Filters.falseFilter() : Filters.or(filters);
 	}
 	
 	public static Regex regex(String field, String expression, boolean caseSensitive) {
@@ -439,6 +445,13 @@ public class Filters {
 	public static class True extends AbstractAtomicFilter {
 
 		public True() {
+			super();
+		}
+	}
+
+	public static class False extends AbstractAtomicFilter {
+
+		public False() {
 			super();
 		}
 	}

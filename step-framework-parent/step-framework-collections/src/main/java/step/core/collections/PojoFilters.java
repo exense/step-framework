@@ -70,6 +70,8 @@ public class PojoFilters {
 				return new RegexPojoFilter<POJO>((Regex) filter);
 			} else if (filter instanceof True) {
 				return new TruePojoFilter<POJO>();
+			}  else if (filter instanceof Filters.False) {
+				return new FalsePojoFilter<POJO>();
 			} else if (filter instanceof Lt) {
 				return new LtPojoFilter<POJO>((Lt) filter);
 			} else if (filter instanceof Lte) {
@@ -138,6 +140,18 @@ public class PojoFilters {
 		@Override
 		public boolean test(T t) {
 			return true;
+		}
+	}
+
+	public static class FalsePojoFilter<T> implements PojoFilter<T> {
+
+		public FalsePojoFilter() {
+			super();
+		}
+
+		@Override
+		public boolean test(T t) {
+			return false;
 		}
 	}
 

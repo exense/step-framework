@@ -25,6 +25,7 @@ import org.bson.conversions.Bson;
 
 import org.bson.types.ObjectId;
 import step.core.collections.Filter;
+import step.core.collections.Filters;
 import step.core.collections.Filters.And;
 import step.core.collections.Filters.Equals;
 import step.core.collections.Filters.FilterFactory;
@@ -57,7 +58,9 @@ public class MongoDBFilterFactory implements FilterFactory<Bson> {
 		} else if (filter instanceof Not) {
 			return com.mongodb.client.model.Filters.not(childerPojoFilters.get(0));
 		} else if (filter instanceof True) {
-			return com.mongodb.client.model.Filters.expr("true");
+			return com.mongodb.client.model.Filters.expr(true);
+		} else if (filter instanceof Filters.False) {
+			return com.mongodb.client.model.Filters.expr(false);
 		} else if (filter instanceof Equals) {
 			Equals equalsFilter = (Equals) filter;
 			String field = equalsFilter.getField();
