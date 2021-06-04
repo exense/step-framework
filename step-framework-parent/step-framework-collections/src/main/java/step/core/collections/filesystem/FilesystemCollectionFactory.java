@@ -20,19 +20,19 @@ package step.core.collections.filesystem;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 
-import ch.exense.commons.app.Configuration;
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
 
 public class FilesystemCollectionFactory implements CollectionFactory {
 
-	public static final String DB_FILESYSTEM_PATH = "db.filesystem.path";
+	public static final String FILESYSTEM_PATH = "filesystem.path";
 	private final File workspace;
 	
-	public FilesystemCollectionFactory(Configuration configuration) {
+	public FilesystemCollectionFactory(Properties properties) {
 		super();
-		this.workspace = configuration.getPropertyAsDirectory(DB_FILESYSTEM_PATH, new File("db"));
+		this.workspace = new File(properties.getProperty(FILESYSTEM_PATH, "db"));
 	}
 
 	public FilesystemCollectionFactory(File workspace) {

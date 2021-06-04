@@ -20,11 +20,11 @@ package step.core.collections.inmemory;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bson.types.ObjectId;
 
-import ch.exense.commons.app.Configuration;
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
 
@@ -32,7 +32,7 @@ public class InMemoryCollectionFactory implements CollectionFactory {
 
 	private final Map<String, Map<ObjectId, Object>> collections = new ConcurrentHashMap<>();
 	
-	public InMemoryCollectionFactory(Configuration configuration) {
+	public InMemoryCollectionFactory(Properties properties) {
 		super();
 	}
 

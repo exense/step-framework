@@ -4,11 +4,11 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import ch.exense.commons.app.Configuration;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.AbstractCollectionTest;
 import step.core.collections.Collection;
@@ -20,14 +20,14 @@ import step.core.entities.Bean;
 public class MongoDBCollectionTest extends AbstractCollectionTest {
 
 	public MongoDBCollectionTest() throws IOException {
-		super(new MongoDBCollectionFactory(getConfiguration()));
+		super(new MongoDBCollectionFactory(getProperties()));
 	}
 	
-	private static Configuration getConfiguration() throws IOException {
-		Configuration configuration = new Configuration();
-		configuration.putProperty("db.host", "localhost");
-		configuration.putProperty("db.database", "test");
-		return configuration;
+	private static Properties getProperties() throws IOException {
+		Properties properties = new Properties();
+		properties.put("host", "localhost");
+		properties.put("database", "test");
+		return properties;
 	}
 
 	@Test

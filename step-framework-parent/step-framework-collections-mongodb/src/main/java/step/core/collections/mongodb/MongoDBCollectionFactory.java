@@ -19,8 +19,8 @@
 package step.core.collections.mongodb;
 
 import java.io.IOException;
+import java.util.Properties;
 
-import ch.exense.commons.app.Configuration;
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
 
@@ -28,9 +28,9 @@ public class MongoDBCollectionFactory implements CollectionFactory {
 
 	private final MongoClientSession mongoClientSession;
 	
-	public MongoDBCollectionFactory(Configuration configuration) {
+	public MongoDBCollectionFactory(Properties properties) {
 		super();
-		mongoClientSession = new MongoClientSession(configuration);
+		mongoClientSession = new MongoClientSession(properties);
 	}
 
 	public MongoClientSession getMongoClientSession() {

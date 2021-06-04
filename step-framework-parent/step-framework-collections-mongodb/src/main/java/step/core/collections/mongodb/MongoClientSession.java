@@ -20,6 +20,7 @@ package step.core.collections.mongodb;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import com.mongodb.ConnectionString;
@@ -30,8 +31,6 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
-import ch.exense.commons.app.Configuration;
-import com.mongodb.connection.ConnectionPoolSettings;
 import step.core.collections.Collection;
 
 public class MongoClientSession implements Closeable {
@@ -40,23 +39,23 @@ public class MongoClientSession implements Closeable {
 	protected final String db;
 	protected final Integer batchSize;
 	
-	public MongoClientSession(Configuration configuration) {
+	public MongoClientSession(Properties properties) {
 		super();
 
-		String host = configuration.getProperty("db.host");
-		Integer port = configuration.getPropertyAsInteger("db.port",27017);
-		String user = configuration.getProperty("db.username");
-		String pwd = configuration.getProperty("db.password");
+		String host = properties.getProperty("host");
+		Integer port = getIntegerProperty(properties, "port", 27017);
+		String user = properties.getProperty("username");
+		String pwd = properties.getProperty("password");
 
-		int maxConnections = configuration.getPropertyAsInteger("db.maxConnections", 200);
-		Integer minConnections = configuration.getPropertyAsInteger("db.minConnections");
-		Integer maxConnectionIdleTimeMs = configuration.getPropertyAsInteger("db.maxConnectionIdleTimeMs");
-		Integer maintenanceFrequencyMs = configuration.getPropertyAsInteger("db.maintenanceFrequencyMs");
-		Integer maxConnectionLifeTimeMs = configuration.getPropertyAsInteger("db.maxConnectionLifeTimeMs");
-		Integer maxWaitTimeMs = configuration.getPropertyAsInteger("db.maxWaitTimeMs");
-		batchSize = configuration.getPropertyAsInteger("db.batchSize",1000);
+		int maxConnections = getIntegerProperty(properties, "maxConnections", 200);
+		Integer minConnections = getIntegerProperty(properties, "minConnections");
+		Integer maxConnectionIdleTimeMs = getIntegerProperty(properties, "maxConnectionIdleTimeMs");
+		Integer maintenanceFrequencyMs = getIntegerProperty(properties, "maintenanceFrequencyMs");
+		Integer maxConnectionLifeTimeMs = getIntegerProperty(properties, "maxConnectionLifeTimeMs");
+		Integer maxWaitTimeMs = getIntegerProperty(properties, "maxWaitTimeMs");
+		batchSize = getIntegerProperty(properties, "batchSize", 1000);
 
-		db = configuration.getProperty("db.database","step");
+		db = properties.getProperty("database","step");
 		
 		Builder builder = MongoClientSettings.builder();
 		if(user!=null) {
@@ -81,6 +80,15 @@ public class MongoClientSession implements Closeable {
 		});
 		mongoClient = MongoClients.create(builder.build());
 		
+	}
+
+	private Integer getIntegerProperty(Properties properties, String key) {
+		return getIntegerProperty(properties, key, null);
+	}
+	
+	private Integer getIntegerProperty(Properties properties, String key, Integer defaultValue) {
+		String property = properties.getProperty(key);
+		return property != null ? Integer.decode(property) : defaultValue;
 	}
 	
 	public MongoDatabase getMongoDatabase() {
