@@ -27,7 +27,7 @@ import step.core.collections.CollectionFactory;
 
 public class FilesystemCollectionFactory implements CollectionFactory {
 
-	public static final String FILESYSTEM_PATH = "filesystem.path";
+	public static final String FILESYSTEM_PATH = "path";
 	private final File workspace;
 	
 	public FilesystemCollectionFactory(Properties properties) {
