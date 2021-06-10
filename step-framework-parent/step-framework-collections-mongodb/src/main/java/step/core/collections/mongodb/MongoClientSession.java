@@ -31,6 +31,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
+import com.mongodb.management.JMXConnectionPoolListener;
 import step.core.collections.Collection;
 
 public class MongoClientSession implements Closeable {
@@ -76,6 +77,7 @@ public class MongoClientSession implements Closeable {
 				poolSettingBuilder.maxConnectionLifeTime(maxConnectionLifeTimeMs, TimeUnit.MILLISECONDS);
 			if (maxWaitTimeMs != null)
 				poolSettingBuilder.maxWaitTime(maxWaitTimeMs, TimeUnit.MILLISECONDS);
+			poolSettingBuilder.addConnectionPoolListener(new JMXConnectionPoolListener());
 			poolSettingBuilder.build();
 		});
 		mongoClient = MongoClients.create(builder.build());
