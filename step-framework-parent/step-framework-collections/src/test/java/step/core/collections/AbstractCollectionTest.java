@@ -284,10 +284,6 @@ public abstract class AbstractCollectionTest {
 		// Special field id
 		actualBean = beanCollection.find(Filters.equals("id", bean1.getId()), null, null, null, 0).findFirst().get();
 		assertEquals(bean1, actualBean);
-
-		// Special field id nested
-		actualBean = beanCollection.find(Filters.equals("nested.id", bean1.getNested().getId()), null, null, null, 0).findFirst().get();
-		assertEquals(bean1, actualBean);
 	}
 
 	@Test
