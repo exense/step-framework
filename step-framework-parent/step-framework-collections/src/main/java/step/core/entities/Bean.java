@@ -24,6 +24,7 @@ public class Bean extends AbstractOrganizableObject {
     private DottedKeyMap<String, String> map;
 
     private Bean nested;
+    private SimpleBean simpleBean;
 
     public Bean() {
         super();
@@ -90,7 +91,15 @@ public class Bean extends AbstractOrganizableObject {
         this.nested = nested;
     }
 
-    @Override
+    public SimpleBean getSimpleBean() {
+		return simpleBean;
+	}
+
+	public void setSimpleBean(SimpleBean simpleBean) {
+		this.simpleBean = simpleBean;
+	}
+
+	@Override
     public String toString() {
         return this.getId().toHexString();
     }

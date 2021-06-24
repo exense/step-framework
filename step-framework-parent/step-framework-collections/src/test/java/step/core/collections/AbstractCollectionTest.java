@@ -19,6 +19,7 @@ import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.DefaultJacksonMapperProvider;
 import step.core.collections.serialization.DottedKeyMap;
 import step.core.entities.Bean;
+import step.core.entities.SimpleBean;
 
 public abstract class AbstractCollectionTest {
 
@@ -76,6 +77,9 @@ public abstract class AbstractCollectionTest {
 		Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
 		beanCollection.remove(Filters.empty());
 		Bean bean1 = new Bean(VALUE1);
+		SimpleBean simpleBean = new SimpleBean();
+		simpleBean.setId("testId");
+		bean1.setSimpleBean(simpleBean);
 		beanCollection.save(bean1);
 
 		// Id as ObjectId
@@ -95,6 +99,13 @@ public abstract class AbstractCollectionTest {
 		// Id as string in equals filter
 		actualBean = beanCollection
 				.find(Filters.equals(AbstractIdentifiableObject.ID, bean1.getId().toString()), null, null, null, 0)
+				.findFirst().get();
+		assertEquals(bean1, actualBean);
+		
+		// Id as string for nested bean in equals filter
+		// In that case the id shouldn't be converted implicitly to ObjectId
+		actualBean = beanCollection
+				.find(Filters.equals("simpleBean.id", "testId"), null, null, null, 0)
 				.findFirst().get();
 		assertEquals(bean1, actualBean);
 

@@ -165,9 +165,7 @@ public class PojoFilters {
 			this.equalsFilter = equalsFilter;
 			String field = equalsFilter.getField();
 			Object expectedValue = equalsFilter.getExpectedValue();
-			if ((field.equals(AbstractIdentifiableObject.ID)
-					|| field.endsWith("." + AbstractIdentifiableObject.ID))
-					&& expectedValue instanceof String) {
+			if (field.equals(AbstractIdentifiableObject.ID) && expectedValue instanceof String) {
 				this.expectedValue = new ObjectId((String) expectedValue);
 			} else {
 				this.expectedValue = expectedValue;
