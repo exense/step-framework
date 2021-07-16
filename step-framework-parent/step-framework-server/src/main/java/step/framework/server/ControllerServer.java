@@ -189,6 +189,7 @@ public class ControllerServer {
 		
 		ServerContext serverContext = new ServerContext();
 		serverContext.put(ServiceRegistrationCallback.class, serviceRegistrationCallback);
+		serverContext.put(Configuration.class, configuration);
 		ServerPluginManager serverPluginManager = new ServerPluginManager(configuration);
 		
 		ServerPlugin proxy = serverPluginManager.getProxy();
