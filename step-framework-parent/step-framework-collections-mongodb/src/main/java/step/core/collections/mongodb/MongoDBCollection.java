@@ -23,11 +23,12 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-import com.mongodb.client.model.CountOptions;
-import com.mongodb.client.model.Projections;
 import org.bson.Document;
 import org.bson.UuidRepresentation;
 import org.bson.conversions.Bson;
@@ -38,11 +39,12 @@ import org.mongojack.SerializationOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Streams;
 import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.MongoNamespace;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.CountOptions;
+import com.mongodb.client.model.Projections;
 
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.Collection;
@@ -162,7 +164,7 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 			}
 		};
 		
-		return Streams.stream(enrichedIterator);
+		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(enrichedIterator, Spliterator.ORDERED), false);
 	}
 
 	private String fixAttributeName(String attributeName) {

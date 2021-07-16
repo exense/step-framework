@@ -27,6 +27,7 @@ public class InMemoryAccessorTest extends AbstractAccessorTest {
 	public void before() {
 		accessor = new InMemoryAccessor<>();
 		organizableObjectAccessor = new InMemoryAccessor<>();
+		beanAccessor = new InMemoryAccessor<>();
 	}
 
 }

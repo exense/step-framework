@@ -25,11 +25,15 @@ import static org.junit.Assert.assertNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.bson.types.ObjectId;
+import org.junit.Assert;
 import org.junit.Test;
-
-import com.google.common.collect.Iterators;
 
 public class LayeredAccessorTest {
 
@@ -83,8 +87,10 @@ public class LayeredAccessorTest {
 		testGet(entity2_1, accessor);
 		testGet(entity2_2, accessor);
 		
-		AbstractOrganizableObject[] all = Iterators.toArray(accessor.getAll(), AbstractOrganizableObject.class);
-		assertEquals(3, all.length);
+		Object[] allIds = StreamSupport
+				.stream(Spliterators.spliteratorUnknownSize(accessor.getAll(), Spliterator.ORDERED), false)
+				.map(e -> e.getId()).collect(Collectors.toList()).toArray();
+		Assert.assertArrayEquals(List.of(entity1_1, entity2_1, entity2_2).toArray(), allIds);
 		
 		AbstractOrganizableObject entity = findByName("entity 1", accessor);
 		assertEquals(entity1_1, entity.getId());
@@ -92,10 +98,19 @@ public class LayeredAccessorTest {
 		entity = findByName("entity 2", accessor);
 		assertEquals(entity2_2, entity.getId());
 		
+		entity = accessor.findByCriteria(Map.of("attributes.name", "entity 1"));
+		assertEquals(entity1_1, entity.getId());
+		
 		entity = accessor.findByAttributes(newAttributes("entity 1"), "attributes");
 		assertEquals(entity1_1, entity.getId());
 		
 		List<AbstractOrganizableObject> entities = new ArrayList<>();
+		entities = accessor.findManyByCriteria(Map.of("attributes.name", "entity 1")).collect(Collectors.toList());
+		assertEquals(2, entities.size());
+		assertEquals(entity1_1, entities.get(0).getId());
+		assertEquals(entity2_1, entities.get(1).getId());
+		
+		entities = new ArrayList<>();
 		accessor.findManyByAttributes(newAttributes("entity 1")).forEachRemaining(entities::add);
 		assertEquals(2, entities.size());
 		assertEquals(entity1_1, entities.get(0).getId());

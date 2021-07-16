@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
+import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
 
@@ -44,6 +45,22 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	T get(String id);
 
 	/**
+	 * Find an object by criteria. If multiple objects match these criteria, the first one will be returned
+	 * 
+	 * @param criteria the map of mandatory criteria of the object to be found
+	 * @return the object
+	 */
+	T findByCriteria(Map<String, String> criteria);
+	
+	/**
+	 * Find objects by criteria.
+	 * 
+	 * @param criteria the map of mandatory criteria of the object to be found
+	 * @return an {@link Iterator} for the objects found
+	 */
+	Stream<T> findManyByCriteria(Map<String, String> criteria);
+	
+	/**
 	 * Find an object by default attributes. If multiple objects match these attributes, the first one will be returned
 	 * 
 	 * @param attributes the map of mandatory attributes of the object to be found
@@ -60,6 +77,11 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	Spliterator<T> findManyByAttributes(Map<String, String> attributes);
 
 	Iterator<T> getAll();
+	
+	/**
+	 * @return a {@link Stream} with all objects
+	 */
+	Stream<T> stream();
 
 	/**
 	 * Find an object by attributes. If multiple objects match these attributes, the first one will be returned

@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
+import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
 
@@ -68,6 +69,16 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	}
 
 	@Override
+	public T findByCriteria(Map<String, String> criteria) {
+		return cache.findByCriteria(criteria);
+	}
+
+	@Override
+	public Stream<T> findManyByCriteria(Map<String, String> criteria) {
+		return cache.findManyByCriteria(criteria);
+	}
+	
+	@Override
 	public T findByAttributes(Map<String, String> attributes) {
 		return cache.findByAttributes(attributes);
 	}
@@ -113,5 +124,10 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	@Override
 	public List<T> getRange(int skip, int limit) {
 		return cache.getRange(skip, limit);
+	}
+
+	@Override
+	public Stream<T> stream() {
+		return cache.stream();
 	}
 }

@@ -40,5 +40,7 @@ public class FilesystemAccessorTest extends AbstractAccessorTest {
 				new FilesystemCollection<>(repository, AbstractIdentifiableObject.class));
 		organizableObjectAccessor = new AbstractAccessor<AbstractOrganizableObject>(
 				new FilesystemCollection<>(repository, AbstractOrganizableObject.class));
+		beanAccessor = new AbstractAccessor<Bean>(
+				new FilesystemCollection<>(repository, Bean.class));
 	}
 }

@@ -18,6 +18,7 @@
  ******************************************************************************/
 package step.core.accessors;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,16 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	}
 
 	@Override
+	public T findByCriteria(Map<String, String> criteria) {
+		return findByCriteriaStream(criteria).findFirst().orElse(null);
+	}
+
+	@Override
+	public Stream<T> findManyByCriteria(Map<String, String> criteria) {
+		return findByCriteriaStream(criteria);
+	}
+
+	@Override
 	public T findByAttributes(Map<String, String> attributes) {
 		return findByKeyAttributes("attributes", attributes);
 	}
@@ -81,10 +92,16 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	}
 
 	private Stream<T> findByAttributesStream(String fieldName, Map<String, String> attributes) {
+		attributes = attributes != null ? attributes : new HashMap<>();
+		return findByCriteriaStream(attributes.entrySet().stream()
+				.collect(Collectors.toMap(e -> fieldName + "." + e.getKey(), e -> e.getValue())));
+	}
+	
+	private Stream<T> findByCriteriaStream(Map<String, String> criteria) {
 		Filter filter;
-		if(attributes != null) {
-			filter = Filters.and(attributes.entrySet().stream()
-					.map(e -> Filters.equals(fieldName + "." + e.getKey(), e.getValue())).collect(Collectors.toList()));
+		if(criteria != null) {
+			filter = Filters.and(criteria.entrySet().stream()
+					.map(e -> Filters.equals(e.getKey(), e.getValue())).collect(Collectors.toList()));
 		} else {
 			filter = Filters.empty();
 		}
@@ -93,9 +110,10 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 
 	@Override
 	public Iterator<T> getAll() {
-		return collectionDriver.find(Filters.empty(), null, null, null, 0).iterator();
+		return stream().iterator();
 	}
 	
+	@Override
 	public Stream<T> stream() {
 		return collectionDriver.find(Filters.empty(), null, null, null, 0);
 	}

@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Spliterator;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -16,7 +17,8 @@ public abstract class AbstractAccessorTest {
 
 	protected Accessor<AbstractIdentifiableObject> accessor;
 	protected Accessor<AbstractOrganizableObject> organizableObjectAccessor;
-
+	protected Accessor<Bean> beanAccessor;
+	
 	public AbstractAccessorTest() {
 		super();
 	}
@@ -37,8 +39,11 @@ public abstract class AbstractAccessorTest {
 		
 		range = accessor.getRange(10, 1);
 		assertEquals(0, range.size());
+
+		List<AbstractIdentifiableObject> all = accessor.stream().collect(Collectors.toList());
+		assertEquals(1, all.size());
 		
-		ArrayList<AbstractIdentifiableObject> all = new ArrayList<>();
+		all.clear();
 		accessor.getAll().forEachRemaining(e->all.add(e));
 		assertEquals(1, all.size());
 		
@@ -58,6 +63,25 @@ public abstract class AbstractAccessorTest {
 		entity.setId(null);
 		accessor.save(entity);
 		assertNotNull(entity.getId());
+	}
+	
+	@Test
+	public void testBeanAccessor() {
+		Bean entity = new Bean();
+		entity.setProperty1("value 1");
+		beanAccessor.save(entity);
+		
+		Bean actualEntity = beanAccessor.get(entity.getId());
+		assertEquals(entity, actualEntity);
+		
+		actualEntity = beanAccessor.get(entity.getId().toString());
+		assertEquals(entity, actualEntity);
+		
+		actualEntity = beanAccessor.findByCriteria(Map.of("property1", "value 1"));
+		assertEquals(entity, actualEntity);
+		
+		actualEntity = beanAccessor.findManyByCriteria(Map.of("property1", "value 1")).findFirst().get();
+		assertEquals(entity, actualEntity);
 	}
 
 	@Test
@@ -136,5 +160,18 @@ public abstract class AbstractAccessorTest {
 		}
 		return actual;
 	}
+	
+	public static class Bean extends AbstractIdentifiableObject {
+		
+		private String property1;
 
+		public String getProperty1() {
+			return property1;
+		}
+
+		public void setProperty1(String property1) {
+			this.property1 = property1;
+		}
+	}
+ 
 }

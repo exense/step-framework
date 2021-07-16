@@ -22,14 +22,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
-
-import com.google.common.collect.Streams;
 
 public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Accessor<T> {
 
@@ -73,15 +71,29 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 	}
 
 	@Override
+	public T findByCriteria(Map<String, String> criteria) {
+		return layeredLookup(a -> a.findByCriteria(criteria));
+	}
+
+	@Override
+	public Stream<T> findManyByCriteria(Map<String, String> criteria) {
+		return layeredStreamMerge(a -> a.findManyByCriteria(criteria));
+	}
+
+	@Override
 	public T findByAttributes(Map<String, String> attributes) {
-		return layeredLookup(a->a.findByAttributes(attributes));
+		return layeredLookup(a -> a.findByAttributes(attributes));
 	}
 
 	@Override
 	public Spliterator<T> findManyByAttributes(Map<String, String> attributes) {
-		return layeredMerge(a->a.findManyByAttributes(attributes));
+		return layeredMerge(a -> a.findManyByAttributes(attributes));
 	}
 
+	protected <V> Stream<V> layeredStreamMerge(Function<Accessor<T>, Stream<V>> f) {
+		return accessors.stream().map(a -> f.apply(a)).flatMap(i -> i);
+	}
+	
 	protected <V> Spliterator<V> layeredMerge(Function<Accessor<T>, Spliterator<V>> f) {
 		List<V> result = new ArrayList<>();
 		accessors.forEach(a->{
@@ -92,52 +104,7 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 	
 	@Override
 	public Iterator<T> getAll() {
-		Iterator<Accessor<T>> accessorIterator = accessors.iterator();
-		return new MergeIterator<T>(accessorIterator);
-	}
-
-	private static final class MergeIterator<T extends AbstractIdentifiableObject> implements Iterator<T> {
-		
-		private final Iterator<Accessor<T>> accessorIterator;
-		private Iterator<T> currentIterator;
-
-		private MergeIterator(Iterator<Accessor<T>> accessorIterator) {
-			this.accessorIterator = accessorIterator;
-			nextAccessor();
-		}
-
-		@Override
-		public boolean hasNext() {
-			if(currentIterator != null) {
-				boolean hasNext = currentIterator.hasNext();
-				if(hasNext) {
-					return true;
-				} else {
-					nextAccessor();
-					return hasNext();
-				}
-			} else {
-				return false;
-			}
-		}
-
-		protected void nextAccessor() {
-			if(accessorIterator.hasNext()) {
-				Accessor<T> currentAccessor = accessorIterator.next();
-				currentIterator = currentAccessor.getAll();
-			} else {
-				currentIterator = null;
-			}
-		}
-
-		@Override
-		public T next() {
-			if(hasNext()) {
-				return currentIterator.next();
-			} else {
-				throw new NoSuchElementException();
-			}
-		}
+		return layeredStreamMerge(a -> a.stream()).iterator();
 	}
 	
 	@Override
@@ -152,8 +119,7 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 
 	@Override
 	public List<T> getRange(int skip, int limit) {
-		List<T> all = Streams.stream(getAll()).collect(Collectors.toList());
-		return all.subList(skip, Math.min(all.size(), skip+limit));
+		return stream().skip(skip).limit(limit).collect(Collectors.toList());
 	}
 
 	@Override
@@ -178,5 +144,10 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 
 	protected Accessor<T> getAccessorForPersistence() {
 		return accessors.get(0);
+	}
+
+	@Override
+	public Stream<T> stream() {
+		return layeredStreamMerge(a -> a.stream());
 	}
 }
