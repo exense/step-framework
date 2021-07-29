@@ -35,6 +35,11 @@ public abstract class AbstractServices {
 	public ServerContext getServerContext() {
 		return serverContext;
 	}
+	
+	//required for unit test
+	protected void setHttpServletRequest(HttpServletRequest httpServletRequest) {
+		this.httpServletRequest = httpServletRequest;
+	}
 
 	public HttpSession getHttpSession() {
 		return httpServletRequest.getSession();
