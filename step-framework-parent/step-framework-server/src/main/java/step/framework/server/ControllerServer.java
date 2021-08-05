@@ -186,6 +186,8 @@ public class ControllerServer {
 				}
 			}
 		};
+
+		resourceConfig.register(JacksonMapperProvider.class);
 		
 		ServerContext serverContext = new ServerContext();
 		serverContext.put(ServiceRegistrationCallback.class, serviceRegistrationCallback);
