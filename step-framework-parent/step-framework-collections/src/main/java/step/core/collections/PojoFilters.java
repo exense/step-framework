@@ -184,6 +184,8 @@ public class PojoFilters {
 						} else {
 							return false;
 						}
+					} if (expectedValue instanceof String && beanProperty!= null && beanProperty.getClass().isEnum())  {
+						return expectedValue.equals(beanProperty.toString());
 					} else {
 						return expectedValue.equals(beanProperty);
 					}
