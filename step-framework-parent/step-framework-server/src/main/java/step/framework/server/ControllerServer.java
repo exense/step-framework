@@ -57,6 +57,10 @@ public class ControllerServer {
 	private Integer port;
 	
 	private static final Logger logger = LoggerFactory.getLogger(ControllerServer.class);
+
+	private ServerPlugin pluginProxy;
+
+	private ServerContext serverContext;
 	
 	public static void main(String[] args) throws Exception {
 		ArgumentParser arguments = new ArgumentParser(args);
@@ -98,6 +102,15 @@ public class ControllerServer {
 
 		server.setHandler(handlers);
 		server.start();
+		
+		Runtime.getRuntime().addShutdownHook(new Thread(()->{
+			logger.info("Shutdown hook called. Stopping...");
+			try {
+				stop();
+			} catch (Exception e) {
+				logger.error("Unexpected error while stopping server", e);
+			}
+		}));
 	}
 	
 	private void stop() {
@@ -114,6 +127,9 @@ public class ControllerServer {
 			} catch (IOException e) {
 				logger.error("Error while closing configuration",e);
 			}
+		}
+		if(pluginProxy != null && serverContext != null) {
+			pluginProxy.serverStop(serverContext);
 		}
 	}
 
@@ -189,15 +205,15 @@ public class ControllerServer {
 
 		resourceConfig.register(JacksonMapperProvider.class);
 		
-		ServerContext serverContext = new ServerContext();
+		serverContext = new ServerContext();
 		serverContext.put(ServiceRegistrationCallback.class, serviceRegistrationCallback);
 		serverContext.put(Configuration.class, configuration);
 		ServerPluginManager serverPluginManager = new ServerPluginManager(configuration);
 		
-		ServerPlugin proxy = serverPluginManager.getProxy();
-		proxy.serverStart(serverContext);
-		proxy.initializeData(serverContext);
-		proxy.afterInitializeData(serverContext);
+		pluginProxy = serverPluginManager.getProxy();
+		pluginProxy.serverStart(serverContext);
+		pluginProxy.initializeData(serverContext);
+		pluginProxy.afterInitializeData(serverContext);
 		
 		// Enabling CORS. Required for tests only
 		resourceConfig.register(CORSResponseFilter.class);
