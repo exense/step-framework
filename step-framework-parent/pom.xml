@@ -50,7 +50,7 @@
 		<junit.version>4.13.1</junit.version>
 		<mongodb.version>4.0.5</mongodb.version>
 		<jackson.version>2.10.0</jackson.version>
-		<jetty.version>11.0.6</jetty.version>
+		<jetty.version>9.4.14.v20181114</jetty.version>
 		<jersey.version>2.29.1</jersey.version>
 	</properties>
 
