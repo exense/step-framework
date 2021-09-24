@@ -39,7 +39,7 @@ public class AnnotationScannerTest {
 	public void test() {
 		try(AnnotationScanner annotationScanner = AnnotationScanner.forAllClassesFromContextClassLoader()) {
 			Class<?> class1 = annotationScanner.getClassesWithAnnotation((TestAnnotation.class)).stream().findFirst().get();
-			assertEquals(TestClass.class, class1);
+			assertEquals(AnnotatedClass.class, class1);
 			
 			Method method1 = annotationScanner.getMethodsWithAnnotation(TestAnnotation.class).stream().findFirst().get();
 			assertEquals("testMethod", method1.getName());
@@ -50,7 +50,7 @@ public class AnnotationScannerTest {
 	public void test2() {
 		try(AnnotationScanner annotationScanner = AnnotationScanner.forAllClassesFromClassLoader(this.getClass().getClassLoader())) {
 			Class<?> class1 = annotationScanner.getClassesWithAnnotation((TestAnnotation.class)).stream().findFirst().get();
-			assertEquals(TestClass.class, class1);
+			assertEquals(AnnotatedClass.class, class1);
 			
 			Method method1 = annotationScanner.getMethodsWithAnnotation(TestAnnotation.class).stream().findFirst().get();
 			assertEquals("testMethod", method1.getName());
@@ -61,7 +61,7 @@ public class AnnotationScannerTest {
 	public void test3() {
 		try(AnnotationScanner annotationScanner = AnnotationScanner.forAllClassesFromClassLoader("step", this.getClass().getClassLoader())) {
 			Class<?> class1 = annotationScanner.getClassesWithAnnotation((TestAnnotation.class)).stream().findFirst().get();
-			assertEquals(TestClass.class, class1);
+			assertEquals(AnnotatedClass.class, class1);
 			
 			Method method1 = annotationScanner.getMethodsWithAnnotation(TestAnnotation.class).stream().findFirst().get();
 			assertEquals("testMethod", method1.getName());
@@ -110,12 +110,4 @@ public class AnnotationScannerTest {
 		
 	}
 	
-	@TestAnnotation
-	public static class TestClass {
-
-		@TestAnnotation
-		public void testMethod() {
-		}
-
-	}
 }

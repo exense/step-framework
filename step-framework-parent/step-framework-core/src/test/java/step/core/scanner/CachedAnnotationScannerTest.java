@@ -24,14 +24,13 @@ import java.lang.reflect.Method;
 
 import org.junit.Test;
 
-import step.core.scanner.AnnotationScannerTest.TestClass;
 
 public class CachedAnnotationScannerTest {
 
 	@Test
 	public void test() {
 		Class<?> class1 = CachedAnnotationScanner.getClassesWithAnnotation(TestAnnotation.class).stream().findFirst().get();
-		assertEquals(TestClass.class, class1);
+		assertEquals(AnnotatedClass.class, class1);
 	}
 
 	@Test
@@ -39,7 +38,7 @@ public class CachedAnnotationScannerTest {
 		Class<?> class1 = CachedAnnotationScanner
 				.getClassesWithAnnotation(TestAnnotation.class, this.getClass().getClassLoader()).stream().findFirst()
 				.get();
-		assertEquals(TestClass.class, class1);
+		assertEquals(AnnotatedClass.class, class1);
 	}
 
 	@Test
@@ -47,7 +46,7 @@ public class CachedAnnotationScannerTest {
 		Class<?> class1 = CachedAnnotationScanner
 				.getClassesWithAnnotation("step", TestAnnotation.class, this.getClass().getClassLoader()).stream()
 				.findFirst().get();
-		assertEquals(TestClass.class, class1);
+		assertEquals(AnnotatedClass.class, class1);
 	}
 
 	@Test
