@@ -68,28 +68,34 @@ public class AnnotationScannerTest {
 		}
 	}
 	
-	/*@Test
+	/*jar file is created manually
+	* go to the test\java folder
+	* javac .\step\core\scanner\TestAnnotation.java .\step\core\scanner\AnnotatedClass.java
+	* jar cf ..\resources\annotation-test.jar .\step\core\scanner\AnnotatedClass.class
+	 */
+	
+	@Test
 	public void testAnnotationScannerForSpecificJars() {
-		File file = FileHelper.getClassLoaderResourceAsFile(this.getClass().getClassLoader(), "step-core-model-test.jar");
+		File file = FileHelper.getClassLoaderResourceAsFile(this.getClass().getClassLoader(), "annotation-test.jar");
 		try(AnnotationScanner annotationScanner = AnnotationScanner.forSpecificJar(file)) {
-			List<Method> methods = annotationScanner.getMethodsWithAnnotation(ContainsDynamicValues.class).stream().collect(Collectors.toList());
+			List<Method> methods = annotationScanner.getMethodsWithAnnotation(TestAnnotation.class).stream().collect(Collectors.toList());
 			assertEquals(1, methods.size());
 			assertEquals("testMethod", methods.get(0).getName());
 		}
-	}*/
+	}
 	
-	/*@Test
+	@Test
 	public void testAnnotationScannerForSpecificJarsWithSpacesAndSpecialCharsInPath() throws IOException {
-		File file = FileHelper.getClassLoaderResourceAsFile(this.getClass().getClassLoader(), "step-core-model-test.jar");
+		File file = FileHelper.getClassLoaderResourceAsFile(this.getClass().getClassLoader(), "annotation-test.jar");
 		File folderWithSpace = FileHelper.createTempFolder("Folder with space");
-		File targetFile = new File(folderWithSpace.getAbsolutePath()+"/stèp-côre-mo del-test.jar");
+		File targetFile = new File(folderWithSpace.getAbsolutePath()+"/annotat iôn-tèst.jar");
 		Files.copy(file, targetFile);
 		try(AnnotationScanner annotationScanner = AnnotationScanner.forSpecificJar(targetFile)) {
-			List<Method> methods = annotationScanner.getMethodsWithAnnotation(ContainsDynamicValues.class).stream().collect(Collectors.toList());
+			List<Method> methods = annotationScanner.getMethodsWithAnnotation(TestAnnotation.class).stream().collect(Collectors.toList());
 			assertEquals(1, methods.size());
 			assertEquals("testMethod", methods.get(0).getName());
 		}
-	}*/
+	}
 
 	// Don't remove this class
 	// It is here to ensure that annotation scanning performed in
