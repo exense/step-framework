@@ -12,7 +12,7 @@ public class Bucket extends AbstractIdentifiableObject {
     private long begin;
     private Map<String, String> attributes;
     private long count, sum, min, max;
-    private int pclPrecision = 1;
+    private long pclPrecision;
     private Map<Long, Long> distribution;
 
     public Bucket() {
@@ -74,11 +74,11 @@ public class Bucket extends AbstractIdentifiableObject {
         return distribution;
     }
 
-    public int getPclPrecision() {
+    public long getPclPrecision() {
         return pclPrecision;
     }
 
-    public void setPclPrecision(int pclPrecision) {
+    public void setPclPrecision(long pclPrecision) {
         this.pclPrecision = pclPrecision;
     }
 
@@ -93,11 +93,11 @@ public class Bucket extends AbstractIdentifiableObject {
 
         ArrayList<Long> keys = new ArrayList<>(distribution.keySet());
         Collections.sort(keys);
-        for (Long key: keys) {
+        for (Long key : keys) {
             Long value = distribution.get(key);
             count.add(value);
             percentileValue = key;
-            if(count.longValue()>=numberOfPointsAtPercentile) {
+            if (count.longValue() >= numberOfPointsAtPercentile) {
                 break;
             }
         }
