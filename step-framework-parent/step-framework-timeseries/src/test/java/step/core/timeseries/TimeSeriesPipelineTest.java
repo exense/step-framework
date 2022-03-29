@@ -69,7 +69,7 @@ public class TimeSeriesPipelineTest {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeriesPipeline pipeline = new TimeSeriesPipeline(bucketCollection);
-        try (TimeSeriesPipeline.IngestionPipeline ingestionPipeline = pipeline.newIngestionPipeline()) {
+        try (TimeSeriesPipeline.IngestionPipeline ingestionPipeline = pipeline.newIngestionPipeline(100)) {
             // Ingest 1M points in series 1
             int nPoints = 1000000;
             Map<String, String> attributes = Map.of("key", "value1");
@@ -78,14 +78,18 @@ public class TimeSeriesPipelineTest {
                 ingestionPipeline.ingestPoint(attributes, 1L, 10L);
             }
             long stop = System.currentTimeMillis();
+            // No automatic flushing should have occurred
+            assertEquals(0, ingestionPipeline.getFlushCount());
             // Flush series to persist
             ingestionPipeline.flush();
+            assertEquals(1, ingestionPipeline.getFlushCount());
             logger.info("Ingested " + nPoints + " points in " + (stop - start) + "ms. TPS = " + ((nPoints * 1000.0) / (stop - start)));
 
             // Ingest 1 point in series 2
             Map<String, String> attributes2 = Map.of("key", "value2");
             ingestionPipeline.ingestPoint(attributes2, 1L, 5L);
             ingestionPipeline.flush();
+            assertEquals(2, ingestionPipeline.getFlushCount());
 
             // Query series 1
             Map<Long, Bucket> series = pipeline.query(attributes, 0L, 10L, 1000);
@@ -117,7 +121,7 @@ public class TimeSeriesPipelineTest {
         Map<String, String> attributes = Map.of("key", "value1");
         Map<String, String> attributes2 = Map.of("key", "value2");
 
-        try (TimeSeriesPipeline.IngestionPipeline ingestionPipeline = pipeline.newAutoFlushingIngestionPipeline(10)) {
+        try (TimeSeriesPipeline.IngestionPipeline ingestionPipeline = pipeline.newAutoFlushingIngestionPipeline(100, 10)) {
             ExecutorService executorService = Executors.newFixedThreadPool(5);
             for (int j = 0; j < 5; j++) {
                 executorService.submit(() -> {
@@ -143,7 +147,7 @@ public class TimeSeriesPipelineTest {
 
         series1 = pipeline.query(attributes, start - 1000L, now, 1);
         assertEquals(count.longValue(), countPoints(series1));
-        assertTrue(series1.size() <= 2);
+        assertTrue(series1.size() <= 11);
 
         Map<Long, Bucket> series2 = pipeline.query(attributes2, start - 1000L, now, now - start);
         assertEquals(count.longValue(), countPoints(series2));
@@ -151,7 +155,7 @@ public class TimeSeriesPipelineTest {
     }
 
     private long countPoints(Map<Long, Bucket> series1) {
-        return series1.values().stream().map(Bucket::getCount).reduce(0L, Long::sum).longValue();
+        return series1.values().stream().map(Bucket::getCount).reduce(0L, Long::sum);
     }
 
     @Test
@@ -162,5 +166,24 @@ public class TimeSeriesPipelineTest {
         Collection<Bucket> bucketCollection = new MongoDBCollectionFactory(properties).getCollection("series", Bucket.class);
         bucketCollection.drop();
         ingestionPipelineParallel(bucketCollection);
+    }
+
+    @Test
+    public void ingestionPipelineResolution() {
+        testResolution(1, 10);
+        testResolution(10, 1);
+        testResolution(100, 1);
+    }
+
+    private void testResolution(int resolutionMs, int expectedBucketCount) {
+        // Create ingestion pipeline
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeriesPipeline pipeline = new TimeSeriesPipeline(bucketCollection);
+        try (TimeSeriesPipeline.IngestionPipeline ingestionPipeline = pipeline.newIngestionPipeline(resolutionMs)) {
+            for (int i = 0; i < 10; i++) {
+                ingestionPipeline.ingestPoint(Map.of(), i, 0L);
+            }
+        }
+        assertEquals(expectedBucketCount, bucketCollection.estimatedCount());
     }
 }

@@ -27,12 +27,12 @@ public class TimeSeriesPipeline {
         this.bucketCollection = bucketCollection;
     }
 
-    public IngestionPipeline newIngestionPipeline() {
-        return new IngestionPipeline();
+    public IngestionPipeline newIngestionPipeline(long resolutionMs) {
+        return new IngestionPipeline(resolutionMs);
     }
 
-    public IngestionPipeline newAutoFlushingIngestionPipeline(long flushingPeriodMs) {
-        return new IngestionPipeline(flushingPeriodMs);
+    public IngestionPipeline newAutoFlushingIngestionPipeline(long resolutionMs, long flushingPeriodMs) {
+        return new IngestionPipeline(resolutionMs, flushingPeriodMs);
     }
 
     public Map<Long, Bucket> query(Map<String, String> criteria, long from, long to, long resolutionMs) {
@@ -68,17 +68,18 @@ public class TimeSeriesPipeline {
         private final Map<Map<String, String>, Map<Long, BucketBuilder>> series = new ConcurrentHashMap<>();
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
         private final ScheduledExecutorService scheduler;
-        // TODO make this configurable
-        private final long resolutionMs = 1000L;
+        private final long resolutionMs;
         private final LongAdder flushCount = new LongAdder();
 
-        public IngestionPipeline() {
+        public IngestionPipeline(long resolutionMs) {
+            this.resolutionMs = resolutionMs;
             scheduler = null;
         }
 
-        public IngestionPipeline(long periodInMs) {
+        public IngestionPipeline(long resolutionMs, long flushingPeriodInMs) {
+            this.resolutionMs = resolutionMs;
             scheduler = Executors.newScheduledThreadPool(1);
-            scheduler.scheduleAtFixedRate(this::flush, periodInMs, periodInMs, TimeUnit.MILLISECONDS);
+            scheduler.scheduleAtFixedRate(this::flush, flushingPeriodInMs, flushingPeriodInMs, TimeUnit.MILLISECONDS);
         }
 
         public void ingestPoint(Map<String, String> attributes, long timestamp, long value) {
@@ -103,9 +104,9 @@ public class TimeSeriesPipeline {
             try {
                 debug("Got write lock");
                 // Persist each bucket
-                series.forEach((k, v) -> v.forEach((index, bucketBuilder) -> {
-                    bucketCollection.save(bucketBuilder.build());
-                }));
+                series.forEach((k, v) -> v.forEach((index, bucketBuilder) ->
+                    bucketCollection.save(bucketBuilder.build())
+                ));
                 series.clear();
                 flushCount.increment();
                 debug("Flushed");
