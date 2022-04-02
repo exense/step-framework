@@ -9,13 +9,13 @@ import step.core.collections.mongodb.MongoDBCollectionFactory;
 
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TimeSeriesPipelineTest {
 
@@ -34,11 +34,12 @@ public class TimeSeriesPipelineTest {
             entity.setSum(5);
             entity.setMin(-i - 1);
             entity.setMax(i + 1);
+            entity.setAttributes(Map.of());
             bucketCollection.save(entity);
         }
 
         // Query the time series with resolution = bucket size
-        Map<Long, Bucket> query = pipeline.query(Map.of(), 0, nBuckets * 1000, 1000);
+        Map<Long, Bucket> query = pipeline.query().range(0, nBuckets * 1000).window(1000).runOne();
         assertEquals(nBuckets, query.size());
         // Get the 2nd bucket
         Bucket actual = query.get(1000L);
@@ -46,11 +47,11 @@ public class TimeSeriesPipelineTest {
         assertEquals(1, actual.getCount());
 
         // Query the time series with resolution = bucket size on a smaller time frame
-        query = pipeline.query(Map.of(), 1000, (nBuckets - 2) * 1000, 1000);
+        query = pipeline.query().range(1000, (nBuckets - 2) * 1000).window(1000).runOne();
         assertEquals(nBuckets - 2, query.size());
 
         // Query the time series with resolution = size of the whole time frame
-        query = pipeline.query(Map.of(), 0, nBuckets * 1000, nBuckets * 1000);
+        query = pipeline.query().range(0, nBuckets * 1000).window(nBuckets * 1000).runOne();
         assertEquals(1, query.size());
         Bucket bucket = query.get(0L);
         assertEquals(nBuckets, bucket.getCount());
@@ -59,7 +60,7 @@ public class TimeSeriesPipelineTest {
         assertEquals(nBuckets, bucket.getMax());
 
         // Query the time series with resolution = 2 x bucket size
-        query = pipeline.query(Map.of(), 0, nBuckets * 1000, 2000);
+        query = pipeline.query().range(0, nBuckets * 1000).window(2000).runOne();
         assertEquals(nBuckets / 2, query.size());
         assertEquals(2, query.get(0L).getCount());
     }
@@ -92,15 +93,15 @@ public class TimeSeriesPipelineTest {
             assertEquals(2, ingestionPipeline.getFlushCount());
 
             // Query series 1
-            Map<Long, Bucket> series = pipeline.query(attributes, 0L, 10L, 1000);
+            Map<Long, Bucket> series = pipeline.query().range(0L, 10L).filter(attributes).window(1000).runOne();
             assertEquals(nPoints, series.get(0L).getCount());
 
             // Query series 2
-            series = pipeline.query(attributes2, 0L, 10, 1000);
+            series = pipeline.query().range(0L, 10L).filter(attributes2).window(1000).runOne();
             assertEquals(1, series.get(0L).getCount());
 
             // Query both series grouped together
-            series = pipeline.query(Map.of(), 0L, 10, 1000);
+            series = pipeline.query().range(0L, 10L).window(1000).runOne();
             assertEquals(1 + nPoints, series.get(0L).getCount());
         }
     }
@@ -141,15 +142,15 @@ public class TimeSeriesPipelineTest {
 
         long now = System.currentTimeMillis();
         // With a resolution equal to (now-start) the query can return 1 or 2 buckets
-        Map<Long, Bucket> series1 = pipeline.query(attributes, start - 1000L, now, now - start);
+        Map<Long, Bucket> series1 = pipeline.query().filter(attributes).range(start - 1000L, now).window(now - start).runOne();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() <= 2);
 
-        series1 = pipeline.query(attributes, start - 1000L, now, 1);
+        series1 = pipeline.query().filter(attributes).range(start - 1000L, now).window(1).runOne();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() <= 11);
 
-        Map<Long, Bucket> series2 = pipeline.query(attributes2, start - 1000L, now, now - start);
+        Map<Long, Bucket> series2 = pipeline.query().filter(attributes2).range(start - 1000L, now).window(now - start).runOne();
         assertEquals(count.longValue(), countPoints(series2));
         assertTrue(series2.size() <= 2);
     }
@@ -185,5 +186,59 @@ public class TimeSeriesPipelineTest {
             }
         }
         assertEquals(expectedBucketCount, bucketCollection.estimatedCount());
+    }
+
+    @Test
+    public void queryWithNumberOfPoints() {
+        testQueryWithNumberOfPoints(2, 2);
+        testQueryWithNumberOfPoints(10, 10);
+    }
+
+    private void testQueryWithNumberOfPoints(int numberOfPoints, int expectedBucketCount) {
+        // Create ingestion pipeline
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeriesPipeline pipeline = new TimeSeriesPipeline(bucketCollection);
+        try (TimeSeriesPipeline.IngestionPipeline ingestionPipeline = pipeline.newIngestionPipeline(1)) {
+            for (int i = 0; i < 10; i++) {
+                ingestionPipeline.ingestPoint(Map.of(), i, 0L);
+            }
+        }
+        Map<Long, Bucket> result = pipeline.query().range(0, 10).split(numberOfPoints).runOne();
+        assertEquals(expectedBucketCount, result.size());
+        assertEquals(10, countPoints(result));
+    }
+
+    @Test
+    public void testGroupBy() {
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeriesPipeline pipeline = new TimeSeriesPipeline(bucketCollection);
+
+        try (TimeSeriesPipeline.IngestionPipeline ingestionPipeline = pipeline.newIngestionPipeline(100)) {
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "FAILED"), 2L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "FAILED"), 2L, 10L);
+        }
+
+        // Group
+        Map<Map<String, String>, Map<Long, Bucket>> result = pipeline.query().range(0, 10).group().window(10).run();
+        assertEquals(4, countPoints(result.get(Map.of())));
+
+        // Group by name
+        result = pipeline.query().range(0, 10).groupBy(Set.of("name")).window(10).run();
+        assertEquals(2, countPoints(result.get(Map.of("name", "transaction1"))));
+        assertEquals(2, countPoints(result.get(Map.of("name", "transaction2"))));
+
+        // Filter status = PASSED and group by name
+        result = pipeline.query().range(0, 10).filter(Map.of("status", "PASSED")).groupBy(Set.of("name")).window(10).run();
+        assertEquals(1, countPoints(result.get(Map.of("name", "transaction1"))));
+        assertEquals(1, countPoints(result.get(Map.of("name", "transaction2"))));
+
+        // Filter status = PASSED and group by name
+        result = pipeline.query().range(0, 2).filter(Map.of("status", "FAILED")).groupBy(Set.of("name", "status")).window(1).run();
+        assertEquals(1, countPoints(result.get(Map.of("name", "transaction1", "status", "FAILED"))));
+        assertEquals(1, countPoints(result.get(Map.of("name", "transaction2", "status", "FAILED"))));
+        assertNull(result.get(Map.of("name", "transaction1", "status", "PASSED")));
+        assertNull(result.get(Map.of("name", "transaction2", "status", "PASSED")));
     }
 }

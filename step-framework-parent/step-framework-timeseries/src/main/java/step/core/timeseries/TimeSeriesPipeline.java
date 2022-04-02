@@ -35,31 +35,53 @@ public class TimeSeriesPipeline {
         return new IngestionPipeline(resolutionMs, flushingPeriodMs);
     }
 
-    public Map<Long, Bucket> query(Map<String, String> criteria, long from, long to, long resolutionMs) {
-        Map<Long, BucketBuilder> result = new ConcurrentHashMap<>();
+    public Query query() {
+        return new Query(this);
+    }
+
+    public Map<Map<String, String>, Map<Long, Bucket>> runQuery(Query query) {
+        Map<Map<String, String>, Map<Long, BucketBuilder>> resultBuilder = new ConcurrentHashMap<>();
         long t1 = System.currentTimeMillis();
-        Filter query = buildQuery(criteria, from, to);
+        Filter filter = buildFilter(query);
         LongAdder bucketCount = new LongAdder();
-        bucketCollection.find(query, null, null, null, 0).forEach(bucket -> {
+        bucketCollection.find(filter, null, null, null, 0).forEach(bucket -> {
             bucketCount.increment();
             // This implementation uses the start time of the bucket as index
             long begin = bucket.getBegin();
-            long index = begin - begin % resolutionMs;
-            result.computeIfAbsent(index, k -> BucketBuilder.create(index)).accumulate(bucket);
+            long index = begin - begin % query.intervalSizeMs;
+
+            Map<String, String> bucketLabels = bucket.getAttributes();
+            Map<String, String> seriesKey;
+            if (query.groupDimensions != null) {
+                seriesKey = bucketLabels.entrySet().stream().filter(e ->
+                        query.groupDimensions.contains(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            } else {
+                seriesKey = Map.of();
+            }
+            Map<Long, BucketBuilder> series = resultBuilder.computeIfAbsent(seriesKey, k -> new ConcurrentHashMap<>());
+            series.computeIfAbsent(index, k -> BucketBuilder.create(index)).accumulate(bucket);
         });
         long t2 = System.currentTimeMillis();
         if (logger.isDebugEnabled()) {
             logger.debug("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
         }
-        return result.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().build()));
+
+        return resultBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
+                e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, builder -> builder.getValue().build()))));
     }
 
-    private Filter buildQuery(Map<String, String> criteria, long from, long to) {
+    private Filter buildFilter(Query query) {
         ArrayList<Filter> filters = new ArrayList<>();
-        filters.add(Filters.gte("begin", from));
-        filters.add(Filters.lte("begin", to));
-        filters.addAll(criteria.entrySet().stream()
-                .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
+        if (query.from != null) {
+            filters.add(Filters.gte("begin", query.from));
+        }
+        if (query.to != null) {
+            filters.add(Filters.lte("begin", query.to));
+        }
+        if (query.filters != null) {
+            filters.addAll(query.filters.entrySet().stream()
+                    .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
+        }
         return Filters.and(filters);
     }
 
@@ -105,7 +127,7 @@ public class TimeSeriesPipeline {
                 debug("Got write lock");
                 // Persist each bucket
                 series.forEach((k, v) -> v.forEach((index, bucketBuilder) ->
-                    bucketCollection.save(bucketBuilder.build())
+                        bucketCollection.save(bucketBuilder.build())
                 ));
                 series.clear();
                 flushCount.increment();
