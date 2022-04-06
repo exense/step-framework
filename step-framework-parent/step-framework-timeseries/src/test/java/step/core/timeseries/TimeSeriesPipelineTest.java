@@ -241,4 +241,51 @@ public class TimeSeriesPipelineTest {
         assertNull(result.get(Map.of("name", "transaction1", "status", "PASSED")));
         assertNull(result.get(Map.of("name", "transaction2", "status", "PASSED")));
     }
+
+    @Test
+    public void testConfiguration() {
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeriesPipeline pipeline = new TimeSeriesPipeline(bucketCollection);
+
+        try (TimeSeriesPipeline.IngestionPipeline ingestionPipeline = pipeline.newIngestionPipeline(1)) {
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "FAILED"), 2L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "FAILED"), 2L, 10L);
+        }
+
+        // No parameter
+        Map<Map<String, String>, Map<Long, Bucket>> result = pipeline.query().run();
+        // Expecting 0 dimension grouping
+        assertEquals(4, countPoints(result.get(Map.of())));
+
+        Map<Long, Bucket> series = pipeline.query().runOne();
+        assertEquals(4, countPoints(series));
+
+        // Range only
+        result = pipeline.query().range(10, 10).run();
+        assertEquals(0, result.size());
+
+        // Filter only
+        result = pipeline.query().filter(Map.of()).run();
+        assertEquals(1, result.size());
+
+        // Group
+        result = pipeline.query().group().run();
+        assertEquals(1, result.size());
+
+        // Group by
+        result = pipeline.query().groupBy(Set.of()).run();
+        assertEquals(1, result.size());
+
+        // Window
+        result = pipeline.query().groupBy(Set.of("name")).window(10).run();
+        assertEquals(1, result.get(Map.of("name", "transaction1")).size());
+
+        // Split
+        assertThrows(IllegalArgumentException.class, () -> pipeline.query().split(2).run());
+        assertThrows(IllegalArgumentException.class, () -> pipeline.query().range(1, 2).split(2).run());
+        result = pipeline.query().groupBy(Set.of("name")).range(0, 2).split(2).run();
+        assertEquals(2, result.get(Map.of("name", "transaction1")).size());
+    }
 }

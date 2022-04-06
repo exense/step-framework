@@ -35,6 +35,9 @@ public class TimeSeriesPipeline {
         return new IngestionPipeline(resolutionMs, flushingPeriodMs);
     }
 
+    /**
+     * @return a new query builder instance
+     */
     public Query query() {
         return new Query(this);
     }
