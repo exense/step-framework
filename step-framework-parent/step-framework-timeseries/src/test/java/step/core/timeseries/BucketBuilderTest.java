@@ -9,7 +9,7 @@ public class BucketBuilderTest {
 
     @Test
     public void ingest1Point() {
-        Map<String, String> attributes = Map.of("key", "value");
+        Map<String, Object> attributes = Map.of("key", "value");
         Bucket bucket = BucketBuilder.create(1000L).withAttributes(attributes).ingest(5L).build();
         assertEquals(1000L, bucket.getBegin());
         assertEquals(1L, bucket.getCount());

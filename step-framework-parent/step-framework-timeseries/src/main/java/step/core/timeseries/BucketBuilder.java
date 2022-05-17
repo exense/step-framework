@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 public class BucketBuilder {
 
     private final long begin;
-    private Map<String, String> attributes;
+    private Map<String, Object> attributes;
     private final LongAdder countAdder = new LongAdder();
     private final LongAdder sumAdder = new LongAdder();
     private final AtomicLong min = new AtomicLong(Long.MAX_VALUE);
@@ -22,7 +22,7 @@ public class BucketBuilder {
         this.begin = begin;
     }
 
-    public BucketBuilder withAttributes(Map<String, String> attributes) {
+    public BucketBuilder withAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }

@@ -8,6 +8,7 @@ import step.core.collections.Filters;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,62 +36,10 @@ public class TimeSeriesPipeline {
         return new IngestionPipeline(resolutionMs, flushingPeriodMs);
     }
 
-    /**
-     * @return a new query builder instance
-     */
-    public Query query() {
-        return new Query(this);
-    }
-
-    public Map<Map<String, String>, Map<Long, Bucket>> runQuery(Query query) {
-        Map<Map<String, String>, Map<Long, BucketBuilder>> resultBuilder = new ConcurrentHashMap<>();
-        long t1 = System.currentTimeMillis();
-        Filter filter = buildFilter(query);
-        LongAdder bucketCount = new LongAdder();
-        bucketCollection.find(filter, null, null, null, 0).forEach(bucket -> {
-            bucketCount.increment();
-            // This implementation uses the start time of the bucket as index
-            long begin = bucket.getBegin();
-            long index = begin - begin % query.intervalSizeMs;
-
-            Map<String, String> bucketLabels = bucket.getAttributes();
-            Map<String, String> seriesKey;
-            if (query.groupDimensions != null) {
-                seriesKey = bucketLabels.entrySet().stream().filter(e ->
-                        query.groupDimensions.contains(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            } else {
-                seriesKey = Map.of();
-            }
-            Map<Long, BucketBuilder> series = resultBuilder.computeIfAbsent(seriesKey, k -> new ConcurrentHashMap<>());
-            series.computeIfAbsent(index, k -> BucketBuilder.create(index)).accumulate(bucket);
-        });
-        long t2 = System.currentTimeMillis();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
-        }
-
-        return resultBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-                e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, builder -> builder.getValue().build()))));
-    }
-
-    private Filter buildFilter(Query query) {
-        ArrayList<Filter> filters = new ArrayList<>();
-        if (query.from != null) {
-            filters.add(Filters.gte("begin", query.from));
-        }
-        if (query.to != null) {
-            filters.add(Filters.lte("begin", query.to));
-        }
-        if (query.filters != null) {
-            filters.addAll(query.filters.entrySet().stream()
-                    .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
-        }
-        return Filters.and(filters);
-    }
-
     public class IngestionPipeline implements AutoCloseable {
 
-        private final Map<Map<String, String>, Map<Long, BucketBuilder>> series = new ConcurrentHashMap<>();
+        //                      Map<fields, setOfBuckets>
+        private final Map<Map<String, Object>, Map<Long, BucketBuilder>> series = new ConcurrentHashMap<>();
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
         private final ScheduledExecutorService scheduler;
         private final long resolutionMs;
@@ -107,7 +56,7 @@ public class TimeSeriesPipeline {
             scheduler.scheduleAtFixedRate(this::flush, flushingPeriodInMs, flushingPeriodInMs, TimeUnit.MILLISECONDS);
         }
 
-        public void ingestPoint(Map<String, String> attributes, long timestamp, long value) {
+        public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
             trace("Acquiring read lock to ingest point");
             lock.readLock().lock();
             try {
@@ -123,6 +72,7 @@ public class TimeSeriesPipeline {
             trace("Lock released");
         }
 
+        // TODO flush method can be improved with a batcher (run when a specific timeout ends, or a specific amount of data is collected)
         public void flush() {
             debug("Trying to acquire write lock");
             lock.writeLock().lock();

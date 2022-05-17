@@ -6,22 +6,24 @@ import java.util.Set;
 
 public class Query {
 
-    private final TimeSeriesPipeline timeSeriesPipeline;
-
     // Range
-    protected Long from;
-    protected Long to;
+    private Long from;
+    private Long to;
 
     // Filters
-    protected Map<String, String> filters = new HashMap<>();
+    private Map<String, String> filters = new HashMap<>();
 
     // Group
-    protected Set<String> groupDimensions;
+    private Set<String> groupDimensions;
 
-    protected long intervalSizeMs = 1000L;
+    private long intervalSizeMs = 1000L;
 
-    public Query(TimeSeriesPipeline timeSeriesPipeline) {
-        this.timeSeriesPipeline = timeSeriesPipeline;
+    public Long getFrom() {
+        return from;
+    }
+
+    public Long getTo() {
+        return to;
     }
 
     /**
@@ -61,6 +63,9 @@ public class Query {
     }
 
     public Query window(long intervalSizeMs) {
+        if (intervalSizeMs <= 0) {
+            return this;
+        }
         this.intervalSizeMs = intervalSizeMs;
         return this;
     }
@@ -78,12 +83,25 @@ public class Query {
         return window(intervalSizeMs);
     }
 
-    public Map<Map<String, String>, Map<Long, Bucket>> run() {
-        return timeSeriesPipeline.runQuery(this);
+    public Map<String, String> getFilters() {
+        return filters;
     }
 
-    public Map<Long, Bucket> runOne() {
-        Map<Map<String, String>, Map<Long, Bucket>> result = timeSeriesPipeline.runQuery(this);
-        return result.values().stream().findFirst().orElseThrow();
+    public Set<String> getGroupDimensions() {
+        return groupDimensions;
     }
+
+    public long getIntervalSizeMs() {
+        return intervalSizeMs;
+    }
+
+
+    //    public Map<Map<String, String>, Map<Long, Bucket>> run() {
+//        return timeSeriesPipeline.runQuery(this);
+//    }
+//
+//    public Map<Long, Bucket> runOne() {
+//        Map<Map<String, String>, Map<Long, Bucket>> result = timeSeriesPipeline.runQuery(this);
+//        return result.values().stream().findFirst().orElseThrow();
+//    }
 }
