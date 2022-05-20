@@ -16,22 +16,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.framework.server;
+package step.framework.server.access;
 
-import step.core.AbstractContext;
+import step.core.access.Role;
+import step.core.access.RoleResolver;
+import step.framework.server.Session;
 
-public interface ServerPlugin<C extends AbstractContext> {
+public interface AccessManager {
 
-	public void serverStart(C context) throws Exception;
+	public void setRoleResolver(RoleResolver roleResolver);
 
-	public void migrateData(C context) throws Exception;
+	public boolean checkRightInContext(Session session, String right);
+
+	public Role getRoleInContext(Session session);
+
 	
-	public void initializeData(C context) throws Exception;
-
-	public void afterInitializeData(C context) throws Exception;
-
-	public void serverStop(C context);
-
-	boolean canBeDisabled();
-
 }

@@ -32,20 +32,23 @@ import javax.ws.rs.ext.Provider;
 import org.glassfish.jersey.server.ExtendedUriInfo;
 import org.glassfish.jersey.server.model.Invocable;
 
+import step.core.accessors.AbstractUser;
 import step.framework.server.AbstractServices;
 import step.framework.server.Session;
+import step.framework.server.access.AccessManager;
 
 @Provider
 @Priority(Priorities.AUTHENTICATION)
-public class SecurityFilter extends AbstractServices implements ContainerRequestFilter {
+public class SecurityFilter<U extends AbstractUser> extends AbstractServices<U> implements ContainerRequestFilter {
 	
 	@Inject
 	private ExtendedUriInfo extendendUriInfo;
+
 	private AccessManager accessManager;
-	
+
 	@PostConstruct
 	public void init() throws Exception {
-		accessManager = getServerContext().require(AccessManager.class);
+		accessManager = getAbstractContext().require(AccessManager.class);
 	}
 	
 	@Override
@@ -53,8 +56,6 @@ public class SecurityFilter extends AbstractServices implements ContainerRequest
 		// Retrieve or initialize session
 		Session session = retrieveOrInitializeSession();
 
-		//authenticationManager.authenticateDefaultUserIfAuthenticationIsDisabled(session);
-		
 		// Check rights
 		Invocable invocable = extendendUriInfo.getMatchedResourceMethod().getInvocable();
 		Secured classAnnotation = invocable.getHandler().getHandlerClass().getAnnotation(Secured.class);

@@ -18,20 +18,16 @@
  ******************************************************************************/
 package step.framework.server;
 
+
 import step.core.AbstractContext;
 
-public interface ServerPlugin<C extends AbstractContext> {
+public interface ControllerInitializationPlugin<C extends AbstractContext> {
 
-	public void serverStart(C context) throws Exception;
+	public void checkPreconditions(C context) throws Exception;
 
-	public void migrateData(C context) throws Exception;
-	
-	public void initializeData(C context) throws Exception;
+	public void recover(C context) throws Exception;
 
-	public void afterInitializeData(C context) throws Exception;
+	public void finalizeStart(C context) throws Exception;
 
-	public void serverStop(C context);
-
-	boolean canBeDisabled();
-
+	public void preShutdownHook(C context);
 }

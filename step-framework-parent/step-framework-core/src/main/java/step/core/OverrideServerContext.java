@@ -16,22 +16,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.framework.server;
+package step.core;
 
-import step.core.AbstractContext;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-public interface ServerPlugin<C extends AbstractContext> {
-
-	public void serverStart(C context) throws Exception;
-
-	public void migrateData(C context) throws Exception;
-	
-	public void initializeData(C context) throws Exception;
-
-	public void afterInitializeData(C context) throws Exception;
-
-	public void serverStop(C context);
-
-	boolean canBeDisabled();
+@Retention(RetentionPolicy.RUNTIME)
+public @interface OverrideServerContext {
 
 }

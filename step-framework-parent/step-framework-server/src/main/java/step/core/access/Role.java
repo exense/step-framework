@@ -16,22 +16,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.framework.server;
+package step.core.access;
 
-import step.core.AbstractContext;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface ServerPlugin<C extends AbstractContext> {
+import step.core.accessors.AbstractOrganizableObject;
 
-	public void serverStart(C context) throws Exception;
+public class Role extends AbstractOrganizableObject {
 
-	public void migrateData(C context) throws Exception;
-	
-	public void initializeData(C context) throws Exception;
+	private List<String> rights = new ArrayList<>();
 
-	public void afterInitializeData(C context) throws Exception;
+	public List<String> getRights() {
+		return rights;
+	}
 
-	public void serverStop(C context);
-
-	boolean canBeDisabled();
-
+	public void setRights(List<String> rights) {
+		this.rights = rights;
+	}
 }

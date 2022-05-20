@@ -16,12 +16,41 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.framework.server.security;
+package step.versionmanager;
 
-import step.framework.server.Session;
+import step.core.Version;
+import step.core.accessors.AbstractIdentifiableObject;
 
-public interface AccessManager {
+import java.util.Date;
 
-	public boolean checkRightInContext(Session session, String right);
+public class ControllerLog extends AbstractIdentifiableObject {
+
+	private Date start;
 	
+	private Version version;
+
+	public ControllerLog() {
+		super();
+	}
+
+	public Date getStart() {
+		return start;
+	}
+
+	public void setStart(Date start) {
+		this.start = start;
+	}
+
+	public Version getVersion() {
+		return version;
+	}
+
+	public void setVersion(Version version) {
+		this.version = version;
+	}
+
+	@Override
+	public String toString() {
+		return "ControllerLog [start=" + start + ", version=" + version + "]";
+	}
 }

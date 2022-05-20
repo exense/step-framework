@@ -1,6 +1,5 @@
 package step.framework.server;
 
-import ch.exense.commons.app.Configuration;
 import step.core.AbstractContext;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.Accessor;
@@ -19,8 +18,5 @@ public class ServerContext extends AbstractContext {
 	private <T extends AbstractIdentifiableObject> String accessorKey(Class<T> beanClass) {
 		return beanClass.getName();
 	}
-	
-	public Configuration getConfiguration(){
-		return this.get(Configuration.class);
-	}
+
 }
