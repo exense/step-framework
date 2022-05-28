@@ -21,9 +21,9 @@ package step.framework.server;
 import step.core.AbstractContext;
 import step.core.accessors.AbstractUser;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 public abstract class AbstractServices<U extends AbstractUser> {
 

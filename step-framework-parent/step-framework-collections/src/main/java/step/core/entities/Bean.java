@@ -1,6 +1,6 @@
 package step.core.entities;
 
-import javax.json.JsonObject;
+import jakarta.json.JsonObject;
 
 import org.json.JSONObject;
 

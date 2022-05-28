@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.glassfish.jersey.internal.inject.AbstractBinder;
+import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -59,10 +60,10 @@ import step.core.scanner.CachedAnnotationScanner;
 import step.framework.server.audit.AuditLogger;
 import step.framework.server.swagger.Swagger;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
 
 
 public class ControllerServer {
@@ -185,15 +186,15 @@ public class ControllerServer {
 
 			HttpConfiguration https = new HttpConfiguration();
 			https.addCustomizer(new SecureRequestCustomizer());
-			
-			SslContextFactory sslContextFactory = new SslContextFactory.Server();
+
+			SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 			sslContextFactory.setKeyStorePath(configuration.getProperty("ui.ssl.keystore.path"));
 			sslContextFactory.setKeyStorePassword(configuration.getProperty("ui.ssl.keystore.password"));
 			sslContextFactory.setKeyManagerPassword(configuration.getProperty("ui.ssl.keymanager.password"));
 			
-			ServerConnector sslConnector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(https));
+			ServerConnector sslConnector = new ServerConnector(this.server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(https));
 			sslConnector.setPort(httpsPort);
-			server.addConnector(sslConnector);
+			this.server.addConnector(sslConnector);
 		}
 
 		server.addConnector(connector);
@@ -213,15 +214,12 @@ public class ControllerServer {
 		resourceConfig.addProperties(Map.of("produces", Arrays.asList("application/json")));
 		resourceConfig.addProperties(Map.of("consumes", Arrays.asList("application/json")));
 
-		// Enabling CORS. Required for tests only
+		resourceConfig.register(JacksonFeature.class);
 		resourceConfig.register(CORSRequestResponseFilter.class);
 		resourceConfig.register(MultiPartFeature.class);
 		resourceConfig.register(new AbstractBinder() {
 			@Override
 			protected void configure() {
-				//C extends AbstractContext
-				//bindAsContract(GenericType.forInstance(serverContext));
-				//bind(serverContext).to(GenericType.forInstance(serverContext));
 				bind(serverContext).to(AbstractContext.class);
 				bind(serverContext).to(serverContext.getClass());
 				bind(configuration).to(Configuration.class);
