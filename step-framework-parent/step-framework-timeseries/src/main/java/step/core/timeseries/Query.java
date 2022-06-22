@@ -6,17 +6,23 @@ import java.util.Set;
 
 public class Query {
 
+    // TODO make a constructor with this instead
+    private static final int RESOLUTION = 1000;
+
     // Range
     private Long from;
     private Long to;
 
     // Filters
     private Map<String, String> filters = new HashMap<>();
+    private boolean threadGroupsBuckets = false;
 
     // Group
     private Set<String> groupDimensions;
 
     private long intervalSizeMs = 1000L;
+
+    private int numberOfBuckets;
 
     public Long getFrom() {
         return from;
@@ -25,6 +31,16 @@ public class Query {
     public Long getTo() {
         return to;
     }
+
+    public boolean isThreadGroupsBuckets() {
+        return threadGroupsBuckets;
+    }
+
+    public Query withThreadGroupsBuckets(boolean onlyThreadGroupsBuckets) {
+        this.threadGroupsBuckets = onlyThreadGroupsBuckets;
+        return this;
+    }
+
 
     /**
      * Specifies a time range for the query
@@ -63,6 +79,9 @@ public class Query {
     }
 
     public Query window(long intervalSizeMs) {
+        if (from == null || to == null) {
+            throw new IllegalArgumentException("window() function must be called when from and to are set");
+        }
         if (intervalSizeMs <= 0) {
             return this;
         }
@@ -70,12 +89,17 @@ public class Query {
         return this;
     }
 
-    public Query split(long numberOfBuckets) {
+    public Query split(Long numberOfBuckets) {
+        if (numberOfBuckets == null) {
+            return this;
+        }
         // TODO support split also when the range isn't specified
         if (to == null || from == null) {
             throw new IllegalArgumentException("The method range() should be called before calling split()");
         }
-        long intervalSizeMs = (to - from) / numberOfBuckets;
+        long paddedFrom = from - from % RESOLUTION;
+        long paddedTo = to + (RESOLUTION - (to % RESOLUTION));
+        long intervalSizeMs = (paddedTo - paddedFrom) / numberOfBuckets;
         if (intervalSizeMs <= 0) {
             throw new IllegalArgumentException("Spitting into " + numberOfBuckets + " results in an interval size of "
                     + intervalSizeMs + "ms. The interval size should be higher than 0");

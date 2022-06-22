@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.LongAdder;
 public class Bucket extends AbstractIdentifiableObject {
 
     private long begin;
-    private Map<String, Object> attributes;
+    private BucketAttributes attributes;
     private long count, sum, min, max;
     private long pclPrecision;
     private Map<Long, Long> distribution;
@@ -30,11 +30,11 @@ public class Bucket extends AbstractIdentifiableObject {
         this.begin = begin;
     }
 
-    public Map<String, Object> getAttributes() {
+    public BucketAttributes getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public void setAttributes(BucketAttributes attributes) {
         this.attributes = attributes;
     }
 

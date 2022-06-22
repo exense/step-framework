@@ -1,28 +1,33 @@
 package step.core.timeseries.accessor;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.accessors.AbstractAccessor;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
-import step.core.timeseries.Bucket;
-import step.core.timeseries.BucketBuilder;
-import step.core.timeseries.Query;
+import step.core.timeseries.*;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
 public class BucketAccessorImpl extends AbstractAccessor<Bucket> implements BucketAccessor {
 
+    private static final String THREAD_GROUP_TYPE = "threadgroup";
+
     private static final Logger logger = LoggerFactory.getLogger(BucketAccessorImpl.class);
 
-    public BucketAccessorImpl(Collection<Bucket> collectionDriver) {
+    private final int resolution;
+
+    public BucketAccessorImpl(Collection<Bucket> collectionDriver, int resolution) {
         super(collectionDriver);
+        this.createOrUpdateIndex("attributes.$**");
+        this.createOrUpdateIndex("begin");
+        this.resolution = resolution;
     }
 
     private Filter buildFilter(Query query) {
@@ -33,11 +38,68 @@ public class BucketAccessorImpl extends AbstractAccessor<Bucket> implements Buck
         if (query.getTo() != null) {
             filters.add(Filters.lte("begin", query.getTo()));
         }
+        Filter threadGroupTypeFilter = Filters.equals("attributes.type", THREAD_GROUP_TYPE);
+        if (!query.isThreadGroupsBuckets()) {
+            threadGroupTypeFilter = Filters.not(threadGroupTypeFilter);
+        }
+        filters.add(threadGroupTypeFilter);
+
         if (query.getFilters() != null) {
             filters.addAll(query.getFilters().entrySet().stream()
                     .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
         }
         return Filters.and(filters);
+    }
+
+    @Override
+    public TimeSeriesChartResponse collect(Query query) {
+        List<Bucket[]> bucketsMatrix = new ArrayList<>();
+        List<BucketAttributes> matrixLegend = new ArrayList<>() {};
+        Filter filter = buildFilter(query);
+        long start = query.getFrom() - query.getFrom() % this.resolution;
+        long end = query.getTo() + (this.resolution - query.getTo() % this.resolution);
+        int timeIntervals = (int) Math.ceil((double) (end - start) / query.getIntervalSizeMs());
+        // object - index in the matrixKeys
+        Map<BucketAttributes, Integer> foundSeriesKeys = new HashMap<>();
+        LongAdder bucketCount = new LongAdder();
+        long t1 = System.currentTimeMillis();
+        collectionDriver.find(filter, null, null, null, 0).forEach(bucket -> {
+            bucketCount.increment();
+            BucketAttributes bucketAttributes = bucket.getAttributes();
+
+            Bucket[] series = null;
+            BucketAttributes seriesKey;
+            if (CollectionUtils.isNotEmpty(query.getGroupDimensions())) {
+                seriesKey = bucketAttributes.subset(query.getGroupDimensions());
+            } else {
+                seriesKey = new BucketAttributes();
+            }
+            if (foundSeriesKeys.containsKey(seriesKey)) {
+                series = bucketsMatrix.get(foundSeriesKeys.get(seriesKey));
+            } else { // we have a new series
+                int seriesCount = bucketsMatrix.size();
+                series = new Bucket[timeIntervals];
+                bucketsMatrix.add(series);
+                foundSeriesKeys.put(seriesKey, seriesCount);
+                matrixLegend.add(seriesKey);
+            }
+            long begin = bucket.getBegin();
+            int beginAnchor = (int) ((begin - start) / query.getIntervalSizeMs());
+//            int bucketIndex = (int) ((beginAnchor - start) / query.getIntervalSizeMs());
+            Bucket existingBucket = series[beginAnchor];
+            if (existingBucket == null) {
+                existingBucket = bucket;
+            } else {
+                existingBucket = new BucketBuilder(existingBucket).accumulate(bucket).build();
+            }
+            series[beginAnchor] = existingBucket;
+        });
+        long t2 = System.currentTimeMillis();
+//        if (logger.isDebugEnabled()) {
+//            logger.info("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
+//        }
+
+        return new TimeSeriesChartResponse(start, end, query.getIntervalSizeMs(), bucketsMatrix, matrixLegend);
     }
 
     @Override
@@ -68,7 +130,14 @@ public class BucketAccessorImpl extends AbstractAccessor<Bucket> implements Buck
             logger.debug("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
         }
         // TODO here we should merge bucket with bucketBuilder to avoid this complete iteration
-        return resultBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-                e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, builder -> builder.getValue().build()))));
+        return resultBuilder.entrySet().stream().collect(
+                Collectors.toMap(
+                        Map.Entry::getKey,
+                        pair -> pair.getValue().entrySet().stream().collect(
+                                Collectors.toMap(Map.Entry::getKey, builder -> builder.getValue().build(),
+                                        (o1, o2) -> o1, TreeMap::new)
+                        )
+                )
+        );
     }
 }

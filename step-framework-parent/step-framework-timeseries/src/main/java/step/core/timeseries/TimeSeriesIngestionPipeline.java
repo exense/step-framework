@@ -33,7 +33,8 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         scheduler.scheduleAtFixedRate(this::flush, flushingPeriodInMs, flushingPeriodInMs, TimeUnit.MILLISECONDS);
     }
 
-    public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
+    public void ingestPoint(BucketAttributes attributes, long timestamp, long value) {
+        // TODO maybe remove empty entries from the map?
         trace("Acquiring read lock to ingest point");
         lock.readLock().lock();
         try {
@@ -56,7 +57,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         try {
             debug("Got write lock");
             // Persist each bucket
-            // TODO use bulk
+            // TODO use bulk save
             series.forEach((k, v) -> v.forEach((index, bucketBuilder) ->
                     bucketAccessor.save(bucketBuilder.build())
             ));
