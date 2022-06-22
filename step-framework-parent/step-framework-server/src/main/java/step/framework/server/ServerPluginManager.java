@@ -19,18 +19,30 @@
 package step.framework.server;
 
 import ch.exense.commons.app.Configuration;
+import step.core.plugins.ModuleChecker;
 import step.core.plugins.PluginManager;
 import step.core.plugins.PluginManager.Builder;
 import step.core.plugins.PluginManager.Builder.CircularDependencyException;
+import step.core.plugins.exceptions.PluginCriticalException;
 
-public class ServerPluginManager {
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class ServerPluginManager<P extends ServerPlugin> {
 	
 	protected Configuration configuration;
+
+	protected ModuleChecker moduleChecker;
 	
 	protected PluginManager<ServerPlugin> pluginManager;
 
 	public ServerPluginManager(Configuration configuration) throws CircularDependencyException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+		this(configuration, null);
+	}
+
+	public ServerPluginManager(Configuration configuration, ModuleChecker moduleChecker) throws CircularDependencyException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 		this.configuration = configuration;
+		this.moduleChecker = moduleChecker;
 		Builder<ServerPlugin> builder = new PluginManager.Builder<ServerPlugin>(ServerPlugin.class);
 		this.pluginManager = builder.withPluginsFromClasspath().withPluginFilter(this::isPluginEnabled).build();
 	}
@@ -39,7 +51,35 @@ public class ServerPluginManager {
 		return pluginManager.getProxy(ServerPlugin.class);
 	}
 
-	private boolean isPluginEnabled(Object plugin) {
-		return configuration.getPropertyAsBoolean("plugins." + plugin.getClass().getSimpleName() + ".enabled", true);
+	protected boolean isPluginEnabled(ServerPlugin plugin) {
+		String pluginName = plugin.getClass().getSimpleName();
+		boolean enabled = configuration.getPropertyAsBoolean("plugins." + pluginName + ".enabled", true)
+				&& (moduleChecker == null || moduleChecker.apply(plugin));
+		if (!enabled && !plugin.canBeDisabled()) {
+			throw new PluginCriticalException("The plugin " + pluginName + " cannot be disabled");
+		}
+		return enabled;
+	}
+
+	public Configuration getConfiguration() {
+		return configuration;
+	}
+
+	public ModuleChecker getModuleChecker() {
+		return moduleChecker;
+	}
+
+	public PluginManager<ServerPlugin> getPluginManager() {
+		return pluginManager;
+	}
+
+	public void setModuleChecker(ModuleChecker moduleChecker) {
+		this.moduleChecker = moduleChecker;
+	}
+
+	public PluginManager<P> cloneAs(Class<P> pluginClass) throws CircularDependencyException {
+		PluginManager.Builder<P> builder = new PluginManager.Builder(pluginClass );
+		List<P> collect = this.getPluginManager().getPlugins().stream().filter(pluginClass::isInstance).map(pluginClass::cast).collect(Collectors.toList());
+		 return builder.withPlugins(collect).build();
 	}
 }

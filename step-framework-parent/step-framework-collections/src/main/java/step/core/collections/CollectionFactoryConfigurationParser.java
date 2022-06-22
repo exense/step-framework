@@ -18,6 +18,8 @@ public class CollectionFactoryConfigurationParser {
 	protected static final String SEPARATOR = ",";
 	protected static final String DOT = "\\.";
 
+	protected static final String DB_PREFIX = "db.";
+
 	public static DelegatingCollectionFactory parseConfiguration(Configuration configuration) {
 		DelegatingCollectionFactory delegatingCollectionFactory = new DelegatingCollectionFactory();
 		// Iterate over all configured collection factories and instantiate them
@@ -25,6 +27,17 @@ public class CollectionFactoryConfigurationParser {
 		propertyNames.stream().filter(p -> p.toString().startsWith(PREFIX)).map(p -> p.toString().split(DOT)[1])
 				.distinct().forEach(collectionFactoryId -> createCollectionFactory(configuration,
 						delegatingCollectionFactory, collectionFactoryId));
+
+		// Legacy DB configuration mode
+		Properties dbProperties = new Properties();
+		propertyNames.stream().filter(p -> p.toString().startsWith(DB_PREFIX))
+				.map(p -> p.toString().replace(DB_PREFIX, ""))
+				.forEach(p -> dbProperties.put(p, configuration.getProperty(DB_PREFIX + p)));
+		if (dbProperties.size() > 0) {
+			addCollectionFactory(delegatingCollectionFactory, "mongodb",
+					"step.core.collections.mongodb.MongoDBCollectionFactory", dbProperties, ALL);
+		}
+
 		return delegatingCollectionFactory;
 
 	}

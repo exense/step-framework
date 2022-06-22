@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import ch.exense.commons.app.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,5 +102,9 @@ public abstract class AbstractContext implements Closeable {
 				}
 			}
 		});
+	}
+
+	public Configuration getConfiguration(){
+		return this.get(Configuration.class);
 	}
 }

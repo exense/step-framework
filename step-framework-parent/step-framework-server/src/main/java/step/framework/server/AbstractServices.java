@@ -18,24 +18,27 @@
  ******************************************************************************/
 package step.framework.server;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import step.core.AbstractContext;
+import step.core.accessors.AbstractUser;
 
-public abstract class AbstractServices {
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
+public abstract class AbstractServices<U extends AbstractUser> {
 
 	private static final String SESSION = "session";
 
 	@Inject
-	private ServerContext serverContext;
+	private AbstractContext context;
 
 	@Inject
 	private HttpServletRequest httpServletRequest;
 
-	public ServerContext getServerContext() {
-		return serverContext;
+	public AbstractContext getAbstractContext() {
+		return context;
 	}
-	
+
 	//required for unit test
 	protected void setHttpServletRequest(HttpServletRequest httpServletRequest) {
 		this.httpServletRequest = httpServletRequest;
@@ -45,7 +48,7 @@ public abstract class AbstractServices {
 		return httpServletRequest.getSession();
 	}
 
-	protected Session getSession() {
+	protected Session<U> getSession() {
 		HttpSession httpSession = getHttpSession();
 		if (httpSession != null) {
 			return (Session) httpSession.getAttribute(SESSION);
@@ -54,7 +57,19 @@ public abstract class AbstractServices {
 		}
 	}
 
-	protected void setSession(Session session) {
+	protected void setSession(Session<U> session) {
 		getHttpSession().setAttribute(SESSION, session);
+	}
+
+	protected void invalidateSession(){
+		getHttpSession().invalidate();
+	}
+
+	public static Session getSession(HttpSession httpSession) {
+		if (httpSession != null) {
+			return (Session) httpSession.getAttribute(SESSION);
+		} else {
+			return null;
+		}
 	}
 }

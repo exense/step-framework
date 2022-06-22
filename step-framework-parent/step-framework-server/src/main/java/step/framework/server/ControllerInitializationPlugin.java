@@ -18,20 +18,16 @@
  ******************************************************************************/
 package step.framework.server;
 
-import jakarta.ws.rs.ext.ContextResolver;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import step.core.AbstractContext;
 
-public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
-	 
-    private final ObjectMapper mapper;
- 
-    public ObjectMapperProvider() {
-        mapper = new ObjectMapper();
-    }
- 
-    public ObjectMapper getContext(Class<?> type) {
-        return mapper;
-    }
+public interface ControllerInitializationPlugin<C extends AbstractContext> {
 
+	public void checkPreconditions(C context) throws Exception;
+
+	public void recover(C context) throws Exception;
+
+	public void finalizeStart(C context) throws Exception;
+
+	public void preShutdownHook(C context);
 }

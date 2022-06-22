@@ -16,22 +16,48 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.framework.server;
+package step.migration;
 
 import step.core.AbstractContext;
+import step.core.plugins.Plugin;
+import step.framework.server.ServerPlugin;
+import step.versionmanager.VersionManagerPlugin;
 
-public interface ServerPlugin<C extends AbstractContext> {
+@Plugin(dependencies= {VersionManagerPlugin.class})
+/**
+ * This plugin is responsible for the registration of the MigrationManager
+ */
+public class MigrationManagerPlugin<C extends AbstractContext> implements ServerPlugin<C> {
 
-	public void serverStart(C context) throws Exception;
+	@Override
+	public void serverStart(C context) throws Exception {
+		MigrationManager migrationManager = new MigrationManager();
+		context.put(MigrationManager.class, migrationManager);
 
-	public void migrateData(C context) throws Exception;
-	
-	public void initializeData(C context) throws Exception;
+	}
 
-	public void afterInitializeData(C context) throws Exception;
+	@Override
+	public void migrateData(C context) throws Exception {
 
-	public void serverStop(C context);
+	}
 
-	boolean canBeDisabled();
+	@Override
+	public void initializeData(C context) throws Exception {
 
+	}
+
+	@Override
+	public void afterInitializeData(C context) throws Exception {
+
+	}
+
+	@Override
+	public void serverStop(C context) {
+
+	}
+
+	@Override
+	public boolean canBeDisabled() {
+		return false;
+	}
 }

@@ -38,7 +38,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
-import com.fasterxml.jackson.datatype.jsr353.JSR353Module;
+import com.fasterxml.jackson.datatype.jsonp.JSONPModule;
 
 public class DefaultJacksonMapperProvider {
 
@@ -47,7 +47,7 @@ public class DefaultJacksonMapperProvider {
 	private static Class<ObjectId> _id = ObjectId.class;
 	
 	static {
-		customModules.add(new JSR353Module());
+		customModules.add(new JSONPModule());
 		customModules.add(new JsonOrgModule());
         modules.add(new SimpleModule("jersey", new Version(1, 0, 0, null,null,null)) //
                 .addSerializer(_id, _idSerializer()) //

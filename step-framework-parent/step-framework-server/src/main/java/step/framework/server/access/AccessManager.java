@@ -16,22 +16,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.framework.server;
+package step.framework.server.access;
 
-import jakarta.ws.rs.ext.ContextResolver;
+import step.core.access.Role;
+import step.core.access.RoleResolver;
+import step.framework.server.Session;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+public interface AccessManager {
 
-public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
-	 
-    private final ObjectMapper mapper;
- 
-    public ObjectMapperProvider() {
-        mapper = new ObjectMapper();
-    }
- 
-    public ObjectMapper getContext(Class<?> type) {
-        return mapper;
-    }
+	public void setRoleResolver(RoleResolver roleResolver);
 
+	public boolean checkRightInContext(Session session, String right);
+
+	public Role getRoleInContext(Session session);
+
+	
 }
