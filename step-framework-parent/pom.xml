@@ -85,6 +85,7 @@
 		<module>step-framework-collections-mongodb</module>
 		<module>step-framework-server</module>
 		<module>step-framework-server-plugins</module>
+		<module>step-framework-timeseries</module>
 	</modules>
 	
 	<build>
