@@ -41,7 +41,6 @@ public class Query {
         return this;
     }
 
-
     /**
      * Specifies a time range for the query
      * @param from the beginning of the time range in ms (Epoch time)
