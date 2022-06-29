@@ -25,6 +25,7 @@ import java.util.Spliterator;
 import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
+import step.core.collections.Collection;
 
 /**
  * This {@link Accessor} loads all the entities of the provided underlying
@@ -56,6 +57,11 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	public void reloadCache() {
 		// Load cache
 		underlyingAccessor.getAll().forEachRemaining(e -> cache.save(e));
+	}
+
+	@Override
+	public Collection<T> getCollectionDriver() {
+		return underlyingAccessor.getCollectionDriver();
 	}
 
 	@Override
