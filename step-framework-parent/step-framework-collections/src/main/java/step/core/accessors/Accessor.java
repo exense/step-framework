@@ -25,8 +25,11 @@ import java.util.Spliterator;
 import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
+import step.core.collections.Collection;
 
 public interface Accessor<T extends AbstractIdentifiableObject> {
+
+	Collection<T> getCollectionDriver();
 
 	/**
 	 * Get an object by id

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
+import step.core.collections.Collection;
 
 public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Accessor<T> {
 
@@ -48,6 +49,11 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 
 	public void pushAccessor(Accessor<T> accessor) {
 		accessors.add(0, accessor);
+	}
+
+	@Override
+	public Collection<T> getCollectionDriver() {
+		return layeredLookup(a->getCollectionDriver());
 	}
 
 	@Override

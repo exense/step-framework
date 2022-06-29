@@ -171,7 +171,7 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 		try {
 			return mapper.readValue(file, entityClass);
 		} catch (IOException e) {
-			throw new FilesystemCollectionException(e);
+			throw new FilesystemCollectionException("The file '" + file.getAbsolutePath() + " could not be read", e);
 		}
 	}
 	
