@@ -52,7 +52,7 @@ public class AuditLogger {
     //called by session invalidation (no request context)
     public static void logSessionInvalidation(HttpSession httpSession) {
         Session session = AbstractServices.getSession(httpSession);
-        if (session != null && session.getUser().getSessionUsername() != null) {
+        if (session != null && session.getUser() != null && session.getUser().getSessionUsername() != null) {
             AuditMessage msg = new AuditMessage();
             msg.req = "Session invalidation";
             msg.sesId = httpSession.getId();
@@ -70,7 +70,12 @@ public class AuditLogger {
     
     private static String getLogMessage(HttpServletRequest req, int status)  {
         String forwardedFor = req.getHeader("X-Forwarded-For");
-        String source = Objects.requireNonNullElse(forwardedFor, req.getRemoteAddr()+":"+req.getRemotePort());
+        String source;
+        try {
+            source = Objects.requireNonNullElse(forwardedFor,  req.getRemoteAddr()+":"+req.getRemotePort());
+        } catch (Exception e) {
+            source = "unknown";
+        }
         String user;
         try {
             user = AbstractServices.getSession(req.getSession()).getUser().getSessionUsername();
