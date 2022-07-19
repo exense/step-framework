@@ -19,6 +19,7 @@
 package step.core.collections;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 public interface Collection<T> {
@@ -66,7 +67,11 @@ public interface Collection<T> {
 
 	void createOrUpdateIndex(String field);
 
+	void createOrUpdateIndex(String field, int order);
+
 	void createOrUpdateCompoundIndex(String... fields);
+
+	void createOrUpdateCompoundIndex(Map<String,Integer> fields);
 	
 	void rename(String newName);
 	

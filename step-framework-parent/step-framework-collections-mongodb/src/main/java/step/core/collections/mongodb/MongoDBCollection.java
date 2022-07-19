@@ -18,13 +18,7 @@
  ******************************************************************************/
 package step.core.collections.mongodb;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -223,37 +217,48 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 
 	@Override
 	public void createOrUpdateIndex(String field) {
-		createOrUpdateIndex(collection, field);
+		createOrUpdateIndex(field, 1);
+	}
+
+	@Override
+	public void createOrUpdateIndex(String field, int order) {
+		createOrUpdateIndex(collection, field, order);
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
+		Map<String,Integer> mapFields = new HashMap<>();
+		Arrays.stream(fields).map(f -> mapFields.put(f,1));
+		createOrUpdateCompoundIndex(mapFields);
+	}
+
+	@Override
+	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
 		createOrUpdateCompoundIndex(collection, fields);
 	}
-	
-	
-	public static void createOrUpdateIndex(com.mongodb.client.MongoCollection<?> collection, String attribute) {
-		Document index = getIndex(collection, attribute);
+
+
+	public static void createOrUpdateIndex(com.mongodb.client.MongoCollection<?> collection, String attribute, int order) {
+		Document index = getIndex(collection, Set.of(attribute));
 		if(index==null) {
-			collection.createIndex(new Document(attribute,1));
+			collection.createIndex(new Document(attribute,order));
 		}
 	}
 
-	public static void createOrUpdateCompoundIndex(com.mongodb.client.MongoCollection<?> collection, String... attribute) {
-		Document index = getIndex(collection, attribute);
+	public static void createOrUpdateCompoundIndex(com.mongodb.client.MongoCollection<?> collection, Map<String, Integer> fields) {
+		Document index = getIndex(collection, fields.keySet());
 		
 		if(index==null) {
 			Document newIndex = new Document();
 			
-			for(String s : attribute)
-				newIndex.append(s, 1);
+			for(String key : fields.keySet())
+				newIndex.append(key, fields.get(key));
 
 			collection.createIndex(newIndex);
 		}
 	}
 	
-	private static Document getIndex(com.mongodb.client.MongoCollection<?> collection, String... attribute) {
-		HashSet<String> attributes = new HashSet<>(Arrays.asList(attribute));
+	private static Document getIndex(com.mongodb.client.MongoCollection<?> collection, Set<String> attributes) {
 
 		for(Document index:collection.listIndexes()) {  // inspect all indexes, looking for a match
 			Object o = index.get("key");

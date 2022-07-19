@@ -20,12 +20,7 @@ package step.core.collections.filesystem;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -37,6 +32,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import step.core.accessors.DefaultJacksonMapperProvider;
 import step.core.collections.*;
+import step.core.collections.Collection;
 import step.core.collections.PojoFilters.PojoFilterFactory;
 
 public class FilesystemCollection<T> extends AbstractCollection<T> implements Collection<T> {
@@ -201,10 +197,20 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	@Override
+	public void createOrUpdateIndex(String field, int order) {
+		// not supported
+	}
+
+	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
 		// not supported
 	}
-	
+
+	@Override
+	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+		// not supported
+	}
+
 	@Override
 	public void rename(String newName) {
 		// TODO Auto-generated method stub
