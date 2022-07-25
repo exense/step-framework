@@ -59,6 +59,7 @@
 		<swagger-version>2.1.11</swagger-version>
 		<slf4j.version>1.7.36</slf4j.version>
 		<guava.version>30.1.1-jre</guava.version>
+		<antlr.version>4.5.3</antlr.version>
 	</properties>
 
 	<repositories>
