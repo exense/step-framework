@@ -14,6 +14,10 @@ public class SimpleBean {
         super();
     }
 
+	public SimpleBean(String stringProperty) {
+		this.stringProperty = stringProperty;
+	}
+
 	public String getId() {
 		return id;
 	}

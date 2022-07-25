@@ -20,6 +20,7 @@ package step.core.collections.inmemory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
@@ -52,8 +53,14 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public List<String> distinct(String columnName, Filter filter) {
-		// TODO Auto-generated method stub
-		return null;
+		return filteredStream(filter).map(e -> {
+			try {
+				Object property = PojoUtils.getProperty(e, columnName);
+				return property != null ? property.toString() : null;
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		}).distinct().collect(Collectors.toList());
 	}
 	
 	@Override
@@ -105,12 +112,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	private Stream<T> filteredStream(Filter filter) {
 		PojoFilter<T> pojoFilter = new PojoFilterFactory<T>().buildFilter(filter);
-		return entityStream().filter(pojoFilter::test).sorted(new Comparator<T>() {
-			@Override
-			public int compare(T o1, T o2) {
-				return getId(o1).compareTo(getId(o2));
-			}
-		});
+		return entityStream().filter(pojoFilter).sorted(Comparator.comparing(this::getId));
 	}
 
 	private Stream<T> entityStream() {
@@ -119,9 +121,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public void remove(Filter filter) {
-		filteredStream(filter).forEach(f->{
-			entities.remove(getId(f));
-		});
+		filteredStream(filter).forEach(f-> entities.remove(getId(f)));
 	}
 
 	@Override
@@ -136,7 +136,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	@Override
 	public void save(Iterable<T> entities) {
 		if (entities != null) {
-			entities.forEach(e -> save(e));
+			entities.forEach(this::save);
 		}
 	}
 
