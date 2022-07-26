@@ -65,7 +65,10 @@ public class JdbcCollectionFactory implements CollectionFactory {
 		config.setJdbcUrl(jdbcUrl);
 		config.setUsername( properties.getProperty("user") );
 		config.setPassword( properties.getProperty("password") );
-		config.setMaximumPoolSize(50);
+		if (properties.containsKey("minConnections")) {
+			config.setMinimumIdle(Integer.parseInt(properties.getProperty("minConnections")));
+		}
+		config.setMaximumPoolSize(Integer.parseInt(properties.getProperty("maxConnections","50")));
 		config.addDataSourceProperty( "cachePrepStmts" , "true" );
 		config.addDataSourceProperty( "prepStmtCacheSize" , "250" );
 		config.addDataSourceProperty( "prepStmtCacheSqlLimit" , "2048" );
