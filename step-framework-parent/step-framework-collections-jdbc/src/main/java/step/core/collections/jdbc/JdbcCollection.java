@@ -1,0 +1,276 @@
+/*******************************************************************************
+ * Copyright (C) 2020, exense GmbH
+ *
+ * This file is part of STEP
+ *
+ * STEP is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * STEP is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
+ ******************************************************************************/
+package step.core.collections.jdbc;
+
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zaxxer.hikari.HikariDataSource;
+import org.bson.types.ObjectId;
+import step.core.collections.Collection;
+import step.core.collections.Filter;
+import step.core.collections.SearchOrder;
+import step.core.collections.filesystem.AbstractCollection;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+public class JdbcCollection<T> extends AbstractCollection<T> implements Collection<T> {
+
+	private final HikariDataSource ds;
+
+	private final String collectionName;
+	private final String collectionNameStr;
+
+	private final Class<T> entityClass;
+
+	private final ObjectMapper objectMapper;
+
+	private final String insertOrUpdateQuery;
+
+	public JdbcCollection(HikariDataSource ds, String collectionName, Class<T> entityClass) throws SQLException {
+		this.ds = ds;
+		this.collectionName = collectionName;
+		this.collectionNameStr = "\"" + collectionName + "\"";
+		this.entityClass = entityClass;
+		objectMapper = JdbcCollectionJacksonMapperProvider.getObjectMapper();
+		insertOrUpdateQuery = "INSERT INTO " + collectionNameStr + " (object)\n" +
+				"VALUES(?::jsonb) \n" +
+				"ON CONFLICT (id) \n" +
+				"DO \n" +
+				"   UPDATE SET object = ?::jsonb";
+
+		createTableIfRequired();
+	}
+
+	private synchronized void createTableIfRequired() throws SQLException {
+		try (Connection connection = ds.getConnection()) {
+			if (!tableExists(connection)) {
+				try (Statement statement = connection.createStatement();) {
+					statement.executeUpdate("CREATE TABLE " + collectionNameStr + " (" +
+							"id text GENERATED ALWAYS AS  (object ->> 'id') STORED, " +
+							"object jsonb NOT NULL,"+
+							"PRIMARY KEY (id))");
+				}
+			}
+		}
+	}
+
+	private boolean tableExists(Connection connection) throws SQLException {
+		DatabaseMetaData meta = connection.getMetaData();
+		ResultSet resultSet = meta.getTables(null, null, collectionName, new String[] {"TABLE"});
+		return resultSet.next();
+	}
+
+	@Override
+	public long count(Filter filter, Integer limit) {
+		String query = "SELECT count(*) FROM " + collectionNameStr +
+				" WHERE " + filterToWhereClause(filter);
+		try (Connection connection = ds.getConnection();
+			 Statement statement = connection.createStatement()) {
+			ResultSet resultSet = statement.executeQuery(query);
+			if (resultSet.next()) {
+				int count = resultSet.getInt(1);
+				//TODO decide how to handle the limit with JDBC
+				if (limit != null && limit < count) {
+					count=limit;
+				}
+				return count;
+			} else {
+				throw new RuntimeException("Unable to estimate the count for collection: " + collectionName + ", query: " + query);
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException("Query execution failed: " + query,e);
+		}
+	}
+
+	@Override
+	public long estimatedCount() {
+		String query = "SELECT count(*) FROM " + collectionNameStr;
+		try {
+			try (Connection connection = ds.getConnection();
+				 PreparedStatement preparedStatement = connection.prepareStatement(query);
+				 ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getInt(1);
+				} else {
+					throw new RuntimeException("Unable to estimate the count for collection: " + collectionName + " , query: " + query);
+				}
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException("Query execution failed: " + query,e);
+		}
+	}
+
+	@Override
+	public Stream<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
+		StringBuffer query = new StringBuffer();
+		query.append("SELECT * FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
+		if (order != null) {
+			String sortOrder = (order.getOrder() > 0 ) ? " ASC" : " DESC";
+			query.append(" ORDER BY ").append(JdbcFilterFactory.formatField(order.getAttributeName())).append(sortOrder);
+		}
+		if (skip != null) {
+			query.append(" OFFSET ").append(skip);
+		}
+		if (limit != null) {
+			query.append(" LIMIT ").append(limit);
+		}
+		try (Connection connection = ds.getConnection();
+			 Statement statement = connection.createStatement()){
+			if (maxTime > 0) {
+				statement.setQueryTimeout(maxTime);
+			}
+			 try (ResultSet resultSet = statement.executeQuery(query.toString())) {
+				 List<T> resultList = new ArrayList<>();
+				 while (resultSet.next()) {
+					 resultList.add(objectMapper.readValue(resultSet.getString(2), entityClass));
+				 }
+				 return resultList.stream();
+			 }
+		} catch (SQLException e) {
+			throw new RuntimeException("Query execution failed: " + query,e);
+		} catch (JsonMappingException e) {
+			throw new RuntimeException("Query execution failed: " + query,e);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("Query execution failed: " + query,e);
+		}
+	}
+
+	@Override
+	public Stream<T> findReduced(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime, List<String> reduceFields) {
+		throw new RuntimeException("Find with reduced fields not yet supported by JDBC collections");
+	}
+
+	@Override
+	public List<String> distinct(String columnName, Filter filter) {
+		StringBuffer query = new StringBuffer();
+		query.append("SELECT DISTINCT(").append(JdbcFilterFactory.formatField(columnName)).append(") FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
+		try (Connection connection = ds.getConnection();
+			 Statement statement = connection.createStatement();
+			 ResultSet resultSet = statement.executeQuery(query.toString())){
+			List<String> resultList = new ArrayList<>();
+			while (resultSet.next()) {
+				resultList.add(resultSet.getString(1));
+			}
+			return resultList;
+		} catch (SQLException e) {
+			throw new RuntimeException("Query execution failed: " + query,e);
+		}
+	}
+
+	@Override
+	public void remove(Filter filter) {
+		executeUpdateQuery("DELETE FROM " + collectionNameStr +
+				" WHERE " + filterToWhereClause(filter));
+	}
+
+	@Override
+	public T save(T entity) {
+		if (getId(entity) == null) {
+			setId(entity, new ObjectId());
+		}
+		try (Connection connection = ds.getConnection();
+			 PreparedStatement preparedStatement = connection.prepareStatement(insertOrUpdateQuery);) {
+			String jsonString = objectMapper.writeValueAsString(entity);
+			preparedStatement.setString(1, jsonString);
+			preparedStatement.setString(2, jsonString);
+			preparedStatement.executeUpdate();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+		return entity;
+	}
+
+	@Override
+	public void save(Iterable<T> entities) {
+		try (Connection connection = ds.getConnection();
+			 PreparedStatement preparedStatement = connection.prepareStatement(insertOrUpdateQuery);) {
+			entities.forEach(entity -> {
+				try {
+					if (getId(entity) == null) {
+						setId(entity, new ObjectId());
+					}
+					preparedStatement.clearParameters();
+					String jsonString = objectMapper.writeValueAsString(entity);
+					preparedStatement.setString(1, jsonString);
+					preparedStatement.setString(2, jsonString);
+					preparedStatement.addBatch();;
+				} catch (SQLException ex) {
+					throw new RuntimeException(ex);
+				} catch (JsonProcessingException ex) {
+					throw new RuntimeException(ex);
+				}
+			});
+			preparedStatement.executeBatch();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public void createOrUpdateIndex(String field) {
+
+	}
+
+	@Override
+	public void createOrUpdateIndex(String field, int order) {
+
+	}
+
+	@Override
+	public void createOrUpdateCompoundIndex(String... fields) {
+
+	}
+
+	@Override
+	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+
+	}
+
+	@Override
+	public void rename(String newName) {
+		executeUpdateQuery("ALTER TABLE " + collectionNameStr + " RENAME TO " + newName);
+	}
+
+	@Override
+	public void drop() {
+		executeUpdateQuery("DROP TABLE " + collectionNameStr);
+
+	}
+
+	private void executeUpdateQuery(String query) {
+		try (Connection connection = ds.getConnection();
+			 Statement statement = connection.createStatement()) {
+			statement.executeUpdate(query);
+		} catch (SQLException e) {
+			throw new RuntimeException("Query execution failed: " + query,e);
+		}
+	}
+
+	private String filterToWhereClause(Filter filter) {
+		return new JdbcFilterFactory().buildFilter(filter);
+	}
+}
