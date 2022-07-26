@@ -59,6 +59,10 @@ public class BucketBuilder {
         return this;
     }
 
+    public long getBegin() {
+        return begin;
+    }
+
     private void updateMin(long value) {
         min.updateAndGet(curMin -> Math.min(value, curMin));
     }
