@@ -84,6 +84,7 @@
 		<module>step-framework-model</module>
 		<module>step-framework-collections</module>
 		<module>step-framework-collections-mongodb</module>
+		<module>step-framework-collections-jdbc</module>
 		<module>step-framework-server</module>
 		<module>step-framework-server-plugins</module>
 		<module>step-framework-timeseries</module>

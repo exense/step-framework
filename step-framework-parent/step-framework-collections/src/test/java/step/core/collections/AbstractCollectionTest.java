@@ -23,7 +23,7 @@ import step.core.entities.SimpleBean;
 
 public abstract class AbstractCollectionTest {
 
-	private static final String COLLECTION = "beans";
+	private static final String COLLECTION = "Beans";
 	private static final String NEW_VALUE = "newValue";
 	private static final String VALUE1 = "Test1";
 	private static final String VALUE2 = "Test2";
