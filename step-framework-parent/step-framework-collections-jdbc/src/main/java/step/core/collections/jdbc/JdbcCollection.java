@@ -24,18 +24,20 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.SearchOrder;
 import step.core.collections.filesystem.AbstractCollection;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class JdbcCollection<T> extends AbstractCollection<T> implements Collection<T> {
+
+	private static final Logger logger = LoggerFactory.getLogger(JdbcCollection.class);
 
 	private final HikariDataSource ds;
 
@@ -159,7 +161,8 @@ public class JdbcCollection<T> extends AbstractCollection<T> implements Collecti
 
 	@Override
 	public Stream<T> findReduced(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime, List<String> reduceFields) {
-		throw new RuntimeException("Find with reduced fields not yet supported by JDBC collections");
+		//TODO implement proper find reducer? Not sure how to handle this with serializations. Usage only in RTM executeAdvancedQuery
+		return find(filter, order, skip,limit,maxTime);
 	}
 
 	@Override
@@ -232,22 +235,48 @@ public class JdbcCollection<T> extends AbstractCollection<T> implements Collecti
 
 	@Override
 	public void createOrUpdateIndex(String field) {
-
+		createOrUpdateIndex(field,1);
 	}
 
 	@Override
 	public void createOrUpdateIndex(String field, int order) {
-
+		createOrUpdateCompoundIndex(Map.of(field, order));
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-
+		Map<String, Integer> fieldsMap = new HashMap<>();
+		Arrays.asList(fields).forEach(s -> fieldsMap.put(s,1));
+		createOrUpdateCompoundIndex(fieldsMap);
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+		StringBuffer indexId = new StringBuffer().append("idx_").append(collectionName);
+		StringBuffer index = new StringBuffer().append("(");
+		fields.forEach((k,v) -> {
+			String order = (v>0) ? "ASC" : "DESC";
+			indexId.append("_").append(k.replaceAll("\\.","_")).append(order);
+			index.append("(").append(JdbcFilterFactory.formatField(k)).append(") ").append(order).append(",");
+		});
+		//finally replace the last comma by the closing parenthesis
+		index.deleteCharAt(index.length()-1).append(")");
+		createIndex(indexId.toString(), index.toString());
+	}
 
+	private void createIndex(String indexId, String index) {
+		String query = "CREATE INDEX IF NOT EXISTS " + indexId + " ON " + collectionName + " " + index;
+		if (index.contains("$**")) {
+			logger.error("The wildcard not supported for index in postgres, skipping index creation for: " + query);
+		} else {
+			try (Connection connection = ds.getConnection();
+				 Statement statement = connection.createStatement()) {
+				statement.executeUpdate(query);
+				logger.info("Created index with id: " + indexId);
+			} catch (SQLException e) {
+				throw new RuntimeException("Unable to create index, query: " + query, e);
+			}
+		}
 	}
 
 	@Override
