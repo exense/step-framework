@@ -131,6 +131,15 @@ public class TableServiceTest {
 
         writer.writeValueAsString(tableRequest);
 
+        tableRequest = reader.readValue("{\"filters\":[{\"oql\":\"not(test=test)\"}]}", TableRequest.class);
+        assertEquals(1, tableRequest.getFilters().size());
+        OQLFilter oqlFilter = (OQLFilter) tableRequest.getFilters().get(0);
+        assertEquals("not(test=test)", oqlFilter.getOql());
+        Filter oqlFilter_ = oqlFilter.toFilter();
+        assertEquals(Filters.Not.class, oqlFilter_.getClass());
+
+        writer.writeValueAsString(tableRequest);
+
         tableRequest = reader.readValue("{\"sort\":{\"field\":\"field1\", \"direction\":\"ASCENDING\"}}", TableRequest.class);
         assertEquals("field1", tableRequest.getSort().getField());
         assertEquals(SortDirection.ASCENDING, tableRequest.getSort().getDirection());
