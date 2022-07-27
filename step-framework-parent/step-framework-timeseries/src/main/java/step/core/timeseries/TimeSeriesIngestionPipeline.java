@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.timeseries.accessor.BucketAccessor;
 
+import java.io.Closeable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class TimeSeriesIngestionPipeline implements AutoCloseable {
+public class TimeSeriesIngestionPipeline implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesIngestionPipeline.class);
 
