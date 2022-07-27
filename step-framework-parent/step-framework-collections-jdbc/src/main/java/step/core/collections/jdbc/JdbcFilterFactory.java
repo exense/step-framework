@@ -65,13 +65,7 @@ public class JdbcFilterFactory implements Filters.FilterFactory<String> {
 				expectedValue = (isId) ? id : "\"" + id + "\"";
 			}
 			if (isNull) {
-				Pattern splitPattern = Pattern.compile("(.+)->([^>]+)");
-				Matcher m = splitPattern.matcher(formattedFieldName);
-				if (m.matches()) {
-					return "(NOT (" + m.group(1) + " ? " + m.group(2) + ") OR " + formattedFieldName + " = '" + expectedValue + "')";
-				}else {
-					throw  new RuntimeException("Unable to create Equal filter for null value, formattedFieldName: " + formattedFieldName);
-				}
+				return "(" + formattedFieldName + " IS NULL OR " + formattedFieldName + " = '" + expectedValue + "')";
 			} else {
 				return formattedFieldName + " = '" + expectedValue + "'";
 			}
