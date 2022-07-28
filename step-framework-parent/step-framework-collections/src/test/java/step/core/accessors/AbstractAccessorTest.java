@@ -1,8 +1,5 @@
 package step.core.accessors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +9,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public abstract class AbstractAccessorTest {
 
@@ -81,6 +80,9 @@ public abstract class AbstractAccessorTest {
 		assertEquals(entity, actualEntity);
 		
 		actualEntity = beanAccessor.findManyByCriteria(Map.of("property1", "value 1")).findFirst().get();
+		assertEquals(entity, actualEntity);
+
+		actualEntity = beanAccessor.findByCriteria(new HashMap<> ());
 		assertEquals(entity, actualEntity);
 	}
 
