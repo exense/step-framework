@@ -18,7 +18,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesIngestionPipeline.class);
 
-    //                      Map<fields, setOfBuckets>
+    Map<Long, Map<BucketAttributes, BucketBuilder>> series2 = new ConcurrentHashMap<>();
     private final Map<Map<String, Object>, Map<Long, BucketBuilder>> series = new ConcurrentHashMap<>();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final ScheduledExecutorService scheduler;
@@ -37,16 +37,18 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     public void ingestPoint(BucketAttributes attributes, long timestamp, long value) {
         // TODO maybe remove empty entries from the map?
         trace("Acquiring read lock to ingest point");
-        lock.readLock().lock();
+//        lock.readLock().lock();
         try {
             trace("Lock acquired to ingest point");
-            Map<Long, BucketBuilder> buckets = series.computeIfAbsent(attributes, k -> new ConcurrentHashMap<>());
+//            Map<Long, BucketBuilder> buckets = series.computeIfAbsent(attributes, k -> new ConcurrentHashMap<>());
             long index = timestamp - timestamp % resolutionInMs;
-            BucketBuilder bucketBuilder = buckets.computeIfAbsent(index, k ->
-                    BucketBuilder.create(index).withAttributes(attributes));
-            bucketBuilder.ingest(value);
+            Map<BucketAttributes, BucketBuilder> bucketsForTimestamp = series2.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
+            bucketsForTimestamp.computeIfAbsent(attributes, k -> BucketBuilder.create(index).withAttributes(attributes)).ingest(value);
+//            BucketBuilder bucketBuilder = buckets.computeIfAbsent(index, k ->
+//                    BucketBuilder.create(index).withAttributes(attributes));
+//            bucketBuilder.ingest(value);
         } finally {
-            lock.readLock().unlock();
+//            lock.readLock().unlock();
         }
         trace("Lock released");
     }
@@ -59,10 +61,20 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             debug("Got write lock");
             // Persist each bucket
             // TODO use bulk save
-            series.forEach((k, v) -> v.forEach((index, bucketBuilder) ->
-                    bucketAccessor.save(bucketBuilder.build())
-            ));
-            series.clear();
+//            series.forEach((k, v) -> v.forEach((index, bucketBuilder) ->
+//                    bucketAccessor.save(bucketBuilder.build())
+//            ));
+//            series.clear();
+            long now = System.currentTimeMillis();
+            long currentInterval = now - now % this.resolutionInMs;
+            series2.forEach((k, v) -> {
+                if (k < currentInterval) {
+                    v.forEach((attributes, bucketBuilder) -> {
+                        bucketAccessor.save(bucketBuilder.build());
+                    });
+                }
+                series2.remove(k);
+            });
             flushCount.increment();
             debug("Flushed");
         } catch (Throwable e) {

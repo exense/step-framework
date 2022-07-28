@@ -18,13 +18,12 @@ public class MigrationIngestPipeline {
         this.resolution = resolutionInMs;
     }
 
-    public void ingest(Map<String, Object> measurement) {
+    public void ingest(long begin, long value, Map<String, Object> measurement) {
         measurement.remove("_id");
         BucketAttributes attributes = new BucketAttributes(measurement);
-        Long begin = (Long) measurement.get("begin");
         long beginAnchor = begin - begin % resolution;
         buckets.computeIfAbsent(attributes, (k) -> new HashMap<>()).computeIfAbsent(beginAnchor, x -> new BucketBuilder(begin).withAttributes(attributes))
-                .ingest((long) measurement.get("value"));
+                .ingest(value);
     }
 
     public Stream<Bucket> getAllBuckets() {
