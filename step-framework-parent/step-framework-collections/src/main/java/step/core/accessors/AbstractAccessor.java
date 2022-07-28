@@ -100,7 +100,8 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	
 	private Stream<T> findByCriteriaStream(Map<String, String> criteria) {
 		Filter filter;
-		if(criteria != null) {
+		if(criteria != null && !criteria.isEmpty()) {
+			//What is expected if no criteria are provided? Behavior for mongo is no results which seems to be expected for some usages
 			filter = Filters.and(criteria.entrySet().stream()
 					.map(e -> Filters.equals(e.getKey(), e.getValue())).collect(Collectors.toList()));
 		} else {
