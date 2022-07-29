@@ -6,10 +6,14 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.Assert;
 import org.junit.Test;
 import step.core.AbstractContext;
+import step.core.access.Role;
+import step.core.access.RoleResolver;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
 import step.core.collections.SearchOrder;
 import step.core.objectenricher.*;
+import step.framework.server.Session;
+import step.framework.server.access.AccessManager;
 import step.framework.server.tables.Table;
 import step.framework.server.tables.TableFindResult;
 import step.framework.server.tables.TableRegistry;
@@ -21,17 +25,22 @@ import static org.junit.Assert.*;
 
 public class TableServiceTest {
 
+    private static final String TEST_RIGHT = "test-right";
+
     @Test
     public void request() throws TableServiceException {
         TableRegistry tableRegistry = new TableRegistry();
-        TestTable table = getTable(false, false);
+        TestTable table = getTable(false, false, null);
         tableRegistry.register("table1", table);
 
-        TestTable table2 = getTable(true, false);
+        TestTable table2 = getTable(true, false, null);
         tableRegistry.register("table2", table2);
 
-        TestTable table3 = getTable(false, true);
+        TestTable table3 = getTable(false, true, null);
         tableRegistry.register("table3", table3);
+
+        TestTable tableWithRequiredAccessRight = getTable(false, true, TEST_RIGHT);
+        tableRegistry.register("tableWithRequiredAccessRight", tableWithRequiredAccessRight);
 
         ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
         objectHookRegistry.add(new ObjectHook() {
@@ -54,19 +63,19 @@ public class TableServiceTest {
                 return false;
             }
         });
-        TableService tableService = new TableService(tableRegistry, objectHookRegistry);
+        TableService tableService = new TableService(tableRegistry, objectHookRegistry, new TestAccessManager());
 
         Assert.assertThrows(TableServiceException.class, () -> tableService.request("invalid", null, null));
 
         TableRequest request = new TableRequest();
-        TableResponse<?> response = tableService.request("table1", request, null);
+        tableService.request("table1", request, null);
 
         assertEquals(Filters.True.class, table.filter.getClass());
 
         request = new TableRequest();
         request.setFilters(List.of(new FieldFilter("field", "value", true)));
 
-        response = tableService.request("table1", request, null);
+        TableResponse<?> response = tableService.request("table1", request, null);
         assertEquals(Filters.And.class, table.filter.getClass());
         assertEquals(1, table.filter.getChildren().size());
         Filters.Regex child = (Filters.Regex) table.filter.getChildren().get(0);
@@ -104,6 +113,20 @@ public class TableServiceTest {
         assertEquals(10, (int) table3.limit);
         assertEquals("field1", table3.order.getAttributeName());
         assertEquals(-1, table3.order.getOrder());
+
+        // Query a table requiring a right with the correct right
+        request = new TableRequest();
+        Session session = new Session();
+        session.put(TEST_RIGHT, new Object());
+        response = tableService.request("tableWithRequiredAccessRight", request, session);
+        assertNotNull(response);
+
+        // Query a table requiring a right without the required right in session
+        assertThrows(TableServiceException.class, () -> tableService.request("tableWithRequiredAccessRight", new TableRequest(), new Session()));
+
+        // Query a table requiring a right without session
+        assertThrows(TableServiceException.class, () -> tableService.request("tableWithRequiredAccessRight", new TableRequest(), null));
+
 
     }
 
@@ -154,8 +177,8 @@ public class TableServiceTest {
 
     }
 
-    private TestTable getTable(boolean filtered, boolean additionalQueryFragments) {
-        return new TestTable(filtered, additionalQueryFragments);
+    private TestTable getTable(boolean filtered, boolean additionalQueryFragments, String requiredAccessRight) {
+        return new TestTable(filtered, additionalQueryFragments, requiredAccessRight);
     }
 
     private static class TestTable implements Table<Object> {
@@ -166,20 +189,12 @@ public class TableServiceTest {
         private SearchOrder order;
         private Integer skip;
         private Integer limit;
+        private String requiredAccessRight;
 
-        public TestTable(boolean filtered, boolean additionalQueryFragments) {
+        public TestTable(boolean filtered, boolean additionalQueryFragments, String requiredAccessRight) {
             this.filtered = filtered;
             this.additionalQueryFragments = additionalQueryFragments;
-        }
-
-        @Override
-        public List<String> distinct(String columnName) {
-            return null;
-        }
-
-        @Override
-        public List<String> distinct(String columnName, Filter filter) {
-            return null;
+            this.requiredAccessRight = requiredAccessRight;
         }
 
         @Override
@@ -199,6 +214,28 @@ public class TableServiceTest {
         @Override
         public boolean isContextFiltered() {
             return filtered;
+        }
+
+        @Override
+        public String getRequiredAccessRight() {
+            return requiredAccessRight;
+        }
+    }
+
+    private static class TestAccessManager implements AccessManager {
+        @Override
+        public void setRoleResolver(RoleResolver roleResolver) {
+
+        }
+
+        @Override
+        public boolean checkRightInContext(Session session, String right) {
+            return session != null && session.get(right) != null;
+        }
+
+        @Override
+        public Role getRoleInContext(Session session) {
+            return null;
         }
     }
 }

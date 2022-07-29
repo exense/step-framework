@@ -24,11 +24,10 @@ import step.framework.server.Session;
 
 public interface AccessManager {
 
-	public void setRoleResolver(RoleResolver roleResolver);
+	void setRoleResolver(RoleResolver roleResolver);
 
-	public boolean checkRightInContext(Session session, String right);
+	boolean checkRightInContext(Session session, String right);
 
-	public Role getRoleInContext(Session session);
+	Role getRoleInContext(Session session);
 
-	
 }

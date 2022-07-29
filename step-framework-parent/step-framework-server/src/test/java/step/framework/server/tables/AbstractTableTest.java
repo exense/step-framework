@@ -8,19 +8,17 @@ import step.core.collections.SearchOrder;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.entities.SimpleBean;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
 public class AbstractTableTest {
 
-    private InMemoryCollection<Object> collection = new InMemoryCollection<>();
+    private final InMemoryCollection<Object> collection = new InMemoryCollection<>();
 
     @Test
     public void testFind() {
-        AbstractTable<Object> table = new AbstractTable<>(collection, false);
+        AbstractTable<Object> table = new AbstractTable<>(collection, null, false);
 
         AbstractIdentifiableObject entity1 = new AbstractIdentifiableObject();
         collection.save(entity1);
@@ -41,7 +39,7 @@ public class AbstractTableTest {
 
     @Test
     public void testFindWithSort() {
-        AbstractTable<Object> table = new AbstractTable<>(collection, false);
+        AbstractTable<Object> table = new AbstractTable<>(collection, null, false);
 
         SimpleBean a = new SimpleBean("a");
         collection.save(a);
@@ -57,7 +55,7 @@ public class AbstractTableTest {
 
     @Test
     public void testFindWithSkipLimit() {
-        AbstractTable<Object> table = new AbstractTable<>(collection, false);
+        AbstractTable<Object> table = new AbstractTable<>(collection, null, false);
 
         SimpleBean a = new SimpleBean("a");
         collection.save(a);
@@ -75,18 +73,9 @@ public class AbstractTableTest {
     }
 
     @Test
-    public void testDistinct() {
-        AbstractTable<Object> table = new AbstractTable<>(collection, false);
-
-        SimpleBean a = new SimpleBean("a");
-        collection.save(a);
-        SimpleBean b = new SimpleBean("b");
-        collection.save(b);
-
-        List<String> distinct = table.distinct("stringProperty");
-        assertEquals(Set.of("a", "b"), new HashSet<>(distinct));
-
-        distinct = table.distinct("stringProperty", Filters.equals("stringProperty", "a"));
-        assertEquals(Set.of("a"), new HashSet<>(distinct));
+    public void testGetRequiredAccessRight() {
+        AbstractTable<Object> table = new AbstractTable<>(collection, "test-right", false);
+        String requiredAccessRight = table.getRequiredAccessRight();
+        assertEquals("test-right", requiredAccessRight);
     }
 }

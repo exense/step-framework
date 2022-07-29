@@ -28,19 +28,6 @@ import java.util.List;
 
 public interface Table<T> {
 
-    /**
-     * @param columnName the name of the column (field)
-     * @return the distinct values of the column
-     */
-    List<String> distinct(String columnName);
-
-    /**
-     * @param columnName the name of the column (field)
-     * @param filter:    the query filter
-     * @return the distinct values of the column
-     */
-    List<String> distinct(String columnName, Filter filter);
-
     TableFindResult<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit);
 
     /**
@@ -55,4 +42,5 @@ public interface Table<T> {
      */
     boolean isContextFiltered();
 
+    String getRequiredAccessRight();
 }
