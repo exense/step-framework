@@ -18,6 +18,9 @@
  ******************************************************************************/
 package step.framework.server;
 
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import step.core.AbstractContext;
 import step.core.accessors.AbstractUser;
 
@@ -25,6 +28,8 @@ import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 public abstract class AbstractServices<U extends AbstractUser> {
 
 	private static final String SESSION = "session";
