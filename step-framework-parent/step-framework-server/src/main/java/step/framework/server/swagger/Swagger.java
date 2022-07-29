@@ -22,6 +22,7 @@ import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -52,7 +53,7 @@ public class Swagger {
 
         // SecurityScheme api-key
         SecurityScheme securitySchemeApiKey = new SecurityScheme();
-        securitySchemeApiKey.setName("Api key");
+        securitySchemeApiKey.setName("Api_key");
         securitySchemeApiKey.setScheme("bearer");
         securitySchemeApiKey.setType(SecurityScheme.Type.HTTP);
         securitySchemeApiKey.setIn(SecurityScheme.In.HEADER);
@@ -66,6 +67,7 @@ public class Swagger {
 
         SwaggerConfiguration oasConfig = new SwaggerConfiguration()
                 .openAPI(oas)
+                .filterClass("step.framework.server.swagger.SwaggerFilterClass")
                 .prettyPrint(true);
 
         openApiResource.setOpenApiConfiguration(oasConfig);
