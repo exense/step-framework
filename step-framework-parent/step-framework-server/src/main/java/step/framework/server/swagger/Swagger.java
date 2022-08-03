@@ -22,7 +22,6 @@ import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -38,7 +37,31 @@ import java.util.List;
 public class Swagger {
 
     public static void setup(ResourceConfig resourceConfig, AbstractContext context) {
-        OpenAPI oas = new OpenAPI();
+        OpenAPI oas = getOpenApiInstance(context);
+
+        SwaggerConfiguration oasConfig = new SwaggerConfiguration()
+                .openAPI(oas)
+                .filterClass("step.framework.server.swagger.SwaggerFilterClass")
+                .prettyPrint(true);
+
+        OpenApiResource openApiResource = new OpenApiResource();
+        openApiResource.setOpenApiConfiguration(oasConfig);
+        resourceConfig.register(openApiResource);
+
+        OpenAPI privateOas = getOpenApiInstance(context);
+        PrivateOpenApiResource privateOpenApiResource = new PrivateOpenApiResource();
+        SwaggerConfiguration privateOasConfig = new SwaggerConfiguration()
+                .openAPI(privateOas)
+                .filterClass("step.framework.server.swagger.PrivateSwaggerFilterClass")
+                .prettyPrint(true);
+        privateOpenApiResource.setOpenApiConfiguration(privateOasConfig);
+        resourceConfig.register(privateOpenApiResource);
+
+        ModelConverters.getInstance().addConverter(new ObjectIdAwareConverter());
+    }
+
+    private static OpenAPI getOpenApiInstance(AbstractContext context) {
+        OpenAPI openAPI = new OpenAPI();
         Info info = new Info()
                 .title("step Controller REST API")
                 .description("")
@@ -49,7 +72,7 @@ public class Swagger {
                         .name("GNU Affero General Public License")
                         .url("http://www.gnu.org/licenses/agpl-3.0.de.html"));
 
-        oas.info(info);
+        openAPI.info(info);
 
         // SecurityScheme api-key
         SecurityScheme securitySchemeApiKey = new SecurityScheme();
@@ -57,22 +80,13 @@ public class Swagger {
         securitySchemeApiKey.setScheme("bearer");
         securitySchemeApiKey.setType(SecurityScheme.Type.HTTP);
         securitySchemeApiKey.setIn(SecurityScheme.In.HEADER);
-        OpenApiResource openApiResource = new OpenApiResource();
 
-        oas.schemaRequirement(securitySchemeApiKey.getName(), securitySchemeApiKey);
+
+        openAPI.schemaRequirement(securitySchemeApiKey.getName(), securitySchemeApiKey);
 
         Server server = new Server().url("/rest");
-        oas.servers(List.of(server));
-        oas.security(List.of(new SecurityRequirement().addList("Api key")));
-
-        SwaggerConfiguration oasConfig = new SwaggerConfiguration()
-                .openAPI(oas)
-                .filterClass("step.framework.server.swagger.SwaggerFilterClass")
-                .prettyPrint(true);
-
-        openApiResource.setOpenApiConfiguration(oasConfig);
-        resourceConfig.register(openApiResource);
-
-        ModelConverters.getInstance().addConverter(new ObjectIdAwareConverter());
+        openAPI.servers(List.of(server));
+        openAPI.security(List.of(new SecurityRequirement().addList("Api key")));
+        return openAPI;
     }
 }
