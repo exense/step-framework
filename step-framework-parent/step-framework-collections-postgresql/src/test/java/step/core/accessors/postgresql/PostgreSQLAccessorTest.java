@@ -1,4 +1,4 @@
-package step.core.accessors.jdbc;
+package step.core.accessors.postgresql;
 
 import org.junit.Before;
 import step.core.accessors.AbstractAccessor;
@@ -6,16 +6,17 @@ import step.core.accessors.AbstractAccessorTest;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.AbstractOrganizableObject;
 import step.core.collections.Filters;
-import step.core.collections.jdbc.JdbcCollectionFactory;
+import step.core.collections.postgresql.PostgreSQLCollectionFactory;
 
 import java.io.IOException;
 import java.util.Properties;
 
-public class JDBCAccessorTest {//extends AbstractAccessorTest {
+//Currently no psql server installed on build server and no mocks implemented
+public class PostgreSQLAccessorTest { //} extends AbstractAccessorTest {
 
 	/*@Before
 	public void before() throws IOException {
-		JdbcCollectionFactory jdbcDBCollectionFactory = new JdbcCollectionFactory(getProperties());
+		PostgreSQLCollectionFactory jdbcDBCollectionFactory = new PostgreSQLCollectionFactory(getProperties());
 
 		accessor = new AbstractAccessor<AbstractIdentifiableObject>(jdbcDBCollectionFactory.getCollection("abstractIdentifiableObject", AbstractIdentifiableObject.class));
 		organizableObjectAccessor = new AbstractAccessor<AbstractOrganizableObject>(
@@ -29,7 +30,7 @@ public class JDBCAccessorTest {//extends AbstractAccessorTest {
 
 	private static Properties getProperties()  {
 		Properties properties = new Properties();
-		properties.put("url", "jdbc:postgresql://localhost/Test");
+		properties.put("jdbcUrl", "jdbc:postgresql://localhost/Test");
 		properties.put("user", "postgres");
 		properties.put("password", "init");
 		return properties;

@@ -16,30 +16,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.core.collections.jdbc;
+package step.core.collections.postgresql;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import step.core.collections.AbstractCollectionTest;
-import step.core.collections.Collection;
-import step.core.entities.Bean;
 
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
-import static step.core.collections.jdbc.JdbcFilterFactory.formatField;
-import static step.core.collections.jdbc.JdbcFilterFactory.formatFieldForValueAsText;
+import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatField;
+import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatFieldForValueAsText;
 
 //Currently no psql server installed on build server and no mocks implemented
-public class JdbcCollectionTest /*extends AbstractCollectionTest*/ {
+public class PostgreSQLCollectionTest { // extends AbstractCollectionTest {
 
-	public JdbcCollectionTest() {
-		//super(new JdbcCollectionFactory(JdbcCollectionTest.getProperties()));
-	}
+	/*public PostgreSQLCollectionTest() {
+		super(new PostgreSQLCollectionFactory(PostgreSQLCollectionTest.getProperties()));
+	}*/
 
 	private static Properties getProperties()  {
 		Properties properties = new Properties();
-		properties.put("url", "jdbc:postgresql://localhost/Test");
+		properties.put("jdbcUrl", "jdbc:postgresql://localhost/Test");
 		properties.put("user", "postgres");
 		properties.put("password", "init");
 		return properties;

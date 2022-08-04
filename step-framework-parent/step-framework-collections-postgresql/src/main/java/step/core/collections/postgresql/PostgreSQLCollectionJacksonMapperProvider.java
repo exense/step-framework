@@ -16,9 +16,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.core.collections.jdbc;
+package step.core.collections.postgresql;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -30,7 +29,7 @@ import step.core.collections.serialization.DottedMapKeySerializer;
 import java.util.ArrayList;
 import java.util.List;
 
-class JdbcCollectionJacksonMapperProvider {
+class PostgreSQLCollectionJacksonMapperProvider {
 
 	public static List<Module> modules = new ArrayList<>();
 

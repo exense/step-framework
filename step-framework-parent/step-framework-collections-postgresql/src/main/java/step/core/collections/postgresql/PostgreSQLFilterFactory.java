@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.core.collections.jdbc;
+package step.core.collections.postgresql;
 
 import org.bson.types.ObjectId;
 import step.core.accessors.AbstractIdentifiableObject;
@@ -28,7 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class JdbcFilterFactory implements Filters.FilterFactory<String> {
+public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 
 	private static Pattern p = Pattern.compile("([^.]+)");
 	@Override

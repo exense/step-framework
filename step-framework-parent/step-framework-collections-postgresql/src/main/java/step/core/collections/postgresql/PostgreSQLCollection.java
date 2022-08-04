@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.core.collections.jdbc;
+package step.core.collections.postgresql;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,9 +35,9 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class JdbcCollection<T> extends AbstractCollection<T> implements Collection<T> {
+public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Collection<T> {
 
-	private static final Logger logger = LoggerFactory.getLogger(JdbcCollection.class);
+	private static final Logger logger = LoggerFactory.getLogger(PostgreSQLCollection.class);
 
 	private final HikariDataSource ds;
 
@@ -50,12 +50,12 @@ public class JdbcCollection<T> extends AbstractCollection<T> implements Collecti
 
 	private final String insertOrUpdateQuery;
 
-	public JdbcCollection(HikariDataSource ds, String collectionName, Class<T> entityClass) throws SQLException {
+	public PostgreSQLCollection(HikariDataSource ds, String collectionName, Class<T> entityClass) throws SQLException {
 		this.ds = ds;
 		this.collectionName = collectionName;
 		this.collectionNameStr = "\"" + collectionName + "\"";
 		this.entityClass = entityClass;
-		objectMapper = JdbcCollectionJacksonMapperProvider.getObjectMapper();
+		objectMapper = PostgreSQLCollectionJacksonMapperProvider.getObjectMapper();
 		insertOrUpdateQuery = "INSERT INTO " + collectionNameStr + " (object)\n" +
 				"VALUES(?::jsonb) \n" +
 				"ON CONFLICT (id) \n" +
@@ -130,7 +130,7 @@ public class JdbcCollection<T> extends AbstractCollection<T> implements Collecti
 		query.append("SELECT * FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
 		if (order != null) {
 			String sortOrder = (order.getOrder() > 0 ) ? " ASC" : " DESC";
-			query.append(" ORDER BY ").append(JdbcFilterFactory.formatField(order.getAttributeName())).append(sortOrder);
+			query.append(" ORDER BY ").append(PostgreSQLFilterFactory.formatField(order.getAttributeName())).append(sortOrder);
 		}
 		if (skip != null) {
 			query.append(" OFFSET ").append(skip);
@@ -168,7 +168,7 @@ public class JdbcCollection<T> extends AbstractCollection<T> implements Collecti
 	@Override
 	public List<String> distinct(String columnName, Filter filter) {
 		StringBuffer query = new StringBuffer();
-		query.append("SELECT DISTINCT(").append(JdbcFilterFactory.formatField(columnName)).append(") FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
+		query.append("SELECT DISTINCT(").append(PostgreSQLFilterFactory.formatField(columnName)).append(") FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
 		try (Connection connection = ds.getConnection();
 			 Statement statement = connection.createStatement();
 			 ResultSet resultSet = statement.executeQuery(query.toString())){
@@ -257,7 +257,7 @@ public class JdbcCollection<T> extends AbstractCollection<T> implements Collecti
 		fields.forEach((k,v) -> {
 			String order = (v>0) ? "ASC" : "DESC";
 			indexId.append("_").append(k.replaceAll("\\.","_")).append(order);
-			index.append("(").append(JdbcFilterFactory.formatField(k)).append(") ").append(order).append(",");
+			index.append("(").append(PostgreSQLFilterFactory.formatField(k)).append(") ").append(order).append(",");
 		});
 		//finally replace the last comma by the closing parenthesis
 		index.deleteCharAt(index.length()-1).append(")");
@@ -300,6 +300,6 @@ public class JdbcCollection<T> extends AbstractCollection<T> implements Collecti
 	}
 
 	private String filterToWhereClause(Filter filter) {
-		return new JdbcFilterFactory().buildFilter(filter);
+		return new PostgreSQLFilterFactory().buildFilter(filter);
 	}
 }
