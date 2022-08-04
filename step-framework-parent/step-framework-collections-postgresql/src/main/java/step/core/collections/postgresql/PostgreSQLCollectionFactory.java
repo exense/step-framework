@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.core.collections.jdbc;
+package step.core.collections.postgresql;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -33,13 +33,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
-public class JdbcCollectionFactory implements CollectionFactory {
+public class PostgreSQLCollectionFactory implements CollectionFactory {
 
-	private static final Logger logger = LoggerFactory.getLogger(JdbcCollectionFactory.class);
+	private static final Logger logger = LoggerFactory.getLogger(PostgreSQLCollectionFactory.class);
 
 	private final HikariDataSource ds;
 
-	public JdbcCollectionFactory(Properties properties) {
+	public PostgreSQLCollectionFactory(Properties properties) {
 		super();
 
 		ds = createConnectionPool(properties);
@@ -48,7 +48,7 @@ public class JdbcCollectionFactory implements CollectionFactory {
 	@Override
 	public <T> Collection<T> getCollection(String name, Class<T> entityClass) {
 		try {
-			return new JdbcCollection<T>(ds, name, entityClass);
+			return new PostgreSQLCollection<T>(ds, name, entityClass);
 		} catch (SQLException e) {
 			throw new RuntimeException("Unable to get Jdbc Collection", e);
 		}
@@ -61,7 +61,7 @@ public class JdbcCollectionFactory implements CollectionFactory {
 
 	private HikariDataSource createConnectionPool(Properties properties) {
 		HikariConfig config = new HikariConfig();
-		String jdbcUrl = properties.getProperty("url");
+		String jdbcUrl = properties.getProperty("jdbcUrl");
 		config.setJdbcUrl(jdbcUrl);
 		config.setUsername( properties.getProperty("user") );
 		config.setPassword( properties.getProperty("password") );
