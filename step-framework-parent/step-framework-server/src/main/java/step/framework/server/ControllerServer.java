@@ -168,6 +168,12 @@ public class ControllerServer {
 				logger.error("Error while closing serverContext",e);
 			}
 		}
+
+		try {
+			initPluginProxy.postShutdownHook(serverContext);
+		} catch (Exception e) {
+			logger.error("Error while calling plugin post-shutdown hooks");
+		}
 	}
 
 	private void setupConnectors() {

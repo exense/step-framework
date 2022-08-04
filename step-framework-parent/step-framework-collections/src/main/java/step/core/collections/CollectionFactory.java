@@ -18,10 +18,12 @@
  ******************************************************************************/
 package step.core.collections;
 
-import java.io.Closeable;
+import java.io.IOException;
 
-public interface CollectionFactory extends Closeable {
+public interface CollectionFactory {
 
 	public <T> Collection<T> getCollection(String name, Class<T> entityClass);
+
+	public void close() throws IOException;
 	
 }

@@ -30,4 +30,6 @@ public interface ControllerInitializationPlugin<C extends AbstractContext> {
 	public void finalizeStart(C context) throws Exception;
 
 	public void preShutdownHook(C context);
+
+	public void postShutdownHook(C context);
 }
