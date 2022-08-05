@@ -18,9 +18,7 @@
  ******************************************************************************/
 package step.core.collections.inmemory;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -30,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import step.core.accessors.DefaultJacksonMapperProvider;
 import step.core.collections.*;
+import step.core.collections.Collection;
 import step.core.collections.PojoFilters.PojoFilterFactory;
 import step.core.collections.filesystem.AbstractCollection;
 
@@ -143,12 +142,24 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public void createOrUpdateIndex(String field) {
-		
+		createOrUpdateIndex(field, 1);
+	}
+
+	@Override
+	public void createOrUpdateIndex(String field, int order) {
+
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		
+		Map<String,Integer> mapFields = new HashMap<>();
+		Arrays.stream(fields).map(f -> mapFields.put(f,1));
+		createOrUpdateCompoundIndex(mapFields);
+	}
+
+	@Override
+	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+
 	}
 
 	@Override
