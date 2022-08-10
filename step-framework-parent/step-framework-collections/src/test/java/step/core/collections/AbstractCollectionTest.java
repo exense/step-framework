@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,6 +14,7 @@ import javax.json.JsonObject;
 
 import org.bson.types.ObjectId;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Test;
 
 import step.core.accessors.AbstractIdentifiableObject;
@@ -35,6 +37,10 @@ public abstract class AbstractCollectionTest {
 	public AbstractCollectionTest(CollectionFactory collectionFactory) {
 		super();
 		this.collectionFactory = collectionFactory;
+	}
+	@After
+	public void tearDown() throws IOException {
+		collectionFactory.close();
 	}
 
 	@Test

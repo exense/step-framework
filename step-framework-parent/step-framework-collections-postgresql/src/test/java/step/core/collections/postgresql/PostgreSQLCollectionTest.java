@@ -28,7 +28,7 @@ import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatFie
 import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatFieldForValueAsText;
 
 //Currently no psql server installed on build server and no mocks implemented
-public class PostgreSQLCollectionTest { // extends AbstractCollectionTest {
+public class PostgreSQLCollectionTest { //extends AbstractCollectionTest {
 
 	/*public PostgreSQLCollectionTest() {
 		super(new PostgreSQLCollectionFactory(PostgreSQLCollectionTest.getProperties()));

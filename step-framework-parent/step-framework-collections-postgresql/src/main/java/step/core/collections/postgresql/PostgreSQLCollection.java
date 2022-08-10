@@ -108,7 +108,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public long estimatedCount() {
-		String query = "SELECT count(*) FROM " + collectionNameStr;
+		String query = "SELECT reltuples AS estimate FROM pg_class WHERE relname = '" + collectionName + "'" ;
 		try {
 			try (Connection connection = ds.getConnection();
 				 PreparedStatement preparedStatement = connection.prepareStatement(query);
