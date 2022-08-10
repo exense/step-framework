@@ -86,8 +86,8 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public long count(Filter filter, Integer limit) {
-		String query = "SELECT count(*) FROM " + collectionNameStr +
-				" WHERE " + filterToWhereClause(filter);
+		String query = "SELECT count(d.*) FROM (SELECT id FROM " + collectionNameStr +
+				" WHERE " + filterToWhereClause(filter) + " ) d";
 		try (Connection connection = ds.getConnection();
 			 Statement statement = connection.createStatement()) {
 			ResultSet resultSet = statement.executeQuery(query);
@@ -144,17 +144,20 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 				statement.setQueryTimeout(maxTime);
 			}
 			 try (ResultSet resultSet = statement.executeQuery(query.toString())) {
-				 List<T> resultList = new ArrayList<>();
+				 List<String> resultList = new ArrayList<>();
 				 while (resultSet.next()) {
-					 resultList.add(objectMapper.readValue(resultSet.getString(2), entityClass));
+					 resultList.add(resultSet.getString(2));
 				 }
-				 return resultList.stream();
+
+				 return resultList.stream().map(s-> {
+					 try {
+						 return objectMapper.readValue(s, entityClass);
+					 } catch (JsonProcessingException e) {
+						 throw new RuntimeException(e);
+					 }
+				 });
 			 }
 		} catch (SQLException e) {
-			throw new RuntimeException("Query execution failed: " + query,e);
-		} catch (JsonMappingException e) {
-			throw new RuntimeException("Query execution failed: " + query,e);
-		} catch (JsonProcessingException e) {
 			throw new RuntimeException("Query execution failed: " + query,e);
 		}
 	}
