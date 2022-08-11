@@ -87,17 +87,12 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	@Override
 	public long count(Filter filter, Integer limit) {
 		String query = "SELECT count(d.*) FROM (SELECT id FROM " + collectionNameStr +
-				" WHERE " + filterToWhereClause(filter) + " ) d";
+				" WHERE " + filterToWhereClause(filter) + " LIMIT " + limit + ") d";
 		try (Connection connection = ds.getConnection();
 			 Statement statement = connection.createStatement()) {
 			ResultSet resultSet = statement.executeQuery(query);
 			if (resultSet.next()) {
-				int count = resultSet.getInt(1);
-				//TODO decide how to handle the limit with JDBC
-				if (limit != null && limit < count) {
-					count=limit;
-				}
-				return count;
+				return resultSet.getInt(1);
 			} else {
 				throw new RuntimeException("Unable to estimate the count for collection: " + collectionName + ", query: " + query);
 			}
