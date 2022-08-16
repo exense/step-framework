@@ -311,11 +311,16 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 				if (genericReturnType instanceof ParameterizedType) {
 					return (Class) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
 				} else {
-					return (Class) genericReturnType;
+					Class fieldClass = (Class) genericReturnType;
+					return (fieldClass.isEnum()) ? String.class: fieldClass;
 				}
 			}
 		}
-		return clazz;
+		if (field.equals("_class")) {
+			return String.class;
+		} else {
+			return clazz;
+		}
 	}
 
 	@Override
