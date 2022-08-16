@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -262,7 +263,10 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		fields.forEach((k,v) -> {
 			String order = (v>0) ? "ASC" : "DESC";
 			indexId.append("_").append(k.replaceAll("\\.","_")).append(order);
-			index.append("(").append(PostgreSQLFilterFactory.formatField(k,getFieldClass(k))).append(") ").append(order).append(",");
+			//dirty hack to manage RTM (deprecated as of 3.20)
+			Class fieldClass = (Document.class.isAssignableFrom(entityClass) && !(k.equals("begin") || k.equals("value"))) ?
+					String.class : getFieldClass(k);
+			index.append("(").append(PostgreSQLFilterFactory.formatField(k, fieldClass)).append(") ").append(order).append(",");
 		});
 		//finally replace the last comma by the closing parenthesis
 		index.deleteCharAt(index.length()-1).append(")");
