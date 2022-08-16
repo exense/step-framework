@@ -152,7 +152,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		Map<String,Integer> mapFields = new HashMap<>();
+		Map<String,Integer> mapFields = new LinkedHashMap<>();
 		Arrays.stream(fields).map(f -> mapFields.put(f,1));
 		createOrUpdateCompoundIndex(mapFields);
 	}

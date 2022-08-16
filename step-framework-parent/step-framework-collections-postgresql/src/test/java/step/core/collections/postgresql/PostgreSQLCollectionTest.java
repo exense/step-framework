@@ -18,9 +18,19 @@
  ******************************************************************************/
 package step.core.collections.postgresql;
 
+import org.bson.types.ObjectId;
+import org.json.JSONObject;
+import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import step.core.collections.AbstractCollectionTest;
+import step.core.collections.Collection;
+import step.core.collections.Filters;
+import step.core.entities.Bean;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -32,7 +42,7 @@ public class PostgreSQLCollectionTest { //extends AbstractCollectionTest {
 
 	/*public PostgreSQLCollectionTest() {
 		super(new PostgreSQLCollectionFactory(PostgreSQLCollectionTest.getProperties()));
-	}*/
+	}
 
 	private static Properties getProperties()  {
 		Properties properties = new Properties();
@@ -42,23 +52,96 @@ public class PostgreSQLCollectionTest { //extends AbstractCollectionTest {
 		return properties;
 	}
 
+	@Test
+	@Ignore
+	public void benchmarkInsert() {
+		Collection<Bean> beanCollection = collectionFactory.getCollection("Beans", Bean.class);
+		beanCollection.remove(Filters.empty());
+		int total = 50000;
+
+		for (int loop=1; loop <= 3; loop++) {
+			long start = System.currentTimeMillis();
+			for (int i = 0; i < total; i++) {
+				beanCollection.save(new Bean("property1"));
+			}
+			long endInsert = System.currentTimeMillis();
+			Assert.assertEquals(total*loop, beanCollection.count(Filters.empty(), null));
+			System.out.println("insert duration " + (endInsert - start) + " ms, avg: " + ((endInsert - start) / (total * 1.0)) + " ms, count duration: " + (System.currentTimeMillis() - endInsert) + " ms");
+		}
+	}
+
+	@Test
+	@Ignore
+	public void benchmarkBulkInsert() {
+		Collection<Bean> beanCollection = collectionFactory.getCollection("Beans", Bean.class);
+		beanCollection.remove(Filters.empty());
+		int total = 50000;
+		int bulkSize = 100;
+
+		for (int loop=1; loop <= 3; loop++) {
+			long start = System.currentTimeMillis();
+			for (int bulks = 0 ; bulks < (total/bulkSize); bulks++) {
+				List<Bean> bulk = new ArrayList<>();
+				for (int i = 0; i < bulkSize; i++) {
+					bulk.add(new Bean("property1"));
+				}
+				beanCollection.save(bulk);
+			}
+			long endInsert = System.currentTimeMillis();
+			Assert.assertEquals(total*loop, beanCollection.count(Filters.empty(), null));
+			System.out.println("insert duration " + (endInsert - start) + " ms, avg: " + ((endInsert - start) / (total * 1.0)) + " ms, count duration: " + (System.currentTimeMillis() - endInsert) + " ms");
+		}
+	}
+
+	@Test
+	public void testGetFieldClass() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+		PostgreSQLCollection<Bean> beanCollection = (PostgreSQLCollection<Bean>) collectionFactory.getCollection("Beans", Bean.class);
+		Assert.assertEquals(String.class,beanCollection.getFieldClass("property1"));
+
+		Assert.assertEquals(Long.class, beanCollection.getFieldClass("longProperty"));
+
+		Assert.assertEquals(Boolean.TYPE, beanCollection.getFieldClass("booleanProperty"));
+
+		Assert.assertEquals(String.class,beanCollection.getFieldClass("map.property1"));
+
+		Assert.assertEquals(Long.class, beanCollection.getFieldClass("nested.longProperty"));
+
+
+		Assert.assertEquals(String.class, beanCollection.getFieldClass("simpleBean.stringProperty"));
+
+		Assert.assertEquals(String.class,beanCollection.getFieldClass("map.property1"));
+
+		Assert.assertEquals(JSONObject.class,beanCollection.getFieldClass("jsonOrgObject.key"));
+
+		Assert.assertEquals(String.class,beanCollection.getFieldClass("attributes.property1"));
+
+	}*/
 
 	@Test
 	public void testFieldFormatter() {
 		String test;
-		test = formatField("id");
+		test = formatField("id",String.class);
+		assertEquals("id",test);
+
+		test = formatField("id", ObjectId.class);
 		assertEquals("id",test);
 
 		test = formatFieldForValueAsText("id");
 		assertEquals("id",test);
 
-		test = formatField("test");
+		test = formatField("test",Long.class);
 		assertEquals("object->'test'",test);
+
+		test = formatField("test",String.class);
+		assertEquals("object->>'test'",test);
 
 		test = formatFieldForValueAsText("test");
 		assertEquals("object->>'test'",test);
 
-		test = formatField("test.nested");
+		test = formatField("test.nested",String.class);
+		assertEquals("object->'test'->>'nested'",test);
+
+		test = formatField("test.nested",Boolean.class);
 		assertEquals("object->'test'->'nested'",test);
 
 		test = formatFieldForValueAsText("test.nested");

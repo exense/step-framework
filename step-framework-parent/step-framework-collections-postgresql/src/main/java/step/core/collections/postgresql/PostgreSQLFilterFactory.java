@@ -54,19 +54,15 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 			return "FALSE";
 		} else if (filter instanceof Filters.Equals) {
 			Filters.Equals equalsFilter = (Filters.Equals) filter;
-			String formattedFieldName = formatField(equalsFilter.getField());
 			Object expectedValue = equalsFilter.getExpectedValue();
-			boolean isNull = (expectedValue == null);
-			boolean isId = formattedFieldName.equals(AbstractIdentifiableObject.ID);
-			if (expectedValue instanceof String && !isId){
-				expectedValue = "\"" + expectedValue + "\"";
-			} else if (expectedValue instanceof ObjectId) {
-				String id = ((ObjectId) expectedValue).toHexString();
-				expectedValue = (isId) ? id : "\"" + id + "\"";
-			}
-			if (isNull) {
+			String formattedFieldName = formatField(equalsFilter.getField(),
+					(expectedValue!=null) ? expectedValue.getClass(): Object.class);
+			if (expectedValue == null) {
 				return "(" + formattedFieldName + " IS NULL OR " + formattedFieldName + " = '" + expectedValue + "')";
 			} else {
+				if (expectedValue instanceof ObjectId) {
+					expectedValue = ((ObjectId) expectedValue).toHexString();
+				}
 				return formattedFieldName + " = '" + expectedValue + "'";
 			}
 		} else if (filter instanceof Filters.Regex) {
@@ -75,23 +71,23 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 			return formatFieldForValueAsText(regexFilter.getField()) + operator + "'" + regexFilter.getExpression() + "'";
 		} else if (filter instanceof Filters.Gt) {
 			Filters.Gt gtFilter = (Filters.Gt) filter;
-			return formatField(gtFilter.getField()) + " > '" + gtFilter.getValue() + "'";
+			return formatField(gtFilter.getField(),false) + " > '" + gtFilter.getValue() + "'";
 		} else if (filter instanceof Filters.Gte) {
 			Filters.Gte gteFilter = (Filters.Gte) filter;
-			return formatField(gteFilter.getField()) + " >= '" + gteFilter.getValue() + "'";
+			return formatField(gteFilter.getField(),false) + " >= '" + gteFilter.getValue() + "'";
 		} else if (filter instanceof Filters.Lt) {
 			Filters.Lt ltFilter = (Filters.Lt) filter;
-			return formatField(ltFilter.getField()) + " < '" + ltFilter.getValue() + "'";
+			return formatField(ltFilter.getField(),false) + " < '" + ltFilter.getValue() + "'";
 		} else if (filter instanceof Filters.Lte) {
 			Filters.Lte lteFilter = (Filters.Lte) filter;
-			return formatField(lteFilter.getField()) + " <= '" + lteFilter.getValue() + "'";
+			return formatField(lteFilter.getField(),false) + " <= '" + lteFilter.getValue() + "'";
 		} else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 		}
 	}
 
-	public static String formatField(String field) {
-		return formatField(field, false);
+	public static String formatField(String field, Class clazz) {
+		return formatField(field, clazz.equals(String.class) || clazz.equals(ObjectId.class));
 	}
 
 	public static String formatFieldForValueAsText(String field) {

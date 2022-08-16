@@ -18,11 +18,10 @@
  ******************************************************************************/
 package step.core.collections.postgresql;
 
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +30,18 @@ import step.core.collections.Filter;
 import step.core.collections.SearchOrder;
 import step.core.collections.filesystem.AbstractCollection;
 
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Collection<T> {
+
+	private static Pattern p = Pattern.compile("([^.]+)");
 
 	private static final Logger logger = LoggerFactory.getLogger(PostgreSQLCollection.class);
 
@@ -125,7 +131,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		query.append("SELECT * FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
 		if (order != null) {
 			String sortOrder = (order.getOrder() > 0 ) ? " ASC" : " DESC";
-			query.append(" ORDER BY ").append(PostgreSQLFilterFactory.formatField(order.getAttributeName())).append(sortOrder);
+			query.append(" ORDER BY ").append(PostgreSQLFilterFactory.formatField(order.getAttributeName(),Object.class)).append(sortOrder);
 		}
 		if (skip != null) {
 			query.append(" OFFSET ").append(skip);
@@ -166,7 +172,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	@Override
 	public List<String> distinct(String columnName, Filter filter) {
 		StringBuffer query = new StringBuffer();
-		query.append("SELECT DISTINCT(").append(PostgreSQLFilterFactory.formatField(columnName)).append(") FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
+		query.append("SELECT DISTINCT(").append(PostgreSQLFilterFactory.formatField(columnName,String.class)).append(") FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
 		try (Connection connection = ds.getConnection();
 			 Statement statement = connection.createStatement();
 			 ResultSet resultSet = statement.executeQuery(query.toString())){
@@ -243,7 +249,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		Map<String, Integer> fieldsMap = new HashMap<>();
+		Map<String, Integer> fieldsMap = new LinkedHashMap<>();
 		Arrays.asList(fields).forEach(s -> fieldsMap.put(s,1));
 		createOrUpdateCompoundIndex(fieldsMap);
 	}
@@ -255,7 +261,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		fields.forEach((k,v) -> {
 			String order = (v>0) ? "ASC" : "DESC";
 			indexId.append("_").append(k.replaceAll("\\.","_")).append(order);
-			index.append("(").append(PostgreSQLFilterFactory.formatField(k)).append(") ").append(order).append(",");
+			index.append("(").append(PostgreSQLFilterFactory.formatField(k,getFieldClass(k))).append(") ").append(order).append(",");
 		});
 		//finally replace the last comma by the closing parenthesis
 		index.deleteCharAt(index.length()-1).append(")");
@@ -275,6 +281,36 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 				throw new RuntimeException("Unable to create index, query: " + query, e);
 			}
 		}
+	}
+
+	protected Class getFieldClass(String field)  {
+		Matcher m = p.matcher(field);
+		String previous = null;
+		Class currentClass = entityClass;
+		while (m.find()) {
+			if (previous != null) {
+				currentClass = getFieldClass(currentClass,previous);
+			}
+			previous = m.group(1);
+		}
+		if (previous == null) {
+			throw new RuntimeException("Failed to format jsonb field: " + field);
+		}
+		return getFieldClass(currentClass,previous);
+	}
+
+	protected Class getFieldClass(Class clazz, String field) {
+		for (PropertyDescriptor propertyDescriptor: PropertyUtils.getPropertyDescriptors(clazz)) {
+			if (propertyDescriptor.getName().equals(field)) {
+				Type genericReturnType = propertyDescriptor.getReadMethod().getGenericReturnType();
+				if (genericReturnType instanceof ParameterizedType) {
+					return (Class) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
+				} else {
+					return (Class) genericReturnType;
+				}
+			}
+		}
+		return clazz;
 	}
 
 	@Override

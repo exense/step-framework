@@ -227,7 +227,7 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		Map<String, Integer> fieldsMap = new HashMap<>();
+		Map<String, Integer> fieldsMap = new LinkedHashMap<>();
 		Arrays.asList(fields).forEach(s -> fieldsMap.put(s,1));
 		createOrUpdateCompoundIndex(fieldsMap);
 	}
