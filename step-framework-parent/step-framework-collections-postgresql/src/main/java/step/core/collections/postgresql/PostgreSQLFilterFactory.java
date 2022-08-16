@@ -56,9 +56,9 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 			Filters.Equals equalsFilter = (Filters.Equals) filter;
 			Object expectedValue = equalsFilter.getExpectedValue();
 			String formattedFieldName = formatField(equalsFilter.getField(),
-					(expectedValue!=null) ? expectedValue.getClass(): Object.class);
+					(expectedValue!=null) ? expectedValue.getClass(): String.class);
 			if (expectedValue == null) {
-				return "(" + formattedFieldName + " IS NULL OR " + formattedFieldName + " = '" + expectedValue + "')";
+				return formattedFieldName + " IS NULL";
 			} else {
 				if (expectedValue instanceof ObjectId) {
 					expectedValue = ((ObjectId) expectedValue).toHexString();
