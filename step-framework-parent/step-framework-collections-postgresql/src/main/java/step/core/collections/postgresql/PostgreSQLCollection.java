@@ -171,8 +171,9 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public List<String> distinct(String columnName, Filter filter) {
+		Class fieldClass = getFieldClass(columnName);
 		StringBuffer query = new StringBuffer();
-		query.append("SELECT DISTINCT(").append(PostgreSQLFilterFactory.formatField(columnName,String.class)).append(") FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
+		query.append("SELECT DISTINCT(").append(PostgreSQLFilterFactory.formatField(columnName,fieldClass)).append(") FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
 		try (Connection connection = ds.getConnection();
 			 Statement statement = connection.createStatement();
 			 ResultSet resultSet = statement.executeQuery(query.toString())){
