@@ -2,7 +2,7 @@ package step.core.timeseries;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import step.core.timeseries.accessor.BucketAccessor;
+import step.core.collections.CollectionFactory;
 
 import java.io.Closeable;
 import java.util.Map;
@@ -27,30 +27,18 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private final BucketAccessor bucketAccessor;
 
 
-    public TimeSeriesIngestionPipeline(BucketAccessor bucketAccessor,long resolutionInMs, long flushingPeriodInMs) {
-        this.bucketAccessor = bucketAccessor;
+    public TimeSeriesIngestionPipeline(CollectionFactory collectionFactory, long resolutionInMs, long flushingPeriodInMs) {
+        this.bucketAccessor = new BucketAccessor(collectionFactory.getCollection(BucketAccessor.ENTITY_NAME, Bucket.class));
         this.resolutionInMs = resolutionInMs;
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(this::flush, flushingPeriodInMs, flushingPeriodInMs, TimeUnit.MILLISECONDS);
     }
 
-    public void ingestPoint(BucketAttributes attributes, long timestamp, long value) {
+    public void ingestPoint(BucketAttributes mainAttributes, long timestamp, long value) {
         // TODO maybe remove empty entries from the map?
-        trace("Acquiring read lock to ingest point");
-//        lock.readLock().lock();
-        try {
-            trace("Lock acquired to ingest point");
-//            Map<Long, BucketBuilder> buckets = series.computeIfAbsent(attributes, k -> new ConcurrentHashMap<>());
             long index = timestamp - timestamp % resolutionInMs;
             Map<BucketAttributes, BucketBuilder> bucketsForTimestamp = series2.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-            bucketsForTimestamp.computeIfAbsent(attributes, k -> BucketBuilder.create(index).withAttributes(attributes)).ingest(value);
-//            BucketBuilder bucketBuilder = buckets.computeIfAbsent(index, k ->
-//                    BucketBuilder.create(index).withAttributes(attributes));
-//            bucketBuilder.ingest(value);
-        } finally {
-//            lock.readLock().unlock();
-        }
-        trace("Lock released");
+            bucketsForTimestamp.computeIfAbsent(mainAttributes, k -> BucketBuilder.create(index).withAttributes(mainAttributes)).ingest(value);
     }
 
     // TODO flush method can be improved with a batcher (run when a specific timeout ends, or a specific amount of data is collected)

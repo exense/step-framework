@@ -1,32 +1,30 @@
-package step.core.timeseries.accessor;
+package step.core.timeseries;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import step.core.accessors.AbstractAccessor;
 import step.core.collections.Collection;
+import step.core.collections.CollectionFactory;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
-import step.core.timeseries.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
-public class BucketAccessorImpl extends AbstractAccessor<Bucket> implements BucketAccessor {
+public class BucketService {
 
     private static final String THREAD_GROUP_TYPE = "threadgroup";
 
-    private static final Logger logger = LoggerFactory.getLogger(BucketAccessorImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(BucketService.class);
 
     private final int resolution;
 
-    public BucketAccessorImpl(Collection<Bucket> collectionDriver, int resolution) {
-        super(collectionDriver);
-        this.createOrUpdateIndex("attributes.$**");
-        this.createOrUpdateIndex("begin");
+    private final Collection<Bucket> collectionDriver;
+
+    public BucketService(CollectionFactory collectionFactory, int resolution) {
+        this.collectionDriver = collectionFactory.getCollection(BucketAccessor.ENTITY_NAME, Bucket.class);
         this.resolution = resolution;
     }
 
@@ -51,7 +49,6 @@ public class BucketAccessorImpl extends AbstractAccessor<Bucket> implements Buck
         return Filters.and(filters);
     }
 
-    @Override
     public TimeSeriesChartResponse collect(Query query) {
         List<Bucket[]> bucketsMatrix = new ArrayList<>();
         List<BucketAttributes> matrixLegend = new ArrayList<>() {};
@@ -102,7 +99,6 @@ public class BucketAccessorImpl extends AbstractAccessor<Bucket> implements Buck
         return new TimeSeriesChartResponse(start, end, query.getIntervalSizeMs(), bucketsMatrix, matrixLegend);
     }
 
-    @Override
     public Map<Map<String, Object>, Map<Long, Bucket>> collectBuckets(Query query) {
         Map<Map<String, Object>, Map<Long, BucketBuilder>> resultBuilder = new ConcurrentHashMap<>();
         long t1 = System.currentTimeMillis();
@@ -140,4 +136,5 @@ public class BucketAccessorImpl extends AbstractAccessor<Bucket> implements Buck
                 )
         );
     }
+
 }
