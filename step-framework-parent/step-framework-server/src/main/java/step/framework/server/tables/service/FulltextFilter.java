@@ -16,7 +16,7 @@ public class FulltextFilter extends TableFilter {
     }
 
     @Override
-    Filter toFilter() {
+    public Filter toFilter() {
         return Filters.fulltext(text);
     }
 }

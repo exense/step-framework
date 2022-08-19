@@ -16,7 +16,7 @@ public class OQLFilter extends TableFilter {
     }
 
     @Override
-    Filter toFilter() {
+    public Filter toFilter() {
         return OQLFilterBuilder.getFilter(oql);
     }
 }

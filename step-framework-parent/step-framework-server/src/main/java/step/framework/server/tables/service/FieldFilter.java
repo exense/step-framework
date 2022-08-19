@@ -43,7 +43,7 @@ public class FieldFilter extends TableFilter {
     }
 
     @Override
-    Filter toFilter() {
+    public Filter toFilter() {
         if (isRegex) {
             return Filters.regex(field, value, false);
         } else {

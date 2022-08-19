@@ -8,6 +8,6 @@ import step.core.collections.Filter;
 @JsonSubTypes({@JsonSubTypes.Type(FieldFilter.class), @JsonSubTypes.Type(FulltextFilter.class), @JsonSubTypes.Type(OQLFilter.class)})
 public abstract class TableFilter {
 
-    abstract Filter toFilter();
+    public abstract Filter toFilter();
 
 }
