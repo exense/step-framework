@@ -17,6 +17,7 @@ public class BucketBuilder {
     private final Map<Long, LongAdder> distribution = new ConcurrentHashMap<>();
     // TODO Make this configurable
     private final long pclPrecision = 10;
+    private String metricType;
 
     public BucketBuilder(long begin) {
         this.begin = begin;
@@ -30,6 +31,10 @@ public class BucketBuilder {
     public BucketBuilder withAttributes(BucketAttributes attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    public void withMetricType(String metricType) {
+        this.metricType = metricType;
     }
 
     public static BucketBuilder create(long begin) {
@@ -82,6 +87,7 @@ public class BucketBuilder {
         bucket.setPclPrecision(pclPrecision);
         bucket.setDistribution(distribution.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().longValue())));
+        bucket.setMetricType(metricType);
         return bucket;
     }
 }

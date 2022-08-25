@@ -15,8 +15,6 @@ import java.util.stream.Collectors;
 
 public class BucketService {
 
-    private static final String THREAD_GROUP_TYPE = "threadgroup";
-
     private static final Logger logger = LoggerFactory.getLogger(BucketService.class);
 
     private final int resolution;
@@ -36,11 +34,6 @@ public class BucketService {
         if (query.getTo() != null) {
             filters.add(Filters.lte("begin", query.getTo()));
         }
-        Filter threadGroupTypeFilter = Filters.equals("attributes.type", THREAD_GROUP_TYPE);
-        if (!query.isThreadGroupsBuckets()) {
-            threadGroupTypeFilter = Filters.not(threadGroupTypeFilter);
-        }
-        filters.add(threadGroupTypeFilter);
 
         if (query.getFilters() != null) {
             filters.addAll(query.getFilters().entrySet().stream()
@@ -99,42 +92,43 @@ public class BucketService {
         return new TimeSeriesChartResponse(start, end, query.getIntervalSizeMs(), bucketsMatrix, matrixLegend);
     }
 
-    public Map<Map<String, Object>, Map<Long, Bucket>> collectBuckets(Query query) {
-        Map<Map<String, Object>, Map<Long, BucketBuilder>> resultBuilder = new ConcurrentHashMap<>();
-        long t1 = System.currentTimeMillis();
-        Filter filter = buildFilter(query);
-        LongAdder bucketCount = new LongAdder();
-        collectionDriver.find(filter, null, null, null, 0).forEach(bucket -> {
-            bucketCount.increment();
-            // This implementation uses the start time of the bucket as index
-            long begin = bucket.getBegin();
-            long index = begin - begin % query.getIntervalSizeMs();
-
-            Map<String, Object> bucketLabels = bucket.getAttributes();
-            Map<String, Object> seriesKey;
-            if (query.getGroupDimensions() != null) {
-                seriesKey = bucketLabels.entrySet().stream().filter(e ->
-                        query.getGroupDimensions().contains(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            } else {
-                seriesKey = Map.of();
-            }
-            Map<Long, BucketBuilder> series = resultBuilder.computeIfAbsent(seriesKey, k -> new TreeMap<>());
-            series.computeIfAbsent(index, k -> BucketBuilder.create(index)).accumulate(bucket);
-        });
-        long t2 = System.currentTimeMillis();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
-        }
-        // TODO here we should merge bucket with bucketBuilder to avoid this complete iteration
-        return resultBuilder.entrySet().stream().collect(
-                Collectors.toMap(
-                        Map.Entry::getKey,
-                        pair -> pair.getValue().entrySet().stream().collect(
-                                Collectors.toMap(Map.Entry::getKey, builder -> builder.getValue().build(),
-                                        (o1, o2) -> o1, TreeMap::new)
-                        )
-                )
-        );
-    }
+    // this is the old implementation
+//    public Map<Map<String, Object>, Map<Long, Bucket>> collectBuckets(Query query) {
+//        Map<Map<String, Object>, Map<Long, BucketBuilder>> resultBuilder = new ConcurrentHashMap<>();
+//        long t1 = System.currentTimeMillis();
+//        Filter filter = buildFilter(query);
+//        LongAdder bucketCount = new LongAdder();
+//        collectionDriver.find(filter, null, null, null, 0).forEach(bucket -> {
+//            bucketCount.increment();
+//            // This implementation uses the start time of the bucket as index
+//            long begin = bucket.getBegin();
+//            long index = begin - begin % query.getIntervalSizeMs();
+//
+//            Map<String, Object> bucketLabels = bucket.getAttributes();
+//            Map<String, Object> seriesKey;
+//            if (query.getGroupDimensions() != null) {
+//                seriesKey = bucketLabels.entrySet().stream().filter(e ->
+//                        query.getGroupDimensions().contains(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+//            } else {
+//                seriesKey = Map.of();
+//            }
+//            Map<Long, BucketBuilder> series = resultBuilder.computeIfAbsent(seriesKey, k -> new TreeMap<>());
+//            series.computeIfAbsent(index, k -> BucketBuilder.create(index)).accumulate(bucket);
+//        });
+//        long t2 = System.currentTimeMillis();
+//        if (logger.isDebugEnabled()) {
+//            logger.debug("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
+//        }
+//        // TODO here we should merge bucket with bucketBuilder to avoid this complete iteration
+//        return resultBuilder.entrySet().stream().collect(
+//                Collectors.toMap(
+//                        Map.Entry::getKey,
+//                        pair -> pair.getValue().entrySet().stream().collect(
+//                                Collectors.toMap(Map.Entry::getKey, builder -> builder.getValue().build(),
+//                                        (o1, o2) -> o1, TreeMap::new)
+//                        )
+//                )
+//        );
+//    }
 
 }

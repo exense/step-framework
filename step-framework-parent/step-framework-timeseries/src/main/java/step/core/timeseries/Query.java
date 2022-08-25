@@ -24,6 +24,8 @@ public class Query {
 
     private int numberOfBuckets;
 
+    private String metricType;
+
     public Long getFrom() {
         return from;
     }
@@ -118,6 +120,13 @@ public class Query {
         return intervalSizeMs;
     }
 
+    public String getMetricType() {
+        return metricType;
+    }
+
+    public void setMetricType(String metricType) {
+        this.metricType = metricType;
+    }
 
     //    public Map<Map<String, String>, Map<Long, Bucket>> run() {
 //        return timeSeriesPipeline.runQuery(this);
