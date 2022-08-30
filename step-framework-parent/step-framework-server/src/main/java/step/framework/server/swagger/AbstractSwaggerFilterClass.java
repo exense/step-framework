@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class AbstractSwaggerFilterClass {
 
-    private static final String SPLITTER = ":";
+    private static final String SPLITTER = "=";
 
     protected Optional<Operation> resolveOperationId(Operation operation) {
         // Create a map containing the key-value tags
