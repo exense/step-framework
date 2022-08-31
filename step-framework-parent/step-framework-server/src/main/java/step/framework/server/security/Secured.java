@@ -24,7 +24,7 @@ import java.lang.annotation.*;
 
 @NameBinding
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
+@Target({ElementType.TYPE, ElementType.METHOD})
 @Repeatable(value = SecuredList.class)
 public @interface Secured {
 	
