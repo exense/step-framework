@@ -2,11 +2,11 @@ package step.framework.server.tables.service;
 
 import java.util.List;
 
-public class TableResponse<T> {
+public class TableResponse {
 
     private long recordsTotal;
     private long recordsFiltered;
-    private List<T> data;
+    private List<Object> data;
 
     public long getRecordsTotal() {
         return recordsTotal;
@@ -24,11 +24,11 @@ public class TableResponse<T> {
         this.recordsFiltered = recordsFiltered;
     }
 
-    public List<T> getData() {
+    public List<Object> getData() {
         return data;
     }
 
-    public void setData(List<T> data) {
+    public void setData(List<Object> data) {
         this.data = data;
     }
 }

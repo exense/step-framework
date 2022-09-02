@@ -8,17 +8,19 @@ import org.junit.Test;
 import step.core.AbstractContext;
 import step.core.access.Role;
 import step.core.access.RoleResolver;
+import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
-import step.core.collections.SearchOrder;
+import step.core.collections.inmemory.InMemoryCollection;
+import step.core.entities.Bean;
 import step.core.objectenricher.*;
 import step.framework.server.Session;
 import step.framework.server.access.AccessManager;
 import step.framework.server.tables.Table;
-import step.framework.server.tables.TableFindResult;
 import step.framework.server.tables.TableRegistry;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -26,27 +28,46 @@ import static org.junit.Assert.*;
 public class TableServiceTest {
 
     private static final String TEST_RIGHT = "test-right";
+    private static final String SIMPLE_TABLE = "table1";
+    private static final String FILTERED_TABLE = "filteredTable";
+    private static final String TABLE_WITH_ACCESS_RIGHT = "tableWithAccessRight";
+    private static final String VALUE_1 = "value1";
+    private static final String VALUE_2 = "value2";
+    private static final String VALUE_3 = "value3";
+    private static final String ENRICHED_ATTRIBUTE_KEY = "entichedAttributes";
+    private static final String ENRICHED_ATTRIBUTE_VALUE = "value";
+    private static final String TABLE_WITH_FILTER_FACTORY = "tableWithFilterFactory";
 
     @Test
     public void request() throws TableServiceException {
+        Collection<Bean> collection = new InMemoryCollection<>();
+        Bean bean1 = new Bean(VALUE_1);
+        Bean bean2 = new Bean(VALUE_2);
+        Bean bean3 = new Bean(VALUE_3);
+
+        collection.save(bean1);
+        collection.save(bean2);
+        collection.save(bean3);
+
         TableRegistry tableRegistry = new TableRegistry();
-        TestTable table = getTable(false, false, null);
-        tableRegistry.register("table1", table);
+        Table<Bean> table = new Table<>(collection, null, false);
+        tableRegistry.register(SIMPLE_TABLE, table);
 
-        TestTable table2 = getTable(true, false, null);
-        tableRegistry.register("table2", table2);
+        Table<Bean> filteredTable = new Table<>(collection, null, true);
+        tableRegistry.register(FILTERED_TABLE, filteredTable);
 
-        TestTable table3 = getTable(false, true, null);
-        tableRegistry.register("table3", table3);
+        Table<Bean> tableWithFilterFactory = new Table<>(collection, null, false);
+        tableWithFilterFactory.withTableFiltersFactory(p->Filters.equals("property1", VALUE_1));
+        tableRegistry.register(TABLE_WITH_FILTER_FACTORY, tableWithFilterFactory);
 
-        TestTable tableWithRequiredAccessRight = getTable(false, true, TEST_RIGHT);
-        tableRegistry.register("tableWithRequiredAccessRight", tableWithRequiredAccessRight);
+        Table<Bean> tableWithAccessRight = new Table<>(collection, TEST_RIGHT, false);
+        tableRegistry.register(TABLE_WITH_ACCESS_RIGHT, tableWithAccessRight);
 
         ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
         objectHookRegistry.add(new ObjectHook() {
             @Override
             public ObjectFilter getObjectFilter(AbstractContext context) {
-                return () -> "field2 = value2";
+                return () -> "property1 = " + VALUE_2;
             }
 
             @Override
@@ -65,69 +86,80 @@ public class TableServiceTest {
         });
         TableService tableService = new TableService(tableRegistry, objectHookRegistry, new TestAccessManager());
 
-        Assert.assertThrows(TableServiceException.class, () -> tableService.request("invalid", null, null));
-
+        // Test empty request
         TableRequest request = new TableRequest();
-        tableService.request("table1", request, null);
+        TableResponse response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean1, bean2, bean3), response.getData());
+        assertEquals(3, response.getRecordsTotal());
+        assertEquals(3, response.getRecordsFiltered());
 
-        assertEquals(Filters.True.class, table.filter.getClass());
-
+        // Test FieldFilter
         request = new TableRequest();
-        request.setFilters(List.of(new FieldFilter("field", "value", true)));
+        request.setFilters(List.of(new FieldFilter("property1", VALUE_1, false)));
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean1), response.getData());
+        assertEquals(3, response.getRecordsTotal());
+        assertEquals(1, response.getRecordsFiltered());
 
-        TableResponse<?> response = tableService.request("table1", request, null);
-        assertEquals(Filters.And.class, table.filter.getClass());
-        assertEquals(1, table.filter.getChildren().size());
-        Filters.Regex child = (Filters.Regex) table.filter.getChildren().get(0);
-        assertEquals("field", child.getField());
-        assertEquals("value", child.getExpression());
-        assertEquals(0, response.getRecordsFiltered());
-        assertEquals(0, response.getRecordsTotal());
-        assertNotNull(response.getData());
-
-        tableService.request("table2", request, null);
-        assertEquals(Filters.And.class, table2.filter.getClass());
-        assertEquals(2, table2.filter.getChildren().size());
-        Filters.Equals childEquals = (Filters.Equals) table2.filter.getChildren().get(0);
-        assertEquals("field2", childEquals.getField());
-        assertEquals("value2", childEquals.getExpectedValue());
-
-        tableService.request("table3", request, null);
-        assertEquals(Filters.And.class, table3.filter.getClass());
-        assertEquals(2, table3.filter.getChildren().size());
-        childEquals = (Filters.Equals) table3.filter.getChildren().get(0);
-        assertEquals("field3", childEquals.getField());
-        assertEquals("value3", childEquals.getExpectedValue());
-
+        // Test skip limit
         request = new TableRequest();
-        request.setFilters(List.of(new FieldFilter("field", "value", true)));
-        request.setSkip(0);
-        request.setLimit(10);
+        request.setSkip(1);
+        request.setLimit(1);
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean2), response.getData());
+
+        // Test skip limit
+        request = new TableRequest();
         Sort sort = new Sort();
-        sort.setField("field1");
+        sort.setField("property1");
         sort.setDirection(SortDirection.DESCENDING);
         request.setSort(sort);
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean3, bean2, bean1), response.getData());
 
-        tableService.request("table3", request, null);
-        assertEquals(0, (int) table3.skip);
-        assertEquals(10, (int) table3.limit);
-        assertEquals("field1", table3.order.getAttributeName());
-        assertEquals(-1, table3.order.getOrder());
+        // Test custom ResultItemEnricher
+        table.withResultItemEnricher(e -> {
+            e.addAttribute(ENRICHED_ATTRIBUTE_KEY, ENRICHED_ATTRIBUTE_VALUE);
+            return e;
+        });
+        request = new TableRequest();
+        request.setFilters(List.of(new FieldFilter("property1", VALUE_1, false)));
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean1), response.getData());
+        assertEquals(ENRICHED_ATTRIBUTE_VALUE, bean1.getAttribute(ENRICHED_ATTRIBUTE_KEY));
+
+        // Test custom ResultListFactory
+        ArrayList<Bean> customResultList = new ArrayList<>();
+        table.withResultListFactory(() -> customResultList);
+        request = new TableRequest();
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(customResultList, response.getData());
+
+        // Test FilterFactory
+        request = new TableRequest();
+        response = tableService.request(TABLE_WITH_FILTER_FACTORY, request, null);
+        assertEquals(List.of(bean1), response.getData());
+
+        // Test filtered table
+        request = new TableRequest();
+        response = tableService.request(FILTERED_TABLE, request, null);
+        assertEquals(List.of(bean2), response.getData());
 
         // Query a table requiring a right with the correct right
         request = new TableRequest();
-        Session session = new Session();
+        Session<?> session = new Session<>();
         session.put(TEST_RIGHT, new Object());
-        response = tableService.request("tableWithRequiredAccessRight", request, session);
+        response = tableService.request(TABLE_WITH_ACCESS_RIGHT, request, session);
         assertNotNull(response);
 
         // Query a table requiring a right without the required right in session
-        assertThrows(TableServiceException.class, () -> tableService.request("tableWithRequiredAccessRight", new TableRequest(), new Session()));
+        assertThrows(TableServiceException.class, () -> tableService.request(TABLE_WITH_ACCESS_RIGHT, new TableRequest(), new Session<>()));
 
         // Query a table requiring a right without session
-        assertThrows(TableServiceException.class, () -> tableService.request("tableWithRequiredAccessRight", new TableRequest(), null));
+        assertThrows(TableServiceException.class, () -> tableService.request(TABLE_WITH_ACCESS_RIGHT, new TableRequest(), null));
 
-
+        // Test non existing table
+        Assert.assertThrows(TableServiceException.class, () -> tableService.request("invalid", null, null));
     }
 
     @Test
@@ -175,51 +207,6 @@ public class TableServiceTest {
 
     private static class MyTableParameters extends TableParameters {
 
-    }
-
-    private TestTable getTable(boolean filtered, boolean additionalQueryFragments, String requiredAccessRight) {
-        return new TestTable(filtered, additionalQueryFragments, requiredAccessRight);
-    }
-
-    private static class TestTable implements Table<Object> {
-
-        private final boolean filtered;
-        private final boolean additionalQueryFragments;
-        private Filter filter;
-        private SearchOrder order;
-        private Integer skip;
-        private Integer limit;
-        private String requiredAccessRight;
-
-        public TestTable(boolean filtered, boolean additionalQueryFragments, String requiredAccessRight) {
-            this.filtered = filtered;
-            this.additionalQueryFragments = additionalQueryFragments;
-            this.requiredAccessRight = requiredAccessRight;
-        }
-
-        @Override
-        public TableFindResult<Object> find(Filter filter, SearchOrder order, Integer skip, Integer limit) {
-            this.filter = filter;
-            this.order = order;
-            this.limit = limit;
-            this.skip = skip;
-            return new TableFindResult<>(0, 0, List.of().listIterator());
-        }
-
-        @Override
-        public List<Filter> getTableFilters(TableParameters tableParameters) {
-            return additionalQueryFragments ? List.of(Filters.equals("field3", "value3")) : null;
-        }
-
-        @Override
-        public boolean isContextFiltered() {
-            return filtered;
-        }
-
-        @Override
-        public String getRequiredAccessRight() {
-            return requiredAccessRight;
-        }
     }
 
     private static class TestAccessManager implements AccessManager {

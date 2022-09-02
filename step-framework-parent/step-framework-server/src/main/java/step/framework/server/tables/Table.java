@@ -1,46 +1,117 @@
-/*******************************************************************************
- * Copyright (C) 2020, exense GmbH
- *
- * This file is part of STEP
- *
- * STEP is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * STEP is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
- ******************************************************************************/
 package step.framework.server.tables;
 
+import step.core.collections.Collection;
 import step.core.collections.Filter;
-import step.core.collections.SearchOrder;
-import step.core.objectenricher.ObjectFilter;
-import step.core.objectenricher.ObjectHookRegistry;
 import step.framework.server.tables.service.TableParameters;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-public interface Table<T> {
+public class Table<T> {
 
-    TableFindResult<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit);
+    private final Collection<T> collection;
+    private final String requiredAccessRight;
+
+    private final boolean filtered;
+    private Function<TableParameters, Filter> tableFiltersFactory;
+
+    private Integer maxFindDuration;
+    private Integer countLimit;
+
+    private Supplier<List<T>> resultListFactory;
+    private Function<T, T> resultItemEnricher;
 
     /**
-     * @param tableParameters some context parameters that might be required to generate the additional query fragments
-     * @return a list of query fragments to be appended to the queries when calling the method find()
+     * @param collection the collection backing this table
+     * @param requiredAccessRight the right required to perform read requests on this table
+     * @param filtered if the table is subject to context filtering (See {@link step.core.objectenricher.ObjectFilter})
      */
-    List<Filter> getTableFilters(TableParameters tableParameters);
+    public Table(Collection<T> collection, String requiredAccessRight, boolean filtered) {
+        this.collection = collection;
+        this.requiredAccessRight = requiredAccessRight;
+        this.filtered = filtered;
+    }
 
     /**
-     * @return true if the filter defined by the {@link ObjectFilter} of the {@link ObjectHookRegistry} have to be applied
-     * when performing a search
+     * @param tableFiltersFactory a factory for additional filters to be applied at each table request
+     * @return this instance
      */
-    boolean isContextFiltered();
+    public Table<T> withTableFiltersFactory(Function<TableParameters, Filter> tableFiltersFactory) {
+        this.tableFiltersFactory = tableFiltersFactory;
+        return this;
+    }
 
-    String getRequiredAccessRight();
+    /**
+     * @param maxFindDuration the maximal duration of the table requests in ms
+     * @return this instance
+     */
+    public Table<T> withMaxFindDuration(int maxFindDuration) {
+        this.maxFindDuration = maxFindDuration;
+        return this;
+    }
+
+    /**
+     * @param countLimit the limit to be used when counting the exact number of results for a table request
+     * @return this instance
+     */
+    public Table<T> withCountLimit(int countLimit) {
+        this.countLimit = countLimit;
+        return this;
+    }
+
+    /**
+     * Specififes a custom factory for the instantiation of the result list.
+     * This can be used to create anonymous classes including the generic type
+     * of the list which is sometimes required by Jackson
+     * @param resultListFactory the factory to be used to create the result list
+     * @return this instance
+     */
+    public Table<T> withResultListFactory(Supplier<List<T>> resultListFactory) {
+        this.resultListFactory = resultListFactory;
+        return this;
+    }
+
+    /**
+     * @param resultItemEnricher an optional enricher to be use to enrich each element returned by this table.
+     *                           The enricher is called for each element before returning the result
+     * @return this instance
+     */
+    public Table<T> withResultItemEnricher(Function<T, T> resultItemEnricher) {
+        this.resultItemEnricher = resultItemEnricher;
+        return this;
+    }
+
+    public Collection<T> getCollection() {
+        return collection;
+    }
+
+    public String getRequiredAccessRight() {
+        return requiredAccessRight;
+    }
+
+    public boolean isFiltered() {
+        return filtered;
+    }
+
+    public Optional<Function<TableParameters, Filter>> getTableFiltersFactory() {
+        return Optional.ofNullable(tableFiltersFactory);
+    }
+
+    public Optional<Integer> getMaxFindDuration() {
+        return Optional.ofNullable(maxFindDuration);
+    }
+
+    public Optional<Integer> getCountLimit() {
+        return Optional.ofNullable(countLimit);
+    }
+
+    public Optional<Supplier<List<T>>> getResultListFactory() {
+        return Optional.ofNullable(resultListFactory);
+    }
+
+    public Optional<Function<T, T>> getResultItemEnricher() {
+        return Optional.ofNullable(resultItemEnricher);
+    }
 }
