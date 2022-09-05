@@ -2,7 +2,7 @@ package step.core.timeseries;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import step.core.collections.CollectionFactory;
+import step.core.collections.Collection;
 
 import java.io.Closeable;
 import java.util.Map;
@@ -11,64 +11,48 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TimeSeriesIngestionPipeline implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesIngestionPipeline.class);
 
-    Map<Long, Map<BucketAttributes, BucketBuilder>> series2 = new ConcurrentHashMap<>();
-    private final Map<Map<String, Object>, Map<Long, BucketBuilder>> series = new ConcurrentHashMap<>();
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final Collection<Bucket> collection;
+    private final Map<Long, Map<BucketAttributes, BucketBuilder>> seriesQueue = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private final LongAdder flushCount = new LongAdder();
     private final long resolutionInMs;
-    private final BucketAccessor bucketAccessor;
 
-
-    public TimeSeriesIngestionPipeline(CollectionFactory collectionFactory, long resolutionInMs, long flushingPeriodInMs) {
-        this.bucketAccessor = new BucketAccessor(collectionFactory.getCollection(BucketAccessor.ENTITY_NAME, Bucket.class));
+    protected TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolutionInMs, long flushingPeriodInMs) {
+        this.collection = collection;
         this.resolutionInMs = resolutionInMs;
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(this::flush, flushingPeriodInMs, flushingPeriodInMs, TimeUnit.MILLISECONDS);
     }
 
-    public void ingestPoint(BucketAttributes mainAttributes, long timestamp, long value) {
-        // TODO maybe remove empty entries from the map?
-            long index = timestamp - timestamp % resolutionInMs;
-            Map<BucketAttributes, BucketBuilder> bucketsForTimestamp = series2.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-            bucketsForTimestamp.computeIfAbsent(mainAttributes, k -> BucketBuilder.create(index).withAttributes(mainAttributes)).ingest(value);
+    public void ingestPoint(BucketAttributes attributes, long timestamp, long value) {
+        long index = timestampToIndex(timestamp);
+        Map<BucketAttributes, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
+        bucketsForTimestamp.computeIfAbsent(attributes, k -> BucketBuilder.create(index).withAttributes(attributes)).ingest(value);
     }
 
     // TODO flush method can be improved with a batcher (run when a specific timeout ends, or a specific amount of data is collected)
     public void flush() {
-        debug("Trying to acquire write lock");
-        lock.writeLock().lock();
         try {
-            debug("Got write lock");
-            // Persist each bucket
-            // TODO use bulk save
-//            series.forEach((k, v) -> v.forEach((index, bucketBuilder) ->
-//                    bucketAccessor.save(bucketBuilder.build())
-//            ));
-//            series.clear();
+            debug("Flushing");
             long now = System.currentTimeMillis();
-            long currentInterval = now - now % this.resolutionInMs;
-            series2.forEach((k, v) -> {
+            long currentInterval = timestampToIndex(now);
+            seriesQueue.forEach((k, v) -> {
                 if (k < currentInterval) {
-                    v.forEach((attributes, bucketBuilder) -> {
-                        bucketAccessor.save(bucketBuilder.build());
-                    });
+                    // Remove the entry from the map and iterate over it afterwards
+                    // This enables concurrent execution of flushing and ingestion
+                    Map<BucketAttributes, BucketBuilder> buckets = seriesQueue.remove(k);
+                    buckets.forEach((attributes, bucketBuilder) -> collection.save(bucketBuilder.build()));
                 }
-                series2.remove(k);
             });
             flushCount.increment();
             debug("Flushed");
         } catch (Throwable e) {
             logger.error("Error while flushing", e);
-        } finally {
-            lock.writeLock().unlock();
         }
     }
 
@@ -82,6 +66,10 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             scheduler.shutdown();
         }
         flush();
+    }
+
+    private long timestampToIndex(long timestamp) {
+        return timestamp - timestamp % resolutionInMs;
     }
 
     private void debug(String message) {

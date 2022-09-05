@@ -2,11 +2,10 @@ package step.core.timeseries.test;
 
 import org.junit.Test;
 import step.core.collections.Collection;
-import step.core.collections.inmemory.InMemoryCollection;
 import step.core.collections.inmemory.InMemoryCollectionFactory;
 import step.core.timeseries.*;
 
-import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -17,9 +16,10 @@ public class TimeseriesPipelineTest {
     @Test
     public void test() {
         InMemoryCollectionFactory factory = new InMemoryCollectionFactory(null);
-        TimeSeriesIngestionPipeline pipeline = new TimeSeriesIngestionPipeline(factory, RESOLUTION, 3000);
+        TimeSeries timeseries = new TimeSeries(factory, "buckets", Set.of());
+        TimeSeriesIngestionPipeline pipeline = timeseries.newIngestionPipeline(RESOLUTION, 3000);
         Collection<Bucket> bucketCollection = factory.getCollection("buckets", Bucket.class);
-        BucketService bucketService = new BucketService(factory, RESOLUTION);
+        TimeSeriesAggregationPipeline bucketService = timeseries.getAggregationPipeline(RESOLUTION);
         long nBuckets = 10;
         for (int i = 0; i < nBuckets; i++) {
             Bucket entity = new Bucket(1000L * i);
@@ -31,7 +31,7 @@ public class TimeseriesPipelineTest {
             bucketCollection.save(entity);
         }
 
-        TimeSeriesChartResponse response = bucketService.collect(new Query().range(0, nBuckets * 1000 - 1).window(1000));
+        TimeSeriesAggregationResponse response = bucketService.newQuery().range(0, nBuckets * 1000 - 1).window(1000).run();
         assertEquals(nBuckets, response.getMatrix().get(0).length);
 
 //        // Query the time series with resolution = bucket size

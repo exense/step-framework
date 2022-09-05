@@ -3,7 +3,8 @@ package step.core.timeseries;
 import java.util.List;
 import java.util.Map;
 
-public class TimeSeriesChartResponse {
+public class TimeSeriesAggregationResponse {
+
     private long start;
     private long interval;
     private long end;
@@ -14,7 +15,7 @@ public class TimeSeriesChartResponse {
     // each object index is corresponding to the row in the matrix
     private List<BucketAttributes> matrixKeys;
 
-    public TimeSeriesChartResponse(long start, long end, long interval, List<Bucket[]> matrix, List<BucketAttributes> matrixKeys) {
+    protected TimeSeriesAggregationResponse(long start, long end, long interval, List<Bucket[]> matrix, List<BucketAttributes> matrixKeys) {
         this.start = start;
         this.interval = interval;
         this.end = end;

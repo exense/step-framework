@@ -14,7 +14,6 @@ public class Bucket extends AbstractIdentifiableObject {
     private long count, sum, min, max;
     private long pclPrecision;
     private Map<Long, Long> distribution;
-    private String metricType;
 
     public Bucket() {
     }
@@ -85,14 +84,6 @@ public class Bucket extends AbstractIdentifiableObject {
 
     public void setDistribution(Map<Long, Long> distribution) {
         this.distribution = distribution;
-    }
-
-    public String getMetricType() {
-        return metricType;
-    }
-
-    public void setMetricType(String metricType) {
-        this.metricType = metricType;
     }
 
     public long getPercentile(int percentile) {
