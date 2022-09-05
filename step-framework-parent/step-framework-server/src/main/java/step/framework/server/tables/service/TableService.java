@@ -26,7 +26,7 @@ public class TableService {
     private final int defaultMaxResultCount;
 
     public TableService(TableRegistry tableRegistry, ObjectHookRegistry objectHookRegistry, AccessManager accessManager) {
-        this(tableRegistry, objectHookRegistry, accessManager, 10000, 1000);
+        this(tableRegistry, objectHookRegistry, accessManager, 10, 1000);
     }
 
     public TableService(TableRegistry tableRegistry, ObjectHookRegistry objectHookRegistry, AccessManager accessManager, int defaultMaxFindDuration, int defaultMaxResultCount) {
@@ -37,12 +37,15 @@ public class TableService {
         this.defaultMaxResultCount = defaultMaxResultCount;
     }
 
-    public TableResponse request(String tableName, TableRequest request, Session<?> session) throws TableServiceException {
-        Table<Object> table = (Table<Object>) tableRegistry.get(tableName);
+    public <T> TableResponse<T> request(String tableName, TableRequest request, Session<?> session) throws TableServiceException {
+        Table<T> table = (Table<T>) tableRegistry.get(tableName);
         if (table == null) {
             throw new TableServiceException("The table " + tableName + " doesn't exist");
         }
+        return request(table, request, session);
+    }
 
+    public <T> TableResponse<T> request(Table<T> table, TableRequest request, Session<?> session) throws TableServiceException {
         String requiredAccessRight = table.getRequiredAccessRight();
         boolean hasRequiredRight = requiredAccessRight == null || accessManager.checkRightInContext(session, requiredAccessRight);
         if (hasRequiredRight) {
@@ -53,10 +56,10 @@ public class TableService {
             SearchOrder searchOrder = getSearchOrder(request);
 
             // Create result list
-            List<Object> result = table.getResultListFactory().orElse(ArrayList::new).get();
+            List<T> result = table.getResultListFactory().orElse(ArrayList::new).get();
 
             // Perform the search
-            Collection<?> collection = table.getCollection();
+            Collection<T> collection = table.getCollection();
             collection.find(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
                     .map(table.getResultItemEnricher().orElse(a -> a)).forEachOrdered(result::add);
 
@@ -64,13 +67,13 @@ public class TableService {
             long count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));
 
             // Create the response
-            TableResponse response = new TableResponse();
+            TableResponse<T> response = new TableResponse<>();
             response.setRecordsFiltered(count);
             response.setRecordsTotal(estimatedTotalCount);
             response.setData(result);
             return response;
         } else {
-            throw new TableServiceException("Missing right " + requiredAccessRight + " to access table " + tableName);
+            throw new TableServiceException("Missing right " + requiredAccessRight + " to access table");
         }
     }
 

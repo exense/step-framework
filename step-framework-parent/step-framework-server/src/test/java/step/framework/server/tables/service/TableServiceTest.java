@@ -88,7 +88,7 @@ public class TableServiceTest {
 
         // Test empty request
         TableRequest request = new TableRequest();
-        TableResponse response = tableService.request(SIMPLE_TABLE, request, null);
+        TableResponse<?> response = tableService.request(SIMPLE_TABLE, request, null);
         assertEquals(List.of(bean1, bean2, bean3), response.getData());
         assertEquals(3, response.getRecordsTotal());
         assertEquals(3, response.getRecordsFiltered());
