@@ -11,6 +11,7 @@ import step.core.access.RoleResolver;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
+import step.core.collections.filters.Not;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.entities.Bean;
 import step.core.objectenricher.*;
@@ -191,7 +192,14 @@ public class TableServiceTest {
         OQLFilter oqlFilter = (OQLFilter) tableRequest.getFilters().get(0);
         assertEquals("not(test=test)", oqlFilter.getOql());
         Filter oqlFilter_ = oqlFilter.toFilter();
-        assertEquals(Filters.Not.class, oqlFilter_.getClass());
+        assertEquals(Not.class, oqlFilter_.getClass());
+
+        writer.writeValueAsString(tableRequest);
+
+        tableRequest = reader.readValue("{\"filters\":[{\"collectionFilter\":{\"type\":\"True\"}}]}", TableRequest.class);
+        assertEquals(1, tableRequest.getFilters().size());
+        CollectionFilter collectionFilter = (CollectionFilter) tableRequest.getFilters().get(0);
+        assertEquals(Filters.empty(), collectionFilter.getCollectionFilter());
 
         writer.writeValueAsString(tableRequest);
 

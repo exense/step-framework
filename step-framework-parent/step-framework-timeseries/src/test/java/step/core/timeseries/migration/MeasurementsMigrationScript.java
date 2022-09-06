@@ -3,10 +3,10 @@ package step.core.timeseries.migration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import step.core.collections.*;
+import step.core.collections.filters.Equals;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 import step.core.timeseries.Bucket;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -30,7 +30,7 @@ public class MeasurementsMigrationScript {
     public void migrate() {
         String executionId = "62c42d6768f64952ffbb64a7";
         boolean cleanupBefore = true;
-        Filters.Equals eIdFilter = Filters.equals("attributes.eId", executionId);
+        Equals eIdFilter = Filters.equals("attributes.eId", executionId);
         Optional<Bucket> foundBucket = bucketCollection.find(eIdFilter, null, null, 1, 0).findFirst();
         if (foundBucket.isPresent()) {
             if (cleanupBefore) {
