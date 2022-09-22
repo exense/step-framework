@@ -17,11 +17,36 @@ import step.framework.server.security.SecuredContext;
 public class TestService extends AbstractServices {
 
     @GET
-    @Path("/")
+    @Path("/serviceWithMultipleRights")
     @Secured(right = "{prefix}-read")
     @Secured(right = "test")
     @Operation(operationId = "get{Entity}")
-    public String get() {
+    public String serviceWithMultipleRights() {
+        return "test";
+    }
+
+    @GET
+    @Path("/serviceWithMultipleRightsNotAllowed")
+    @Secured(right = "{prefix}-read")
+    @Secured(right = "notAvailableRight")
+    @Operation(operationId = "get{Entity}")
+    public String serviceWithMultipleRightsNotAllowed() {
+        return "test";
+    }
+
+    @GET
+    @Path("/serviceWithOneRight")
+    @Secured(right = "test")
+    @Operation(operationId = "get{Entity}")
+    public String serviceWithOneRight() {
+        return "test";
+    }
+
+    @GET
+    @Path("/serviceWithOneRightNotAllowed")
+    @Secured(right = "notAvailableRight")
+    @Operation(operationId = "get{Entity}")
+    public String serviceWithOneRightNotAllowed() {
         return "test";
     }
 

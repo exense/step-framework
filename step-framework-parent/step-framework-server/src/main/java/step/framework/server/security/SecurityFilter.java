@@ -64,10 +64,10 @@ public class SecurityFilter<U extends AbstractUser> extends AbstractServices<U> 
 		// Check rights
 		Invocable invocable = extendendUriInfo.getMatchedResourceMethod().getInvocable();
 		Class<?> handlerClass = invocable.getHandler().getHandlerClass();
-		SecuredList securedList = invocable.getHandlingMethod().getAnnotation(SecuredList.class);
-		if (securedList != null) {
+		Secured[] securedAnnotations = invocable.getHandlingMethod().getAnnotationsByType(Secured.class);
+		if (securedAnnotations != null) {
 			// Check each right contained in the list
-			Arrays.stream(securedList.value())
+			Arrays.stream(securedAnnotations)
 					.forEach(a -> checkRightsForAnnotation(requestContext, session, handlerClass, a));
 		}
 	}
