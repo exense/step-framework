@@ -71,16 +71,20 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 			return formatFieldForValueAsText(regexFilter.getField()) + operator + "'" + regexFilter.getExpression() + "'";
 		} else if (filter instanceof Filters.Gt) {
 			Filters.Gt gtFilter = (Filters.Gt) filter;
-			return formatField(gtFilter.getField(),false) + " > '" + gtFilter.getValue() + "'";
+			return formatField(gtFilter.getField(),true) + " IS NOT NULL AND "
+					+ formatField(gtFilter.getField(),false) + " > '" + gtFilter.getValue() + "'";
 		} else if (filter instanceof Filters.Gte) {
 			Filters.Gte gteFilter = (Filters.Gte) filter;
-			return formatField(gteFilter.getField(),false) + " >= '" + gteFilter.getValue() + "'";
+			return formatField(gteFilter.getField(),true) + " IS NOT NULL AND "
+					+ formatField(gteFilter.getField(),false) + " >= '" + gteFilter.getValue() + "'";
 		} else if (filter instanceof Filters.Lt) {
 			Filters.Lt ltFilter = (Filters.Lt) filter;
-			return formatField(ltFilter.getField(),false) + " < '" + ltFilter.getValue() + "'";
+			return formatField(ltFilter.getField(),true) + " IS NOT NULL AND "
+					+ formatField(ltFilter.getField(),false) + " < '" + ltFilter.getValue() + "'";
 		} else if (filter instanceof Filters.Lte) {
 			Filters.Lte lteFilter = (Filters.Lte) filter;
-			return formatField(lteFilter.getField(),false) + " <= '" + lteFilter.getValue() + "'";
+			return formatField(lteFilter.getField(),true) + " IS NOT NULL AND "
+					+ formatField(lteFilter.getField(),false) + " <= '" + lteFilter.getValue() + "'";
 		} else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 		}
