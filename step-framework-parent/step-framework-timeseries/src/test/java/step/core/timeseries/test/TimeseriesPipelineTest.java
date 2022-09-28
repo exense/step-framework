@@ -16,8 +16,8 @@ public class TimeseriesPipelineTest {
     @Test
     public void test() {
         InMemoryCollectionFactory factory = new InMemoryCollectionFactory(null);
-        TimeSeries timeseries = new TimeSeries(factory, "buckets", Set.of());
-        TimeSeriesIngestionPipeline pipeline = timeseries.newIngestionPipeline(RESOLUTION, 3000);
+        TimeSeries timeseries = new TimeSeries(factory, "buckets", Set.of(), RESOLUTION);
+        TimeSeriesIngestionPipeline pipeline = timeseries.newIngestionPipeline( 3000);
         Collection<Bucket> bucketCollection = factory.getCollection("buckets", Bucket.class);
         TimeSeriesAggregationPipeline bucketService = timeseries.getAggregationPipeline(RESOLUTION);
         long nBuckets = 10;
