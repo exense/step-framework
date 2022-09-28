@@ -9,10 +9,12 @@ public class TimeSeries {
 
     private final Collection<Bucket> collection;
     private final Set<String> indexedFields;
+    private final Integer ingestionResolutionPeriod;
 
-    public TimeSeries(CollectionFactory collectionFactory, String collectionName, Set<String> indexedAttributes) {
+    public TimeSeries(CollectionFactory collectionFactory, String collectionName, Set<String> indexedAttributes, Integer ingestionResolutionPeriod) {
         this.collection = collectionFactory.getCollection(collectionName, Bucket.class);
         this.indexedFields = indexedAttributes;
+        this.ingestionResolutionPeriod = ingestionResolutionPeriod;
         createIndexes();
     }
 
@@ -21,8 +23,12 @@ public class TimeSeries {
         indexedFields.forEach(f -> collection.createOrUpdateIndex("attributes."+f));
     }
 
-    public TimeSeriesIngestionPipeline newIngestionPipeline(long resolutionInMs, long flushingPeriodInMs) {
-        return new TimeSeriesIngestionPipeline(collection, resolutionInMs, flushingPeriodInMs);
+    public TimeSeriesIngestionPipeline newIngestionPipeline(long flushingPeriodInMs) {
+        return newIngestionPipeline(this.ingestionResolutionPeriod, flushingPeriodInMs);
+    }
+
+    public TimeSeriesIngestionPipeline newIngestionPipeline(long customResolutionMs, long flushingPeriodInMs) {
+        return new TimeSeriesIngestionPipeline(collection, customResolutionMs, flushingPeriodInMs);
     }
 
     public TimeSeriesAggregationPipeline getAggregationPipeline(int resolution) {
