@@ -22,11 +22,6 @@ public class BucketBuilder {
         this.begin = begin;
     }
 
-    public BucketBuilder(Bucket bucket) {
-        this(bucket.getBegin());
-        this.accumulate(bucket);
-    }
-
     public BucketBuilder withAttributes(BucketAttributes attributes) {
         this.attributes = attributes;
         return this;

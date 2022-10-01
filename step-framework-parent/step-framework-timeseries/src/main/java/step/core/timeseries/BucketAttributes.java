@@ -4,13 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class BucketAttributes extends HashMap<String, Object> {
+public class BucketAttributes extends HashMap<String, String> {
 
     public BucketAttributes() {
         super();
     }
 
-    public BucketAttributes(Map<String, Object> map) {
+    public BucketAttributes(Map<String, String> map) {
         super(map);
     }
 

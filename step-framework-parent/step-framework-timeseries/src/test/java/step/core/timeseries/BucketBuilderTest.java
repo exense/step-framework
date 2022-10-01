@@ -1,13 +1,9 @@
-package step.core.timeseries.test;
+package step.core.timeseries;
 
+import static org.junit.Assert.*;
 import org.junit.Test;
-import step.core.timeseries.Bucket;
-import step.core.timeseries.BucketAttributes;
-import step.core.timeseries.BucketBuilder;
 
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
 
 public class BucketBuilderTest {
 
