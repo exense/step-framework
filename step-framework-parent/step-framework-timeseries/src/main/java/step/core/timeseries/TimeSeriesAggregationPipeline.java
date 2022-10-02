@@ -12,29 +12,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TimeSeriesAggregationPipeline {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesAggregationPipeline.class);
 
-    private final long resolution;
+    private final long sourceResolution;
     private final Collection<Bucket> collection;
-    private final Function<Long, Function<Long, Long>> indexProjectionFunctionFactory;
 
-    protected TimeSeriesAggregationPipeline(Collection<Bucket> collectionDriver, long resolution, Function<Long, Function<Long, Long>> indexProjectionFunctionFactory) {
+    protected TimeSeriesAggregationPipeline(Collection<Bucket> collectionDriver, long resolution) {
         this.collection = collectionDriver;
-        this.resolution = resolution;
-        this.indexProjectionFunctionFactory = indexProjectionFunctionFactory;
+        this.sourceResolution = resolution;
     }
 
-    protected long getResolution() {
-        return resolution;
-    }
-
-    protected Function<Long, Function<Long, Long>> getIndexProjectionFunctionFactory() {
-        return indexProjectionFunctionFactory;
+    protected long getSourceResolution() {
+        return sourceResolution;
     }
 
     private Filter buildFilter(TimeSeriesAggregationQuery query) {
@@ -43,7 +36,7 @@ public class TimeSeriesAggregationPipeline {
             filters.add(Filters.gte("begin", query.getBucketIndexFrom()));
         }
         if (query.getBucketIndexTo() != null) {
-            filters.add(Filters.lte("begin", query.getBucketIndexTo()));
+            filters.add(Filters.lt("begin", query.getBucketIndexTo()));
         }
 
         if (query.getFilters() != null) {
@@ -54,13 +47,12 @@ public class TimeSeriesAggregationPipeline {
     }
 
     public TimeSeriesAggregationQuery newQuery() {
-        return new TimeSeriesAggregationQuery(this, indexProjectionFunctionFactory.apply(resolution));
+        return new TimeSeriesAggregationQuery(this);
     }
 
     protected TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
-        Function<Long, Long> indexProjectionFunction = query.getIndexProjectionFunction();
         Filter filter = buildFilter(query);
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
@@ -77,7 +69,7 @@ public class TimeSeriesAggregationPipeline {
             Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
 
             long begin = bucket.getBegin();
-            long index = indexProjectionFunction.apply(begin);
+            long index = TimeSeries.timestampToBucketTimestamp(begin, query.getResultResolution());
             series.computeIfAbsent(index, BucketBuilder::new).accumulate(bucket);
         });
         long t2 = System.currentTimeMillis();

@@ -4,21 +4,17 @@ import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
 
 import java.util.Set;
-import java.util.function.Function;
 
 public class TimeSeries {
 
     private final Collection<Bucket> collection;
     private final Set<String> indexedFields;
-    private final Integer ingestionResolutionPeriod;
-
-    private final Function<Long,Function<Long, Long>> indexProjectionFunctionFactory;
+    private final Integer timeSeriesResolution;
 
     public TimeSeries(Collection<Bucket> collection, Set<String> indexedAttributes, Integer timeSeriesResolution) {
         this.collection = collection;
         this.indexedFields = indexedAttributes;
-        this.ingestionResolutionPeriod = timeSeriesResolution;
-        this.indexProjectionFunctionFactory = this::timestampToIndex;
+        this.timeSeriesResolution = timeSeriesResolution;
         createIndexes();
 
     }
@@ -33,18 +29,18 @@ public class TimeSeries {
     }
 
     public TimeSeriesIngestionPipeline newIngestionPipeline() {
-        return new TimeSeriesIngestionPipeline(collection, ingestionResolutionPeriod, indexProjectionFunctionFactory);
+        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution);
     }
 
     public TimeSeriesIngestionPipeline newIngestionPipeline(long flushingPeriodInMs) {
-        return new TimeSeriesIngestionPipeline(collection, ingestionResolutionPeriod, flushingPeriodInMs, indexProjectionFunctionFactory);
+        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution, flushingPeriodInMs);
     }
 
     public TimeSeriesAggregationPipeline getAggregationPipeline() {
-        return new TimeSeriesAggregationPipeline(collection, ingestionResolutionPeriod, indexProjectionFunctionFactory);
+        return new TimeSeriesAggregationPipeline(collection, timeSeriesResolution);
     }
 
-    private Function<Long, Long> timestampToIndex(long resolution) {
-        return t ->  t - t % resolution;
+    protected static long timestampToBucketTimestamp(long timestamp, long resolution) {
+        return timestamp - timestamp % resolution;
     }
 }

@@ -162,7 +162,7 @@ public class TimeSeriesTest {
         // Split in 2 points
         series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).split(2).run().getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
-        assertEquals(2, series1.size());
+        assertTrue(series1.size() <=3);
 
         // Use source resolution
         series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).run().getFirstSeries();
@@ -252,20 +252,40 @@ public class TimeSeriesTest {
             }
         }
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        TimeSeriesAggregationResponse response = pipeline.newQuery().range(0, 10).split(1).run();
+        TimeSeriesAggregationResponse response;
+
+        response = pipeline.newQuery().range(0, 10).window(5).run();
+        assertEquals(Arrays.asList(0L, 5L, 10L), response.getAxis());
+
+        response = pipeline.newQuery().range(0, 9).window(5).run();
+        assertEquals(Arrays.asList(0L, 5L), response.getAxis());
+
+        response = pipeline.newQuery().range(1, 9).window(5).run();
+        assertEquals(Arrays.asList(0L, 5L), response.getAxis());
+
+        response = pipeline.newQuery().range(0, 10).split(1).run();
         assertEquals(Arrays.asList(0L), response.getAxis());
 
-        response = pipeline.newQuery().range(0, 10).split(2).run();
+        response = pipeline.newQuery().range(0, 9).split(2).run();
         assertEquals(Arrays.asList(0L, 5L), response.getAxis());
 
         response = pipeline.newQuery().range(1, 3).split(2).run();
-        assertEquals(Arrays.asList(1L, 2L), response.getAxis());
+        assertEquals(Arrays.asList(1L, 2L, 3L), response.getAxis());
 
         response = pipeline.newQuery().range(0, 5).window(1).run();
-        assertEquals(Arrays.asList(0L, 1L, 2L, 3L, 4L), response.getAxis());
+        assertEquals(Arrays.asList(0L, 1L, 2L, 3L, 4L, 5L), response.getAxis());
 
         response = pipeline.newQuery().range(0, 5).window(2).run();
         assertEquals(Arrays.asList(0L, 2L, 4L), response.getAxis());
+
+        response = pipeline.newQuery().range(0, 5).split(2).run();
+        assertEquals(Arrays.asList(0L, 3l), response.getAxis());
+
+        response = pipeline.newQuery().range(1, 5).split(2).run();
+        assertEquals(Arrays.asList(0L, 2l, 4l), response.getAxis());
+        Map<Long, Bucket> firstSeries = response.getFirstSeries();
+        assertEquals(2, firstSeries.get(0L).getCount());
+        assertEquals(2, firstSeries.get(2L).getCount());
     }
 
     @Test
@@ -348,6 +368,6 @@ public class TimeSeriesTest {
         // Split
         assertThrows(IllegalArgumentException.class, () -> pipeline.newQuery().split(2l).run());
         result = pipeline.newQuery().groupBy(Set.of("name")).range(0, 2).split(1l).run().getSeries();
-        assertEquals(2, result.get(Map.of("name", "transaction1")).size());
+        assertEquals(1, result.get(Map.of("name", "transaction1")).size());
     }
 }

@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Function;
 
 public class TimeSeriesIngestionPipeline implements Closeable {
 
@@ -25,19 +24,20 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private final ConcurrentHashMap<Long, Map<BucketAttributes, BucketBuilder>> seriesQueue = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private final LongAdder flushCount = new LongAdder();
-    private final Function<Long, Long> indexProjectionFunction;
 
-    protected TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolutionInMs, Function<Long,Function<Long, Long>> indexProjectionFunctionFactory) {
+    private final long sourceResolution;
+
+    protected TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolutionInMs) {
         this.collection = collection;
-        this.indexProjectionFunction = indexProjectionFunctionFactory.apply(resolutionInMs);
         this.scheduler = null;
+        this.sourceResolution = resolutionInMs;
     }
 
-    protected TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolutionInMs, long flushingPeriodInMs, Function<Long,Function<Long, Long>> indexProjectionFunctionFactory) {
+    protected TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolutionInMs, long flushingPeriodInMs) {
         this.collection = collection;
-        this.indexProjectionFunction = indexProjectionFunctionFactory.apply(resolutionInMs);;
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> flush(false), flushingPeriodInMs, flushingPeriodInMs, TimeUnit.MILLISECONDS);
+        this.sourceResolution = resolutionInMs;
     }
 
     public void ingestPoint(Map<String, String> attributes, long timestamp, long value) {
@@ -50,7 +50,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         }
         lock.readLock().lock();
         try {
-            long index = indexProjectionFunction.apply(timestamp);
+            long index = TimeSeries.timestampToBucketTimestamp(timestamp, sourceResolution);
             Map<BucketAttributes, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
             bucketsForTimestamp.computeIfAbsent(attributes, k -> BucketBuilder.create(index).withAttributes(attributes)).ingest(value);
         } finally {
@@ -101,12 +101,6 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private void debug(String message) {
         if (logger.isDebugEnabled()) {
             logger.debug(message);
-        }
-    }
-
-    private void trace(String message) {
-        if (logger.isTraceEnabled()) {
-            logger.trace(message);
         }
     }
 }

@@ -1,45 +1,35 @@
 package step.core.timeseries;
 
 import java.util.*;
-import java.util.function.Function;
 
 public class TimeSeriesAggregationQuery {
 
-    private final Function<Long, Long> indexProjectionFunction;
-
-    // Range
-    private Long bucketIndexFrom;
-    private Long bucketIndexTo;
-
+    // Specified range
     private Long from;
     private Long to;
 
     // Filters
-    private Map<String, String> filters = new HashMap<>();
+    private final Map<String, String> filters = new HashMap<>();
 
     // Group
     private Set<String> groupDimensions;
 
+    // The resolution of the source time series
     private final long sourceResolution;
 
-
-    private Long numberOfBuckets;
-    private Long resolution;
+    // The resolution of the
+    private Long resultResolution;
+    // The timestamp of the lower bound bucket to be included in the result
+    private Long resultFrom;
+    // The timestamp of the upper bound bucket (exclusive)
+    private Long resultTo;
 
     private final TimeSeriesAggregationPipeline aggregationPipeline;
 
-    protected TimeSeriesAggregationQuery(TimeSeriesAggregationPipeline aggregationPipeline, Function<Long, Long> indexProjectionFunction) {
+    protected TimeSeriesAggregationQuery(TimeSeriesAggregationPipeline aggregationPipeline) {
         this.aggregationPipeline = aggregationPipeline;
-        this.indexProjectionFunction = indexProjectionFunction;
-        this.sourceResolution = aggregationPipeline.getResolution();
-    }
-
-    protected Long getBucketIndexFrom() {
-        return bucketIndexFrom;
-    }
-
-    protected Long getBucketIndexTo() {
-        return bucketIndexTo;
+        this.sourceResolution = aggregationPipeline.getSourceResolution();
+        this.resultResolution = sourceResolution;
     }
 
     /**
@@ -52,8 +42,6 @@ public class TimeSeriesAggregationQuery {
     public TimeSeriesAggregationQuery range(long from, long to) {
         this.from = from;
         this.to = to;
-        this.bucketIndexFrom = indexProjectionFunction.apply(from);
-        this.bucketIndexTo = indexProjectionFunction.apply(to);
         return this;
     }
 
@@ -83,64 +71,79 @@ public class TimeSeriesAggregationQuery {
         return this;
     }
 
-    public TimeSeriesAggregationQuery window(long intervalSizeMs) {
-        if (intervalSizeMs < sourceResolution) {
-            throw new IllegalArgumentException("The intervalSizeMs cannot be lower than the source resolution of " + sourceResolution + "ms");
+    /**
+     * Defines the desired resolution. <br>
+     * If the desired resolution isn't a multiple of the source resolution it will floored to the closest valid resolution
+     *
+     * @param resolution the desired resolution in ms
+     * @return the builder
+     */
+    public TimeSeriesAggregationQuery window(long resolution) {
+        if (resolution < sourceResolution) {
+            throw new IllegalArgumentException("The resolution cannot be lower than the source resolution of " + sourceResolution + "ms");
         }
-        this.resolution = intervalSizeMs;
+        this.resultResolution = Math.max(sourceResolution, resolution - resolution % sourceResolution);
         return this;
     }
 
-    public TimeSeriesAggregationQuery split(long numberOfBuckets) {
-        // TODO support split also when the range isn't specified
-        if (bucketIndexTo == null || bucketIndexFrom == null) {
-            throw new IllegalArgumentException("The method range() should be called before calling split()");
+    /**
+     * Specifies the desired number of buckets in the result.
+     * - For targetNumberOfBuckets = 1 the resulting number of buckets will be exactly 1
+     * - For targetNumberOfBuckets > 1 the resulting number of buckets will be as close as possible to the specified target
+     *
+     * @param targetNumberOfBuckets the desired number of buckets in the result
+     * @return the builder
+     */
+    public TimeSeriesAggregationQuery split(long targetNumberOfBuckets) {
+        if (targetNumberOfBuckets == 1) {
+            window(Long.MAX_VALUE);
+        } else {
+            if (from == null || to == null) {
+                throw new IllegalArgumentException("No range specified. The method range() should be called before calling split()");
+            }
+            long targetResolution = (long) Math.ceil((double) (to - from) / targetNumberOfBuckets);
+            long resolution = targetResolution - targetResolution % sourceResolution;
+            this.resultResolution = Math.max(sourceResolution, resolution);
         }
-        this.numberOfBuckets = numberOfBuckets;
         return this;
     }
 
-    public Map<String, String> getFilters() {
+    protected Map<String, String> getFilters() {
         return filters;
     }
 
-    public Set<String> getGroupDimensions() {
+    protected Set<String> getGroupDimensions() {
         return groupDimensions;
     }
 
-    public long getResolution() {
-        return resolution != null ? resolution : sourceResolution;
+    protected Long getResultResolution() {
+        return resultResolution;
     }
 
-    public Function<Long, Long> getIndexProjectionFunction() {
-        if (resolution != null) {
-            return aggregationPipeline.getIndexProjectionFunctionFactory().apply(resolution);
-        } else if (numberOfBuckets != null) {
-            long intervalSizeMs = (long) Math.ceil((double) (to - from) / numberOfBuckets);
-            return index -> Math.max(from, index - (index - from) % intervalSizeMs);
-        } else {
-            return aggregationPipeline.getIndexProjectionFunctionFactory().apply(sourceResolution);
-        }
+    protected Long getBucketIndexFrom() {
+        return resultFrom;
     }
 
-    public List<Long> drawAxis() {
+    protected Long getBucketIndexTo() {
+        return resultTo;
+    }
+
+    protected List<Long> drawAxis() {
         ArrayList<Long> legend = new ArrayList<>();
         if (from != null && to != null) {
-            if (resolution != null) {
-                for (long index = bucketIndexFrom; index < bucketIndexTo; index += resolution) {
-                    legend.add(index);
-                }
-            } else if (numberOfBuckets != null) {
-                long intervalSizeMs = (long) Math.ceil((double) (to - from) / numberOfBuckets);
-                for (long index = from; index < to; index += intervalSizeMs) {
-                    legend.add(index);
-                }
+            for (long index = resultFrom; index < resultTo; index += resultResolution) {
+                legend.add(index);
             }
         }
         return legend;
     }
 
     public TimeSeriesAggregationResponse run() {
+        if (from != null && to != null) {
+            resultFrom = from - from % resultResolution;
+            resultTo = to - (to - resultFrom) % resultResolution + resultResolution;
+        }
+
         return aggregationPipeline.collect(this);
     }
 }
