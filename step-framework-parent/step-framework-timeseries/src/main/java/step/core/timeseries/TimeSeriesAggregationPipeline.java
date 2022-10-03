@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TimeSeriesAggregationPipeline {
@@ -54,6 +55,7 @@ public class TimeSeriesAggregationPipeline {
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
         Filter filter = buildFilter(query);
+        Function<Long, Long> projectionFunction = query.getProjectionFunction();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
         collection.find(filter, null, null, null, 0).forEach(bucket -> {
@@ -68,9 +70,8 @@ public class TimeSeriesAggregationPipeline {
             }
             Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
 
-            long begin = bucket.getBegin();
-            long index = TimeSeries.timestampToBucketTimestamp(begin, query.getResultResolution());
-            series.computeIfAbsent(index, BucketBuilder::new).accumulate(bucket);
+            long index = projectionFunction.apply(bucket.getBegin());
+            series.computeIfAbsent(index, i -> new BucketBuilder(i, query.getBucketSize())).accumulate(bucket);
         });
         long t2 = System.currentTimeMillis();
         if (logger.isDebugEnabled()) {
@@ -79,6 +80,6 @@ public class TimeSeriesAggregationPipeline {
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        return new TimeSeriesAggregationResponse(result).withAxis(query.drawAxis());
+        return new TimeSeriesAggregationResponse(result, query.getBucketSize()).withAxis(query.drawAxis());
     }
 }

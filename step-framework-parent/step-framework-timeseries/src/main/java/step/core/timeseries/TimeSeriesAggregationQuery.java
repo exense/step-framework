@@ -1,6 +1,7 @@
 package step.core.timeseries;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class TimeSeriesAggregationQuery {
 
@@ -17,8 +18,11 @@ public class TimeSeriesAggregationQuery {
     // The resolution of the source time series
     private final long sourceResolution;
 
+    // if all buckets should be shrinked in one single bucket
+    private boolean shrink = false;
+
     // The resolution of the
-    private Long resultResolution;
+    private long resultResolution;
     // The timestamp of the lower bound bucket to be included in the result
     private Long resultFrom;
     // The timestamp of the upper bound bucket (exclusive)
@@ -96,6 +100,7 @@ public class TimeSeriesAggregationQuery {
      */
     public TimeSeriesAggregationQuery split(long targetNumberOfBuckets) {
         if (targetNumberOfBuckets == 1) {
+            shrink = true;
             window(Long.MAX_VALUE);
         } else {
             if (from == null || to == null) {
@@ -116,10 +121,6 @@ public class TimeSeriesAggregationQuery {
         return groupDimensions;
     }
 
-    protected Long getResultResolution() {
-        return resultResolution;
-    }
-
     protected Long getBucketIndexFrom() {
         return resultFrom;
     }
@@ -131,17 +132,50 @@ public class TimeSeriesAggregationQuery {
     protected List<Long> drawAxis() {
         ArrayList<Long> legend = new ArrayList<>();
         if (from != null && to != null) {
-            for (long index = resultFrom; index < resultTo; index += resultResolution) {
-                legend.add(index);
+            if(shrink) {
+                legend.add(resultFrom);
+            } else {
+                for (long index = resultFrom; index < resultTo; index += resultResolution) {
+                    legend.add(index);
+                }
             }
         }
         return legend;
     }
 
+    protected Function<Long, Long> getProjectionFunction() {
+        if(shrink) {
+            if(resultFrom != null) {
+                return t -> resultFrom;
+            } else {
+                return t -> 0L;
+            }
+        } else {
+            return t -> TimeSeries.timestampToBucketTimestamp(t, resultResolution);
+        }
+    }
+
+    protected long getBucketSize() {
+        if(shrink) {
+            if(resultFrom != null) {
+                return resultTo - resultFrom;
+            } else {
+                return Long.MAX_VALUE;
+            }
+        } else {
+            return resultResolution;
+        }
+    }
+
     public TimeSeriesAggregationResponse run() {
         if (from != null && to != null) {
-            resultFrom = from - from % resultResolution;
-            resultTo = to - (to - resultFrom) % resultResolution + resultResolution;
+            if(shrink) {
+                resultFrom = from - from % sourceResolution;
+                resultTo = to - to % sourceResolution + sourceResolution;
+            } else {
+                resultFrom = from - from % resultResolution;
+                resultTo = to - (to - resultFrom) % resultResolution + resultResolution;
+            }
         }
 
         return aggregationPipeline.collect(this);

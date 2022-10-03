@@ -6,10 +6,13 @@ import java.util.Map;
 public class TimeSeriesAggregationResponse {
 
     private List<Long> axis;
-    private Map<BucketAttributes, Map<Long, Bucket>> series;
+    private final Map<BucketAttributes, Map<Long, Bucket>> series;
 
-    protected TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series) {
+    private final long resolution;
+
+    protected TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution) {
         this.series = series;
+        this.resolution = resolution;
     }
 
     protected TimeSeriesAggregationResponse withAxis(List<Long> axis) {
@@ -19,6 +22,10 @@ public class TimeSeriesAggregationResponse {
 
     public List<Long> getAxis() {
         return axis;
+    }
+
+    public long getResolution() {
+        return resolution;
     }
 
     public Map<BucketAttributes, Map<Long, Bucket>> getSeries() {
