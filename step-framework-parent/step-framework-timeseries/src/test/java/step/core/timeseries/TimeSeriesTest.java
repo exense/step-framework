@@ -158,11 +158,17 @@ public class TimeSeriesTest {
         series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).split(1).run().getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertEquals(1, series1.size());
+        Bucket firstBucket = series1.values().stream().findFirst().get();
+        assertEquals(now - now % timeSeriesResolution + timeSeriesResolution, (long) firstBucket.getEnd());
+        assertEquals(start - start % timeSeriesResolution, firstBucket.getBegin());
 
         // Split in 2 points
-        series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).split(2).run().getFirstSeries();
+        TimeSeriesAggregationResponse response = aggregationPipeline.newQuery().filter(attributes).range(start, now).split(2).run();
+        series1 = response.getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() <=3);
+        firstBucket = series1.values().stream().findFirst().get();
+        assertEquals(response.getResolution(), firstBucket.getEnd() - firstBucket.getBegin());
 
         // Use source resolution
         series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).run().getFirstSeries();

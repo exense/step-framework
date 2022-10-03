@@ -71,7 +71,7 @@ public class TimeSeriesAggregationPipeline {
             Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
 
             long index = projectionFunction.apply(bucket.getBegin());
-            series.computeIfAbsent(index, i -> new BucketBuilder(i, query.getBucketSize())).accumulate(bucket);
+            series.computeIfAbsent(index, i -> new BucketBuilder(i, i + query.getBucketSize())).accumulate(bucket);
         });
         long t2 = System.currentTimeMillis();
         if (logger.isDebugEnabled()) {
