@@ -9,13 +9,18 @@ public class TimeSeries {
 
     private final Collection<Bucket> collection;
     private final Set<String> indexedFields;
-    private final Integer ingestionResolutionPeriod;
+    private final Integer timeSeriesResolution;
+
+    public TimeSeries(Collection<Bucket> collection, Set<String> indexedAttributes, Integer timeSeriesResolution) {
+        this.collection = collection;
+        this.indexedFields = indexedAttributes;
+        this.timeSeriesResolution = timeSeriesResolution;
+        createIndexes();
+
+    }
 
     public TimeSeries(CollectionFactory collectionFactory, String collectionName, Set<String> indexedAttributes, Integer ingestionResolutionPeriod) {
-        this.collection = collectionFactory.getCollection(collectionName, Bucket.class);
-        this.indexedFields = indexedAttributes;
-        this.ingestionResolutionPeriod = ingestionResolutionPeriod;
-        createIndexes();
+        this(collectionFactory.getCollection(collectionName, Bucket.class), indexedAttributes, ingestionResolutionPeriod);
     }
 
     private void createIndexes() {
@@ -23,15 +28,19 @@ public class TimeSeries {
         indexedFields.forEach(f -> collection.createOrUpdateIndex("attributes."+f));
     }
 
+    public TimeSeriesIngestionPipeline newIngestionPipeline() {
+        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution);
+    }
+
     public TimeSeriesIngestionPipeline newIngestionPipeline(long flushingPeriodInMs) {
-        return newIngestionPipeline(this.ingestionResolutionPeriod, flushingPeriodInMs);
+        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution, flushingPeriodInMs);
     }
 
-    public TimeSeriesIngestionPipeline newIngestionPipeline(long customResolutionMs, long flushingPeriodInMs) {
-        return new TimeSeriesIngestionPipeline(collection, customResolutionMs, flushingPeriodInMs);
+    public TimeSeriesAggregationPipeline getAggregationPipeline() {
+        return new TimeSeriesAggregationPipeline(collection, timeSeriesResolution);
     }
 
-    public TimeSeriesAggregationPipeline getAggregationPipeline(int resolution) {
-        return new TimeSeriesAggregationPipeline(collection, resolution);
+    protected static long timestampToBucketTimestamp(long timestamp, long resolution) {
+        return timestamp - timestamp % resolution;
     }
 }

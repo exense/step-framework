@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.LongAdder;
 public class Bucket extends AbstractIdentifiableObject {
 
     private long begin;
+    private Long end;
     private BucketAttributes attributes;
     private long count, sum, min, max;
     private long pclPrecision;
@@ -28,6 +29,14 @@ public class Bucket extends AbstractIdentifiableObject {
 
     public void setBegin(long begin) {
         this.begin = begin;
+    }
+
+    public Long getEnd() {
+        return end;
+    }
+
+    public void setEnd(Long end) {
+        this.end = end;
     }
 
     public BucketAttributes getAttributes() {

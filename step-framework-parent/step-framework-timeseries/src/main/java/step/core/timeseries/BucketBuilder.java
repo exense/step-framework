@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 public class BucketBuilder {
 
     private final long begin;
+    private final Long end;
     private BucketAttributes attributes;
     private final LongAdder countAdder = new LongAdder();
     private final LongAdder sumAdder = new LongAdder();
@@ -20,11 +21,12 @@ public class BucketBuilder {
 
     public BucketBuilder(long begin) {
         this.begin = begin;
+        this.end = null;
     }
 
-    public BucketBuilder(Bucket bucket) {
-        this(bucket.getBegin());
-        this.accumulate(bucket);
+    public BucketBuilder(long begin, long end) {
+        this.begin = begin;
+        this.end = end;
     }
 
     public BucketBuilder withAttributes(BucketAttributes attributes) {
@@ -63,6 +65,10 @@ public class BucketBuilder {
         return begin;
     }
 
+    public Long getEnd() {
+        return end;
+    }
+
     private void updateMin(long value) {
         min.updateAndGet(curMin -> Math.min(value, curMin));
     }
@@ -74,6 +80,7 @@ public class BucketBuilder {
     public Bucket build() {
         Bucket bucket = new Bucket();
         bucket.setBegin(begin);
+        bucket.setEnd(end);
         bucket.setAttributes(attributes);
         bucket.setCount(countAdder.longValue());
         bucket.setSum(sumAdder.longValue());

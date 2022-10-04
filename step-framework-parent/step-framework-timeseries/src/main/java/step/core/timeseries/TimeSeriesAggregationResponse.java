@@ -5,41 +5,34 @@ import java.util.Map;
 
 public class TimeSeriesAggregationResponse {
 
-    private long start;
-    private long interval;
-    private long end;
+    private List<Long> axis;
+    private final Map<BucketAttributes, Map<Long, Bucket>> series;
 
-    // all buckets for all series. series keys are defined in the legend
-    private List<Bucket[]> matrix;
+    private final long resolution;
 
-    // each object index is corresponding to the row in the matrix
-    private List<BucketAttributes> matrixKeys;
-
-    protected TimeSeriesAggregationResponse(long start, long end, long interval, List<Bucket[]> matrix, List<BucketAttributes> matrixKeys) {
-        this.start = start;
-        this.interval = interval;
-        this.end = end;
-        this.matrix = matrix;
-        this.matrixKeys = matrixKeys;
+    protected TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution) {
+        this.series = series;
+        this.resolution = resolution;
     }
 
-    public long getStart() {
-        return start;
+    protected TimeSeriesAggregationResponse withAxis(List<Long> axis) {
+        this.axis = axis;
+        return this;
     }
 
-    public long getInterval() {
-        return interval;
+    public List<Long> getAxis() {
+        return axis;
     }
 
-    public long getEnd() {
-        return end;
+    public long getResolution() {
+        return resolution;
     }
 
-    public List<Bucket[]> getMatrix() {
-        return matrix;
+    public Map<BucketAttributes, Map<Long, Bucket>> getSeries() {
+        return series;
     }
 
-    public List<BucketAttributes> getMatrixKeys() {
-        return matrixKeys;
+    public Map<Long, Bucket> getFirstSeries() {
+        return series.values().stream().findFirst().get();
     }
 }

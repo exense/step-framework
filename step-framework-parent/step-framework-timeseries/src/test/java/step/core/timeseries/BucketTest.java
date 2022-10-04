@@ -1,13 +1,12 @@
-package step.core.timeseries.test;
+package step.core.timeseries;
 
 import org.junit.Test;
-import step.core.timeseries.Bucket;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.Assert.assertEquals;
 
-public class BucketsTest {
+public class BucketTest {
 
     @Test
     public void getDistribution() {
@@ -30,5 +29,4 @@ public class BucketsTest {
         assertEquals(20L, bucket.getPercentile(50));
         assertEquals(25L, bucket.getPercentile(100));
     }
-
 }
