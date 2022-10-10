@@ -18,8 +18,6 @@
  ******************************************************************************/
 package step.framework.server.security;
 
-import java.io.IOException;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
@@ -28,23 +26,30 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
-
 import org.glassfish.jersey.server.ExtendedUriInfo;
 import org.glassfish.jersey.server.model.Invocable;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import step.core.accessors.AbstractUser;
 import step.framework.server.AbstractServices;
 import step.framework.server.Session;
 import step.framework.server.access.AccessManager;
 
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
 @Provider
 @Priority(Priorities.AUTHORIZATION)
 public class SecurityFilter<U extends AbstractUser> extends AbstractServices<U> implements ContainerRequestFilter {
-	
+
 	@Inject
 	private ExtendedUriInfo extendendUriInfo;
 
 	private AccessManager accessManager;
+
+	private static final Logger logger = LoggerFactory.getLogger(SecurityFilter.class);
 
 	@PostConstruct
 	public void init() throws Exception {
@@ -54,34 +59,60 @@ public class SecurityFilter<U extends AbstractUser> extends AbstractServices<U> 
 	@Override
 	public void filter(ContainerRequestContext requestContext) throws IOException {
 		// Retrieve or initialize session
-		Session session = retrieveOrInitializeSession();
+		Session<U> session = retrieveOrInitializeSession();
 
 		// Check rights
 		Invocable invocable = extendendUriInfo.getMatchedResourceMethod().getInvocable();
-		Secured classAnnotation = invocable.getHandler().getHandlerClass().getAnnotation(Secured.class);
-		Secured annotation = invocable.getHandlingMethod().getAnnotation(Secured.class);
-		if(annotation != null) {
-			if(session.isAuthenticated()) {
-				String right = annotation.right();
-				if(right.length()>0) {
-					if (classAnnotation != null && classAnnotation.right().length()>0) {
-						right = classAnnotation.right() + right;
-					}
-					boolean hasRight = accessManager.checkRightInContext(session, right);
-					if(!hasRight) {
-						requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).build());
-					}
-				}
-			} else {
-				requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
-			}
+		Class<?> handlerClass = invocable.getHandler().getHandlerClass();
+		Secured[] securedAnnotations = invocable.getHandlingMethod().getAnnotationsByType(Secured.class);
+		if (securedAnnotations != null) {
+			// Check each right contained in the list
+			Arrays.stream(securedAnnotations)
+					.forEach(a -> checkRightsForAnnotation(requestContext, session, handlerClass, a));
 		}
 	}
-	
-	protected Session retrieveOrInitializeSession() {
-		Session session = getSession();
+
+	private void checkRightsForAnnotation(ContainerRequestContext requestContext, Session<?> session, Class<?> handlerClass, Secured annotation) {
+		if(session.isAuthenticated()) {
+			// Session authenticated, checking right
+			String right = annotation.right();
+			if(right.length()>0) {
+				// Replacing placeholders in right based on SecuredContext annotations
+				Annotation[] handlerClassAnnotations = handlerClass.getAnnotations();
+				for (Annotation a : handlerClassAnnotations) {
+					if (a instanceof SecuredContext) {
+						SecuredContext securedContext = (SecuredContext) a;
+						right = right.replaceAll(Pattern.quote("{" + securedContext.key() + "}"), securedContext.value());
+					}
+				}
+				// Check resolved right
+				boolean hasRight = accessManager.checkRightInContext(session, right);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Checked right '" + right + "' for user '" + username(session) + "'. Result: " + hasRight);
+				}
+				if(!hasRight) {
+					requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).build());
+					logger.warn("User " + username(session) + " missing right " + right);
+				}
+			}
+		} else {
+			// Session not authenticated
+			if (logger.isDebugEnabled()) {
+				logger.debug("User '" + username(session) + "' not authenticated. Returning " + Response.Status.UNAUTHORIZED);
+			}
+			requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
+		}
+	}
+
+	private String username(Session<?> session) {
+		AbstractUser user = session.getUser();
+		return (user != null ? user.getSessionUsername() : null);
+	}
+
+	protected Session<U> retrieveOrInitializeSession() {
+		Session<U> session = getSession();
 		if(session == null) {
-			session = new Session();
+			session = new Session<>();
 			setSession(session);
 		}
 		return session;

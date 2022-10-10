@@ -22,6 +22,7 @@ import org.bson.types.ObjectId;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
+import step.core.collections.filters.*;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -30,30 +31,30 @@ import java.util.stream.Collectors;
 
 public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 
-	private static Pattern p = Pattern.compile("([^.]+)");
+	private static final Pattern p = Pattern.compile("([^.]+)");
 	@Override
 	public String buildFilter(Filter filter) {
 		List<String> childerPojoFilters;
 		List<Filter> children = filter.getChildren();
 		if(children != null) {
-			childerPojoFilters = filter.getChildren().stream().map(f -> this.buildFilter(f))
+			childerPojoFilters = filter.getChildren().stream().map(this::buildFilter)
 					.collect(Collectors.toList());
 		} else {
 			childerPojoFilters = null;
 		}
 
-		if (filter instanceof Filters.And) {
+		if (filter instanceof And) {
 			return subQueryWithChildren(childerPojoFilters, "AND");
-		} else if (filter instanceof Filters.Or) {
+		} else if (filter instanceof Or) {
 			return subQueryWithChildren(childerPojoFilters, "OR");
-		} else if (filter instanceof Filters.Not) {
+		} else if (filter instanceof Not) {
 			return "NOT (" + childerPojoFilters.get(0) + ")";
-		} else if (filter instanceof Filters.True) {
+		} else if (filter instanceof True) {
 			return "TRUE";
-		} else if (filter instanceof Filters.False) {
+		} else if (filter instanceof False) {
 			return "FALSE";
-		} else if (filter instanceof Filters.Equals) {
-			Filters.Equals equalsFilter = (Filters.Equals) filter;
+		} else if (filter instanceof Equals) {
+			Equals equalsFilter = (Equals) filter;
 			Object expectedValue = equalsFilter.getExpectedValue();
 			String formattedFieldName = formatField(equalsFilter.getField(),
 					(expectedValue!=null) ? expectedValue.getClass(): String.class);
@@ -65,28 +66,32 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 				}
 				return formattedFieldName + " = '" + expectedValue + "'";
 			}
-		} else if (filter instanceof Filters.Regex) {
-			Filters.Regex regexFilter = (Filters.Regex) filter;
+		} else if (filter instanceof Regex) {
+			Regex regexFilter = (Regex) filter;
 			String operator = (regexFilter.isCaseSensitive()) ? " ~ " : " ~* ";
 			return formatFieldForValueAsText(regexFilter.getField()) + operator + "'" + regexFilter.getExpression() + "'";
-		} else if (filter instanceof Filters.Gt) {
-			Filters.Gt gtFilter = (Filters.Gt) filter;
-			return formatField(gtFilter.getField(),false) + " > '" + gtFilter.getValue() + "'";
-		} else if (filter instanceof Filters.Gte) {
-			Filters.Gte gteFilter = (Filters.Gte) filter;
-			return formatField(gteFilter.getField(),false) + " >= '" + gteFilter.getValue() + "'";
-		} else if (filter instanceof Filters.Lt) {
-			Filters.Lt ltFilter = (Filters.Lt) filter;
-			return formatField(ltFilter.getField(),false) + " < '" + ltFilter.getValue() + "'";
-		} else if (filter instanceof Filters.Lte) {
-			Filters.Lte lteFilter = (Filters.Lte) filter;
-			return formatField(lteFilter.getField(),false) + " <= '" + lteFilter.getValue() + "'";
+		} else if (filter instanceof Gt) {
+			Gt gtFilter = (Gt) filter;
+			return formatField(gtFilter.getField(),true) + " IS NOT NULL AND "
+					+ formatField(gtFilter.getField(),false) + " > '" + gtFilter.getValue() + "'";
+		} else if (filter instanceof Gte) {
+			Gte gteFilter = (Gte) filter;
+			return formatField(gteFilter.getField(),true) + " IS NOT NULL AND "
+					+ formatField(gteFilter.getField(),false) + " >= '" + gteFilter.getValue() + "'";
+		} else if (filter instanceof Lt) {
+			Lt ltFilter = (Lt) filter;
+			return formatField(ltFilter.getField(),true) + " IS NOT NULL AND "
+					+ formatField(ltFilter.getField(),false) + " < '" + ltFilter.getValue() + "'";
+		} else if (filter instanceof Lte) {
+			Lte lteFilter = (Lte) filter;
+			return formatField(lteFilter.getField(),true) + " IS NOT NULL AND "
+					+ formatField(lteFilter.getField(),false) + " <= '" + lteFilter.getValue() + "'";
 		} else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 		}
 	}
 
-	public static String formatField(String field, Class clazz) {
+	public static String formatField(String field, Class<?> clazz) {
 		return formatField(field, clazz.equals(String.class) || clazz.equals(ObjectId.class));
 	}
 
@@ -98,13 +103,13 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 		if (field.equals(AbstractIdentifiableObject.ID)) {
 			return field;
 		}
-		StringBuffer b = new StringBuffer();
+		StringBuilder b = new StringBuilder();
 		b.append("object");
 		Matcher m = p.matcher(field);
 		String previous = null;
 		while (m.find()) {
 			if (previous != null) {
-				b.append("->'").append(previous).append("'").toString();
+				b.append("->'").append(previous).append("'");
 			}
 			previous = m.group(1);
 		}
@@ -116,7 +121,7 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 		} else {
 			b.append("->'");
 		}
-		b.append(previous).append("'").toString();
+		b.append(previous).append("'");
 		return b.toString();
 	}
 
@@ -126,7 +131,7 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 		} else if (childerPojoFilters.size() == 1) {
 			return childerPojoFilters.get(0);
 		} else {
-			StringBuffer buf = new StringBuffer();
+			StringBuilder buf = new StringBuilder();
 			buf.append("(").append(childerPojoFilters.get(0));
 			for (int i=1; i < childerPojoFilters.size(); i++) {
 				buf.append(" ").append(operator).append(" ").append(childerPojoFilters.get(i));

@@ -18,27 +18,17 @@
  ******************************************************************************/
 package step.core.collections;
 
+import org.bson.types.ObjectId;
+import step.core.accessors.AbstractIdentifiableObject;
+import step.core.collections.Filters.FilterFactory;
+import step.core.collections.filters.*;
+
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import org.bson.types.ObjectId;
-
-import step.core.accessors.AbstractIdentifiableObject;
-import step.core.collections.Filters.And;
-import step.core.collections.Filters.Equals;
-import step.core.collections.Filters.FilterFactory;
-import step.core.collections.Filters.Gt;
-import step.core.collections.Filters.Gte;
-import step.core.collections.Filters.Lt;
-import step.core.collections.Filters.Lte;
-import step.core.collections.Filters.Not;
-import step.core.collections.Filters.Or;
-import step.core.collections.Filters.Regex;
-import step.core.collections.Filters.True;
 
 public class PojoFilters {
 
@@ -50,36 +40,34 @@ public class PojoFilters {
 			List<PojoFilter<POJO>> childerPojoFilters;
 			List<Filter> children = filter.getChildren();
 			if(children != null) {
-				childerPojoFilters = children.stream().map(f -> this.buildFilter(f))
+				childerPojoFilters = children.stream().map(this::buildFilter)
 						.collect(Collectors.toList());
 			} else {
 				childerPojoFilters = null;
 			}
 
 			if (filter instanceof And) {
-				return new AndPojoFilter<POJO>(childerPojoFilters);
+				return new AndPojoFilter<>(childerPojoFilters);
 			} else if (filter instanceof Or) {
-				return new OrPojoFilter<POJO>(childerPojoFilters);
+				return new OrPojoFilter<>(childerPojoFilters);
 			} else if (filter instanceof Not) {
-				return new NotPojoFilter<POJO>(childerPojoFilters.get(0));
-			} else if (filter instanceof Or) {
-				return new OrPojoFilter<POJO>(childerPojoFilters);
+				return new NotPojoFilter<>(childerPojoFilters.get(0));
 			} else if (filter instanceof Equals) {
-				return new EqualsPojoFilter<POJO>((Equals) filter);
+				return new EqualsPojoFilter<>((Equals) filter);
 			} else if (filter instanceof Regex) {
-				return new RegexPojoFilter<POJO>((Regex) filter);
+				return new RegexPojoFilter<>((Regex) filter);
 			} else if (filter instanceof True) {
-				return new TruePojoFilter<POJO>();
-			}  else if (filter instanceof Filters.False) {
-				return new FalsePojoFilter<POJO>();
+				return new TruePojoFilter<>();
+			}  else if (filter instanceof False) {
+				return new FalsePojoFilter<>();
 			} else if (filter instanceof Lt) {
-				return new LtPojoFilter<POJO>((Lt) filter);
+				return new LtPojoFilter<>((Lt) filter);
 			} else if (filter instanceof Lte) {
-				return new LtePojoFilter<POJO>((Lte) filter);
+				return new LtePojoFilter<>((Lte) filter);
 			} else if (filter instanceof Gt) {
-				return new GtPojoFilter<POJO>((Gt) filter);
+				return new GtPojoFilter<>((Gt) filter);
 			}else if (filter instanceof Gte) {
-				return new GtePojoFilter<POJO>((Gte) filter);
+				return new GtePojoFilter<>((Gte) filter);
 			} else {
 				throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 			}

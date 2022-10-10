@@ -16,33 +16,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.framework.server.tables;
+package step.framework.server.security;
 
-import java.util.Iterator;
+import jakarta.ws.rs.NameBinding;
 
-public class TableFindResult<T> {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-	private final long recordsTotal;
-	private final long recordsFiltered;
-	private final Iterator<T> iterator;
+@NameBinding
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface SecuredContext {
+	
+	String key();
 
-	public TableFindResult(long recordsTotal, long recordsFiltered,
-			Iterator<T> iterator) {
-		super();
-		this.recordsTotal = recordsTotal;
-		this.recordsFiltered = recordsFiltered;
-		this.iterator = iterator;
-	}
+	String value();
 
-	public long getRecordsTotal() {
-		return recordsTotal;
-	}
-
-	public long getRecordsFiltered() {
-		return recordsFiltered;
-	}
-
-	public Iterator<T> getIterator() {
-		return iterator;
-	}
 }

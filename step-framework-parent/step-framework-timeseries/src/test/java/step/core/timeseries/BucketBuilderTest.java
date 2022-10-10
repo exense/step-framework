@@ -1,16 +1,12 @@
-package step.core.timeseries.test;
+package step.core.timeseries;
 
+import static org.junit.Assert.*;
 import org.junit.Test;
-import step.core.timeseries.Bucket;
-import step.core.timeseries.BucketAttributes;
-import step.core.timeseries.BucketBuilder;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-
 public class BucketBuilderTest {
-//
+
     @Test
     public void ingest1Point() {
         BucketAttributes attributes = new BucketAttributes(Map.of("key", "value"));
@@ -23,7 +19,7 @@ public class BucketBuilderTest {
         assertEquals(5L, bucket.getMax());
         assertEquals(attributes, bucket.getAttributes());
     }
-//
+
     @Test
     public void ingest2Point() {
         Bucket bucket = BucketBuilder.create(0L).ingest(-5L).ingest(5L).build();
@@ -47,5 +43,4 @@ public class BucketBuilderTest {
         assertEquals(-5L, bucket.getMin());
         assertEquals(5L, bucket.getMax());
     }
-//
 }

@@ -5,7 +5,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import step.core.collections.Filter;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
-@JsonSubTypes({@JsonSubTypes.Type(FieldFilter.class), @JsonSubTypes.Type(FulltextFilter.class), @JsonSubTypes.Type(OQLFilter.class)})
+@JsonSubTypes({
+        @JsonSubTypes.Type(FieldFilter.class),
+        @JsonSubTypes.Type(FulltextFilter.class),
+        @JsonSubTypes.Type(OQLFilter.class),
+        @JsonSubTypes.Type(CollectionFilter.class)
+})
 public abstract class TableFilter {
 
     public abstract Filter toFilter();

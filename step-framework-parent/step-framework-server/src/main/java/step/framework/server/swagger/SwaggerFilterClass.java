@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class SwaggerFilterClass implements OpenAPISpecFilter {
+public class SwaggerFilterClass extends AbstractSwaggerFilterClass implements OpenAPISpecFilter {
 	@Override
 	public Optional<OpenAPI> filterOpenAPI(OpenAPI openAPI, Map<String, List<String>> map, Map<String, String> map1, Map<String, List<String>> map2) {
 		return Optional.of(openAPI);
@@ -28,7 +28,7 @@ public class SwaggerFilterClass implements OpenAPISpecFilter {
 	@Override
 	public Optional<Operation> filterOperation(Operation operation, ApiDescription apiDescription, Map<String, List<String>> map, Map<String, String> map1, Map<String, List<String>> map2) {
 		if (operation.getTags() != null && operation.getTags().stream().filter(t -> t.startsWith("Private ")).findFirst().isEmpty()) {
-			return Optional.of(operation);
+			return resolveOperationId(operation);
 		} else {
 			return Optional.empty();
 		}

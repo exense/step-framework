@@ -10,11 +10,11 @@ import java.util.concurrent.atomic.LongAdder;
 public class Bucket extends AbstractIdentifiableObject {
 
     private long begin;
+    private Long end;
     private BucketAttributes attributes;
     private long count, sum, min, max;
     private long pclPrecision;
     private Map<Long, Long> distribution;
-    private String metricType;
 
     public Bucket() {
     }
@@ -29,6 +29,14 @@ public class Bucket extends AbstractIdentifiableObject {
 
     public void setBegin(long begin) {
         this.begin = begin;
+    }
+
+    public Long getEnd() {
+        return end;
+    }
+
+    public void setEnd(Long end) {
+        this.end = end;
     }
 
     public BucketAttributes getAttributes() {
@@ -85,14 +93,6 @@ public class Bucket extends AbstractIdentifiableObject {
 
     public void setDistribution(Map<Long, Long> distribution) {
         this.distribution = distribution;
-    }
-
-    public String getMetricType() {
-        return metricType;
-    }
-
-    public void setMetricType(String metricType) {
-        this.metricType = metricType;
     }
 
     public long getPercentile(int percentile) {

@@ -31,7 +31,7 @@ import org.bson.types.ObjectId;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
-import step.core.collections.Filters.Equals;
+import step.core.collections.filters.Equals;
 
 public class AbstractAccessor<T extends AbstractIdentifiableObject> implements Accessor<T> {
 

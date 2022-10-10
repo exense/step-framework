@@ -18,25 +18,14 @@
  ******************************************************************************/
 package step.core.collections.mongodb;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.bson.conversions.Bson;
-
 import org.bson.types.ObjectId;
 import step.core.collections.Filter;
-import step.core.collections.Filters;
-import step.core.collections.Filters.And;
-import step.core.collections.Filters.Equals;
 import step.core.collections.Filters.FilterFactory;
-import step.core.collections.Filters.Gt;
-import step.core.collections.Filters.Gte;
-import step.core.collections.Filters.Lt;
-import step.core.collections.Filters.Lte;
-import step.core.collections.Filters.Not;
-import step.core.collections.Filters.Or;
-import step.core.collections.Filters.Regex;
-import step.core.collections.Filters.True;
+import step.core.collections.filters.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MongoDBFilterFactory implements FilterFactory<Bson> {
 
@@ -45,7 +34,7 @@ public class MongoDBFilterFactory implements FilterFactory<Bson> {
 		List<Bson> childerPojoFilters;
 		List<Filter> children = filter.getChildren();
 		if(children != null) {
-			childerPojoFilters = filter.getChildren().stream().map(f -> this.buildFilter(f))
+			childerPojoFilters = filter.getChildren().stream().map(this::buildFilter)
 					.collect(Collectors.toList());
 		} else {
 			childerPojoFilters = null;
@@ -59,7 +48,7 @@ public class MongoDBFilterFactory implements FilterFactory<Bson> {
 			return com.mongodb.client.model.Filters.not(childerPojoFilters.get(0));
 		} else if (filter instanceof True) {
 			return com.mongodb.client.model.Filters.expr(true);
-		} else if (filter instanceof Filters.False) {
+		} else if (filter instanceof False) {
 			return com.mongodb.client.model.Filters.expr(false);
 		} else if (filter instanceof Equals) {
 			Equals equalsFilter = (Equals) filter;
