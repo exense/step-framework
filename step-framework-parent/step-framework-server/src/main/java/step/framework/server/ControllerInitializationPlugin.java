@@ -25,6 +25,8 @@ public interface ControllerInitializationPlugin<C extends AbstractContext> {
 
 	public void checkPreconditions(C context) throws Exception;
 
+	public void init(C context) throws Exception;
+
 	public void recover(C context) throws Exception;
 
 	public void finalizeStart(C context) throws Exception;

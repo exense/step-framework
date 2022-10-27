@@ -246,22 +246,24 @@ public class ControllerServer {
 		serverContext.put(ServiceRegistrationCallback.class, serviceRegistrationCallback);
 		serverContext.put(Configuration.class, configuration);
 
-		//Manage plugins
-		ServerPluginManager serverPluginManager = new ServerPluginManager(configuration);
-		serverContext.put(ServerPluginManager.class, serverPluginManager);
-		pluginProxy = serverPluginManager.getProxy();
-
 		//Initialization plugins check preconditions and recover
-		PluginManager<ControllerInitializationPlugin> initPluginManager = serverPluginManager.cloneAs(ControllerInitializationPlugin.class);
+		PluginManager<ControllerInitializationPlugin> initPluginManager = (new ServerPluginManager(configuration,null))
+				.cloneAs(ControllerInitializationPlugin.class);
 		initPluginProxy = initPluginManager.getProxy();
 		logger.info("Checking preconditions...");
 		initPluginProxy.checkPreconditions(serverContext);
+
+		//module checker must be created in the checkPreconditions phase of the ControllerInitializationPlugin plugins
+		ModuleChecker moduleChecker = serverContext.get(ModuleChecker.class);
+		//Create plugins manager for all plugins and add it to context (required for init phases)
+		ServerPluginManager serverPluginManager = new ServerPluginManager(configuration, moduleChecker);
+		serverContext.put(ServerPluginManager.class, serverPluginManager);
+		pluginProxy = serverPluginManager.getProxy();
+
+		logger.info("Initializing...");
+		initPluginProxy.init(serverContext);
 		logger.info("Recovering controller...");
 		initPluginProxy.recover(serverContext);
-
-		//module checker is created during by initalization plugins, set it now to the pluginManager
-		ModuleChecker moduleChecker = serverContext.get(ModuleChecker.class);
-		serverPluginManager.setModuleChecker(moduleChecker);
 
 		//start all plugins and init data
 		logger.info("Starting controller...");

@@ -36,10 +36,6 @@ public class ServerPluginManager<P extends ServerPlugin> {
 	
 	protected PluginManager<ServerPlugin> pluginManager;
 
-	public ServerPluginManager(Configuration configuration) throws CircularDependencyException, InstantiationException, IllegalAccessException, ClassNotFoundException {
-		this(configuration, null);
-	}
-
 	public ServerPluginManager(Configuration configuration, ModuleChecker moduleChecker) throws CircularDependencyException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 		this.configuration = configuration;
 		this.moduleChecker = moduleChecker;
@@ -65,17 +61,10 @@ public class ServerPluginManager<P extends ServerPlugin> {
 		return configuration;
 	}
 
-	public ModuleChecker getModuleChecker() {
-		return moduleChecker;
-	}
-
 	public PluginManager<ServerPlugin> getPluginManager() {
 		return pluginManager;
 	}
 
-	public void setModuleChecker(ModuleChecker moduleChecker) {
-		this.moduleChecker = moduleChecker;
-	}
 
 	public PluginManager<P> cloneAs(Class<P> pluginClass) throws CircularDependencyException {
 		PluginManager.Builder<P> builder = new PluginManager.Builder(pluginClass );
