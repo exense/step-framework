@@ -1,9 +1,11 @@
 package step.core.timeseries;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
+import step.core.collections.Filters;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 
@@ -375,5 +377,27 @@ public class TimeSeriesTest {
         assertThrows(IllegalArgumentException.class, () -> pipeline.newQuery().split(2l).run());
         result = pipeline.newQuery().groupBy(Set.of("name")).range(0, 2).split(1l).run().getSeries();
         assertEquals(1, result.get(Map.of("name", "transaction1")).size());
+    }
+
+    @Test
+    public void testHousekeeping() {
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "FAILED"), 2L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "FAILED"), 2L, 10L);
+        }
+
+        Assert.assertEquals(4, bucketCollection.count(Filters.empty(), 10));
+
+        TimeSeriesQuery timeSeriesQuery = new TimeSeriesQuery();
+        timeSeries.performHousekeeping(timeSeriesQuery.range(0L,2L).filter(Map.of("name","transaction1")));
+
+        Assert.assertEquals(3, bucketCollection.count(Filters.empty(), 10));
+
+
     }
 }

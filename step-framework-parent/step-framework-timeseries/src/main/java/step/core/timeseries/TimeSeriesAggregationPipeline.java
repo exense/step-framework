@@ -15,6 +15,8 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static step.core.timeseries.TimeSeries.buildFilter;
+
 public class TimeSeriesAggregationPipeline {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesAggregationPipeline.class);
@@ -31,22 +33,6 @@ public class TimeSeriesAggregationPipeline {
         return sourceResolution;
     }
 
-    private Filter buildFilter(TimeSeriesAggregationQuery query) {
-        ArrayList<Filter> filters = new ArrayList<>();
-        if (query.getBucketIndexFrom() != null) {
-            filters.add(Filters.gte("begin", query.getBucketIndexFrom()));
-        }
-        if (query.getBucketIndexTo() != null) {
-            filters.add(Filters.lt("begin", query.getBucketIndexTo()));
-        }
-
-        if (query.getFilters() != null) {
-            filters.addAll(query.getFilters().entrySet().stream()
-                    .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
-        }
-        return Filters.and(filters);
-    }
-
     public TimeSeriesAggregationQuery newQuery() {
         return new TimeSeriesAggregationQuery(this);
     }
@@ -54,7 +40,7 @@ public class TimeSeriesAggregationPipeline {
     protected TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
-        Filter filter = buildFilter(query);
+        Filter filter = buildFilter(query.getFilters(), query.getBucketIndexFrom(), query.getBucketIndexTo());
         Function<Long, Long> projectionFunction = query.getProjectionFunction();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();

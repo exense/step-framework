@@ -3,14 +3,7 @@ package step.core.timeseries;
 import java.util.*;
 import java.util.function.Function;
 
-public class TimeSeriesAggregationQuery {
-
-    // Specified range
-    private Long from;
-    private Long to;
-
-    // Filters
-    private final Map<String, String> filters = new HashMap<>();
+public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     // Group
     private Set<String> groupDimensions;
@@ -36,27 +29,15 @@ public class TimeSeriesAggregationQuery {
         this.resultResolution = sourceResolution;
     }
 
-    /**
-     * Specifies a time range for the query
-     *
-     * @param from the beginning of the time range in ms (Epoch time)
-     * @param to   the end of the time range (Epoch time)
-     * @return the builder
-     */
-    public TimeSeriesAggregationQuery range(long from, long to) {
-        this.from = from;
-        this.to = to;
+    @Override
+    public TimeSeriesAggregationQuery filter(Map<String, String> filters) {
+        super.filter(filters);
         return this;
     }
 
-    /**
-     * Specifies the mandatory list of key-value attributes that the series should match
-     *
-     * @param filters the mandatory key-value attributes that the series should match
-     * @return the builder
-     */
-    public TimeSeriesAggregationQuery filter(Map<String, String> filters) {
-        this.filters.putAll(filters);
+    @Override
+    public TimeSeriesAggregationQuery range(long from, long to) {
+        super.range(from, to);
         return this;
     }
 
@@ -111,10 +92,6 @@ public class TimeSeriesAggregationQuery {
             this.resultResolution = Math.max(sourceResolution, resolution);
         }
         return this;
-    }
-
-    protected Map<String, String> getFilters() {
-        return filters;
     }
 
     protected Set<String> getGroupDimensions() {
