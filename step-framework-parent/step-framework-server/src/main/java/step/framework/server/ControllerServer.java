@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.logging.LogManager;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Handler;
@@ -86,6 +87,8 @@ public class ControllerServer {
 
 	ServletContextHandler servletContextHandler;
 
+	private final Set<String> webAppRoots;
+
 	public static void main(String[] args) throws Exception {
 		ArgumentParser arguments = new ArgumentParser(args);
 		
@@ -113,6 +116,8 @@ public class ControllerServer {
 		super();
 		this.configuration = configuration;
 		this.port = configuration.getPropertyAsInteger("port", 8080);
+		this.webAppRoots = new HashSet<>();
+		this.webAppRoots.add(configuration.getProperty("ui.resource.root","dist/step-app"));
 	}
 
 	public void start() throws Exception {
@@ -207,10 +212,9 @@ public class ControllerServer {
 	}
 
 	private void initWebapp() throws Exception {
-		ResourceCollection resources = new ResourceCollection(
-				Resource.newClassPathResource(configuration.getProperty("ui.resource.root","dist/step-app")),
-				Resource.newClassPathResource("webapp"));
-		servletContextHandler.setBaseResource(resources);
+		List<Resource> resources = webAppRoots.stream().map(r -> Resource.newClassPathResource(r)).collect(Collectors.toList());
+		ResourceCollection resourceCollection = new ResourceCollection(resources);
+		servletContextHandler.setBaseResource(resourceCollection);
 		servletContextHandler.setContextPath("/");
 		addHandler(servletContextHandler);
 	}
@@ -296,6 +300,7 @@ public class ControllerServer {
 			}
 		});
 
+		webAppRoots.add("swagger/webapp");
 		Swagger.setup(resourceConfig, serverContext);
 
 		// Lastly, the default servlet for root content (always needed, to satisfy servlet spec)
@@ -375,6 +380,14 @@ public class ControllerServer {
 		@Override
 		public void registerPackage(Package aPackage) {
 			resourceConfig.packages(aPackage.getName());
+		}
+
+		@Override
+		public void registerWebAppRoot(String webAppRoot) {
+			boolean add = webAppRoots.add(webAppRoot);
+			if (!add) {
+				logger.warn("The web application resource path already exist and will be loaded only once: " + webAppRoot);
+			}
 		}
 	}
 }

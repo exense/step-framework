@@ -41,4 +41,6 @@ public interface ServiceRegistrationCallback {
 	public void stop();
 
 	public void registerPackage(Package aPackage);
+
+	public void registerWebAppRoot(String webAppRoot);
 }
