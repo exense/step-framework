@@ -42,14 +42,14 @@ import java.util.regex.Pattern;
 
 @Provider
 @Priority(Priorities.AUTHORIZATION)
-public class SecurityFilter<U extends AbstractUser> extends AbstractServices<U> implements ContainerRequestFilter {
+public class AuthorizationFilter<U extends AbstractUser> extends AbstractServices<U> implements ContainerRequestFilter {
 
 	@Inject
 	private ExtendedUriInfo extendendUriInfo;
 
 	private AccessManager accessManager;
 
-	private static final Logger logger = LoggerFactory.getLogger(SecurityFilter.class);
+	private static final Logger logger = LoggerFactory.getLogger(AuthorizationFilter.class);
 
 	@PostConstruct
 	public void init() throws Exception {

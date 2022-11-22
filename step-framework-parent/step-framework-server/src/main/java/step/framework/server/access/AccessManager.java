@@ -20,14 +20,16 @@ package step.framework.server.access;
 
 import step.core.access.Role;
 import step.core.access.RoleResolver;
+import step.core.accessors.AbstractUser;
 import step.framework.server.Session;
 
-public interface AccessManager {
+public interface AccessManager<U extends AbstractUser, S extends Session<U>>  {
 
 	void setRoleResolver(RoleResolver roleResolver);
 
-	boolean checkRightInContext(Session session, String right);
+	boolean checkRightInContext(S session, String right);
+	boolean checkRightInRole(String role, String right);
 
-	Role getRoleInContext(Session session);
+	Role getRoleInContext(S session);
 
 }

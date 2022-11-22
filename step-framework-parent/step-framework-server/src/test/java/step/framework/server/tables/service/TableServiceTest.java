@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.Assert;
 import org.junit.Test;
 import step.core.AbstractContext;
-import step.core.access.Role;
-import step.core.access.RoleResolver;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
@@ -17,6 +15,7 @@ import step.core.entities.Bean;
 import step.core.objectenricher.*;
 import step.framework.server.Session;
 import step.framework.server.access.AccessManager;
+import step.framework.server.access.NoAccessManager;
 import step.framework.server.tables.Table;
 import step.framework.server.tables.TableRegistry;
 
@@ -217,20 +216,12 @@ public class TableServiceTest {
 
     }
 
-    private static class TestAccessManager implements AccessManager {
-        @Override
-        public void setRoleResolver(RoleResolver roleResolver) {
-
-        }
+    private static class TestAccessManager extends NoAccessManager {
 
         @Override
         public boolean checkRightInContext(Session session, String right) {
             return session != null && session.get(right) != null;
         }
 
-        @Override
-        public Role getRoleInContext(Session session) {
-            return null;
-        }
     }
 }
