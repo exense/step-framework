@@ -23,7 +23,7 @@ import step.core.access.RoleResolver;
 import step.core.accessors.AbstractUser;
 import step.framework.server.Session;
 
-public interface AccessManager<U extends AbstractUser, S extends Session<U>>  {
+public interface AuthorizationManager<U extends AbstractUser, S extends Session<U>>  {
 
 	void setRoleResolver(RoleResolver roleResolver);
 

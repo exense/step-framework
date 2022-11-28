@@ -21,6 +21,10 @@ public class AuthenticationResults {
 
     boolean authenticated;
 
+    String username;
+
+    String mainRole;
+
     AuthenticationTokenDetails authenticationTokenDetails;
 
     String token;
@@ -35,6 +39,22 @@ public class AuthenticationResults {
 
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getMainRole() {
+        return mainRole;
+    }
+
+    public void setMainRole(String mainRole) {
+        this.mainRole = mainRole;
     }
 
     public AuthenticationTokenDetails getAuthenticationTokenDetails() {

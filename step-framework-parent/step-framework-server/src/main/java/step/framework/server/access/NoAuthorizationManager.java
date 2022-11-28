@@ -4,7 +4,7 @@ import step.core.access.Role;
 import step.core.access.RoleResolver;
 import step.framework.server.Session;
 
-public class NoAccessManager implements AccessManager {
+public class NoAuthorizationManager implements AuthorizationManager {
 	@Override
 	public void setRoleResolver(RoleResolver roleResolver) {
 

@@ -26,9 +26,9 @@ public interface Authenticator<C extends AbstractCredentials> {
 
 	boolean implementOTP();
 
-	boolean syncWithStepDB();
-
 	boolean supportPasswordManagement();
 
-	boolean supportUserManagement();
+	boolean useUiLoginMask();
+
+	void setRoleFromProvider(AuthenticationResults authenticationResults);
 }

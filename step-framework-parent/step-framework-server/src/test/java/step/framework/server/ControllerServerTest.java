@@ -4,8 +4,8 @@ import ch.exense.commons.app.Configuration;
 import step.core.AbstractContext;
 import step.core.Version;
 import step.core.plugins.Plugin;
-import step.framework.server.access.AccessManager;
-import step.framework.server.access.NoAccessManager;
+import step.framework.server.access.AuthorizationManager;
+import step.framework.server.access.NoAuthorizationManager;
 import step.framework.server.security.AuthorizationFilter;
 import step.framework.server.tables.TestService;
 import step.framework.server.tables.TestService2;
@@ -20,13 +20,13 @@ public class ControllerServerTest implements ServerPlugin<AbstractContext> {
     @Override
     public void serverStart(AbstractContext context) throws Exception {
         context.put(Version.class, new Version(0,0,0));
-        context.put(AccessManager.class, new TestAccessManager());
+        context.put(AuthorizationManager.class, new TestAuthorizationManager());
         context.require(ServiceRegistrationCallback.class).registerService(AuthorizationFilter.class);
         context.require(ServiceRegistrationCallback.class).registerService(TestService.class);
         context.require(ServiceRegistrationCallback.class).registerService(TestService2.class);
     }
 
-    private static class TestAccessManager extends NoAccessManager {
+    private static class TestAuthorizationManager extends NoAuthorizationManager {
 
         @Override
         public boolean checkRightInContext(Session session, String right) {

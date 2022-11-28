@@ -14,8 +14,7 @@ import step.core.collections.inmemory.InMemoryCollection;
 import step.core.entities.Bean;
 import step.core.objectenricher.*;
 import step.framework.server.Session;
-import step.framework.server.access.AccessManager;
-import step.framework.server.access.NoAccessManager;
+import step.framework.server.access.NoAuthorizationManager;
 import step.framework.server.tables.Table;
 import step.framework.server.tables.TableRegistry;
 
@@ -84,7 +83,7 @@ public class TableServiceTest {
                 return false;
             }
         });
-        TableService tableService = new TableService(tableRegistry, objectHookRegistry, new TestAccessManager());
+        TableService tableService = new TableService(tableRegistry, objectHookRegistry, new TestAuthorizationManager());
 
         // Test empty request
         TableRequest request = new TableRequest();
@@ -216,7 +215,7 @@ public class TableServiceTest {
 
     }
 
-    private static class TestAccessManager extends NoAccessManager {
+    private static class TestAuthorizationManager extends NoAuthorizationManager {
 
         @Override
         public boolean checkRightInContext(Session session, String right) {

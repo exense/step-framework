@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import step.core.accessors.AbstractUser;
 import step.framework.server.AbstractServices;
 import step.framework.server.Session;
-import step.framework.server.access.AccessManager;
+import step.framework.server.access.AuthorizationManager;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -47,13 +47,13 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 	@Inject
 	private ExtendedUriInfo extendendUriInfo;
 
-	private AccessManager accessManager;
+	private AuthorizationManager authorizationManager;
 
 	private static final Logger logger = LoggerFactory.getLogger(AuthorizationFilter.class);
 
 	@PostConstruct
 	public void init() throws Exception {
-		accessManager = getAbstractContext().require(AccessManager.class);
+		authorizationManager = getAbstractContext().require(AuthorizationManager.class);
 	}
 	
 	@Override
@@ -86,7 +86,7 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 					}
 				}
 				// Check resolved right
-				boolean hasRight = accessManager.checkRightInContext(session, right);
+				boolean hasRight = authorizationManager.checkRightInContext(session, right);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Checked right '" + right + "' for user '" + username(session) + "'. Result: " + hasRight);
 				}
@@ -113,6 +113,8 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 		Session<U> session = getSession();
 		if(session == null) {
 			session = new Session<>();
+			session.setLocalToken(true);//default
+			session.setAuthenticated(false);
 			setSession(session);
 		}
 		return session;
