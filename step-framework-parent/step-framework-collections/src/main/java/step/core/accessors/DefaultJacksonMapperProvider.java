@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.bson.types.ObjectId;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -49,6 +50,7 @@ public class DefaultJacksonMapperProvider {
 	static {
 		customModules.add(new JSONPModule());
 		customModules.add(new JsonOrgModule());
+		customModules.add(new JavaTimeModule());
         modules.add(new SimpleModule("jersey", new Version(1, 0, 0, null,null,null)) //
                 .addSerializer(_id, _idSerializer()) //
                 .addDeserializer(_id, _idDeserializer()));
