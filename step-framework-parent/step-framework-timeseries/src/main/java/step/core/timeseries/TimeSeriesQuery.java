@@ -29,6 +29,7 @@ public class TimeSeriesQuery {
 	protected Long to;
 
 	// Filters
+    protected String oqlFilters;
 	protected final Map<String, String> filters = new HashMap<>();
 
 	/**
@@ -41,6 +42,11 @@ public class TimeSeriesQuery {
 		this.filters.putAll(filters);
 		return this;
 	}
+
+    public TimeSeriesQuery filter(String oqlFilters) {
+        this.oqlFilters = oqlFilters;
+        return this;
+    }
 
 	protected Map<String, String> getFilters() {
 		return filters;
@@ -67,4 +73,7 @@ public class TimeSeriesQuery {
 		return to;
 	}
 
+    public String getOqlFilter() {
+        return oqlFilters;
+    }
 }

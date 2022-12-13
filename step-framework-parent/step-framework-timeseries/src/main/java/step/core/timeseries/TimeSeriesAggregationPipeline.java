@@ -40,7 +40,7 @@ public class TimeSeriesAggregationPipeline {
     protected TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
-        Filter filter = buildFilter(query.getFilters(), query.getBucketIndexFrom(), query.getBucketIndexTo());
+        Filter filter = buildFilter(query.getOqlFilter(), query.getBucketIndexFrom(), query.getBucketIndexTo());
         Function<Long, Long> projectionFunction = query.getProjectionFunction();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();

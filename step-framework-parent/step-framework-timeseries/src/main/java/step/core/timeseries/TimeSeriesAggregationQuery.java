@@ -30,6 +30,12 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     }
 
     @Override
+    public TimeSeriesAggregationQuery filter(String oqlFilter) {
+        super.filter(oqlFilter);
+        return this;
+    }
+
+    @Override
     public TimeSeriesAggregationQuery filter(Map<String, String> filters) {
         super.filter(filters);
         return this;

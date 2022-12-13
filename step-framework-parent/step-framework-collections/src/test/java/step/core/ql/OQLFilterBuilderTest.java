@@ -1,18 +1,18 @@
 /*******************************************************************************
  * Copyright (C) 2020, exense GmbH
- *  
+ *
  * This file is part of STEP
- *  
+ *
  * STEP is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * STEP is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
@@ -65,7 +65,7 @@ public class OQLFilterBuilderTest {
 			this.map1 = map1;
 		}
 	}
-	
+
 	public static class Bean2 {
 		String property1 = "prop1";
 
@@ -77,7 +77,14 @@ public class OQLFilterBuilderTest {
 			this.property1 = property1;
 		}
 	}
-	
+
+    @Test
+    public void lucianTest() {
+        String expression = "(status ~ \".*pass.*\")";
+        Filter filter = OQLFilterBuilder.getFilter(expression);
+        System.out.println(filter);
+    }
+
 	@Test
 	public void test() {
 		PojoFilter<Object> filter = filter("property1=prop1");
@@ -89,21 +96,21 @@ public class OQLFilterBuilderTest {
 		PojoFilter<Object> pojoFilter = OQLFilterBuilder.getPojoFilter(expression);
 		return pojoFilter;
 	}
-	
+
 	@Test
 	public void test2() {
 		PojoFilter<Object> filter = filter("property1=prop1 and bean1.property1=prop1");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
-	
+
 	@Test
 	public void test3() {
 		PojoFilter<Object> filter = filter("property1=prop1 and bean1.property1=prop1 and map1.property2=prop2");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
-	
+
 	@Test
 	public void test4() {
 		PojoFilter<Object> filter = filter("property1=wrongValue and bean1.property1=prop1 and map1.property2=prop2");
@@ -117,42 +124,42 @@ public class OQLFilterBuilderTest {
 		boolean test = filter.test(new Bean());
 		assertFalse(test);
 	}
-	
+
 	@Test
 	public void test6() {
 		PojoFilter<Object> filter = filter("");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
-	
+
 	@Test
 	public void test7() {
 		PojoFilter<Object> filter = filter(null);
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
-	
+
 	@Test
 	public void test8() {
 		PojoFilter<Object> filter = filter("not(property1=prop1)");
 		boolean test = filter.test(new Bean());
 		assertFalse(test);
 	}
-	
+
 	@Test
 	public void test9() {
 		PojoFilter<Object> filter = filter("not(property1=prop1) or bean1.property1=prop1");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
-	
+
 	@Test
 	public void test10() {
 		PojoFilter<Object> filter = filter("property1=\"prop1\"");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
-	
+
 	@Test
 	public void test11() {
 		PojoFilter<Object> filter = filter("property2=\"prop with some \"\"\"\"\"");
