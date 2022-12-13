@@ -78,13 +78,6 @@ public class OQLFilterBuilderTest {
 		}
 	}
 
-    @Test
-    public void lucianTest() {
-        String expression = "(status ~ \".*pass.*\")";
-        Filter filter = OQLFilterBuilder.getFilter(expression);
-        System.out.println(filter);
-    }
-
 	@Test
 	public void test() {
 		PojoFilter<Object> filter = filter("property1=prop1");
