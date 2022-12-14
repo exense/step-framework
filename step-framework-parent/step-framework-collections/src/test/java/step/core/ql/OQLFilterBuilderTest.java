@@ -33,6 +33,8 @@ public class OQLFilterBuilderTest {
 		String property1 = "prop1";
 		String property2 = "prop with some \"\"";
 		Bean2 bean1 = new Bean2();
+		int int1 = 1;
+		int int10 = 10;
 		Map<String, String> map1 = new HashMap<>();
 		public Bean() {
 			super();
@@ -56,6 +58,23 @@ public class OQLFilterBuilderTest {
 		public void setBean1(Bean2 bean1) {
 			this.bean1 = bean1;
 		}
+
+		public int getInt1() {
+			return int1;
+		}
+
+		public void setInt1(int int1) {
+			this.int1 = int1;
+		}
+
+		public int getInt10() {
+			return int10;
+		}
+
+		public void setInt10(int int10) {
+			this.int10 = int10;
+		}
+
 		public Map<String, String> getMap1() {
 			return map1;
 		}
@@ -169,6 +188,69 @@ public class OQLFilterBuilderTest {
 	@Test
 	public void testNotEqualFilter() {
 		PojoFilter<Object> filter = filter("property1 != \"prop2\"");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testLTFilter() {
+		PojoFilter<Object> filter = filter("int1 < 2");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testLTFilterNegative() {
+		PojoFilter<Object> filter = filter("int1 < 1");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testLTEFilter() {
+		PojoFilter<Object> filter = filter("int1 <= 1");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testLTEFilterNegative() {
+		PojoFilter<Object> filter = filter("int1 <= 0");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testGTFilter() {
+		PojoFilter<Object> filter = filter("int10 > 2");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testGTFilterNegative() {
+		PojoFilter<Object> filter = filter("int10 > 10");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testGTEFilter() {
+		PojoFilter<Object> filter = filter("int1 >= 1");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testGTEFilterNegative() {
+		PojoFilter<Object> filter = filter("int10 >= 11");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testBetween() {
+		PojoFilter<Object> filter = filter("int1 < 2 and int1 >= 1");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}

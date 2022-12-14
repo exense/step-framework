@@ -52,6 +52,29 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
 		}
 	}
 
+	@Override
+	public Filter visitComparisonExpr(ComparisonExprContext ctx) {
+		String text0 = unescapeStringIfNecessary(ctx.expr(0).getText());
+		String text1 = unescapeStringIfNecessary(ctx.expr(1).getText());
+		Long value;
+		try {
+			value = Long.parseLong(text1);
+		} catch (Exception e) {
+			throw new UnsupportedOperationException("Comparison expression only support long value. Expression: " + ctx.getText());
+		}
+		if (ctx.LT() != null) {
+			return Filters.lt(text0, value);
+		} else if (ctx.LTE() != null) {
+			return Filters.lte(text0, value);
+		} else if (ctx.GT() != null) {
+			return Filters.gt(text0, value);
+		} else if (ctx.GTE() != null) {
+			return Filters.gte(text0, value);
+		} else {
+			throw new UnsupportedOperationException("Operation of the provided comparison expression is not supported. Expression: " + ctx.getText());
+		}
+	}
+
 	protected String unescapeStringIfNecessary(String text1) {
 		if(text1.startsWith("\"") && text1.endsWith("\"")) {
 			text1 = unescapeStringAtom(text1);

@@ -58,6 +58,13 @@ public interface OQLVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitOrExpr(OQLParser.OrExprContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code comparisonExpr}
+	 * labeled alternative in {@link OQLParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitComparisonExpr(OQLParser.ComparisonExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code equalityExpr}
 	 * labeled alternative in {@link OQLParser#expr}.
 	 * @param ctx the parse tree

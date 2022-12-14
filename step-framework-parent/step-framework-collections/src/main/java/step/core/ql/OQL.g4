@@ -11,6 +11,7 @@ parse
 expr
  : NOT expr                             #notExpr
  | expr op=(EQ | NEQ | REGEX) expr              #equalityExpr
+ | expr op=(LT | LTE | GT | GTE) expr           #comparisonExpr
  | expr AND expr                        #andExpr
  | expr OR expr                         #orExpr
  | atom                                 #atomExpr
@@ -28,6 +29,10 @@ REGEX : '~';
 OR : 'or';
 AND : 'and';
 NOT : 'not';
+LT : '<';
+LTE : '<=';
+GT : '>';
+GTE : '>=';
 
 OPAR : '(';
 CPAR : ')';
