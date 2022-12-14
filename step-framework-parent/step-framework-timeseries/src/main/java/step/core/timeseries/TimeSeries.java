@@ -4,6 +4,7 @@ import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
+import step.core.ql.OQLFilterBuilder;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -66,6 +67,19 @@ public class TimeSeries {
             filters.addAll(attributes.entrySet().stream()
                     .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
         }
+        return Filters.and(filters);
+    }
+
+    public static Filter buildFilter(String oqlExpression, Long from, Long to) {
+        ArrayList<Filter> filters = new ArrayList<>();
+        if (from != null) {
+            filters.add(Filters.gte("begin", from));
+        }
+        if (to != null) {
+            filters.add(Filters.lt("begin", to));
+        }
+        filters.add(OQLFilterBuilder.getFilter(oqlExpression));
+
         return Filters.and(filters);
     }
 }
