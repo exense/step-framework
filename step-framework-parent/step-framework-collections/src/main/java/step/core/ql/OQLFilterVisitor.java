@@ -41,7 +41,15 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
 	public Filter visitEqualityExpr(EqualityExprContext ctx) {
 		String text0 = unescapeStringIfNecessary(ctx.expr(0).getText());
 		String text1 = unescapeStringIfNecessary(ctx.expr(1).getText());
-		return Filters.equals(text0, text1);
+		if (ctx.EQ() != null) {
+			return Filters.equals(text0, text1);
+		} else if (ctx.NEQ() != null) {
+			return Filters.not(Filters.equals(text0, text1));
+		} else if (ctx.REGEX() != null) {
+			return Filters.regex(text0, text1,false);
+		} else {
+			throw new UnsupportedOperationException("Operation of the provided equality expression is not supported. Expression: " + ctx.getText());
+		}
 	}
 
 	protected String unescapeStringIfNecessary(String text1) {
