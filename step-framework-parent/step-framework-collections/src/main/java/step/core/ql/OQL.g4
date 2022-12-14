@@ -14,6 +14,7 @@ expr
  | expr op=(LT | LTE | GT | GTE) expr           #comparisonExpr
  | expr AND expr                        #andExpr
  | expr OR expr                         #orExpr
+ | expr IN OPAR (STRING (COMMA STRING)* )? CPAR            #inExpr
  | atom                                 #atomExpr
  ;    
 
@@ -28,6 +29,7 @@ NEQ : '!=';
 REGEX : '~';
 OR : 'or';
 AND : 'and';
+IN : 'in';
 NOT : 'not';
 LT : '<';
 LTE : '<=';
@@ -36,6 +38,7 @@ GTE : '>=';
 
 OPAR : '(';
 CPAR : ')';
+COMMA: ',';
 
 NONQUOTEDSTRING: ('a'..'z' | 'A'..'Z' | '0'..'9' |'.'|'$'|'_'|'-'|'<'|'>')+ ;
 

@@ -23,6 +23,7 @@ import step.core.collections.Filters;
 import step.core.ql.OQLParser.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
 
@@ -87,6 +88,13 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
 		final Filter left = this.visit(ctx.expr(0));
 		final Filter right = this.visit(ctx.expr(1));
         return Filters.or(List.of(left, right));
+	}
+
+	@Override
+	public Filter visitInExpr(InExprContext ctx) {
+		String text0 = unescapeStringIfNecessary(ctx.expr().getText());
+		List<String> ins = ctx.STRING().stream().map(tn -> unescapeStringIfNecessary(tn.getText())).collect(Collectors.toList());
+		return Filters.in(text0, ins);
 	}
 
 	@Override

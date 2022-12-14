@@ -254,4 +254,33 @@ public class OQLFilterBuilderTest {
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
+
+	@Test
+	public void testIn() {
+		PojoFilter<Object> filter = filter("property1 in ( \"prop1\", \"prop2\" )");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testInFail() {
+		PojoFilter<Object> filter = filter("property1 in ( \"prop3\", \"prop2\" )");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testNotIn() {
+		PojoFilter<Object> filter = filter("not (property1 in ( \"prop3\", \"prop2\" ))");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testNotInFail() {
+		PojoFilter<Object> filter = filter("not (property1 in ( \"prop1\", \"prop2\" ))");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
 }
