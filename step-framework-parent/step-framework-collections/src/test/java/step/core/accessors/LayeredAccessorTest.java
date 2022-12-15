@@ -169,8 +169,7 @@ public class LayeredAccessorTest {
 
 	protected AbstractOrganizableObject newEntity(String name) {
 		AbstractOrganizableObject entity = new AbstractOrganizableObject();
-		entity.setAttributes(new HashMap<>());
-		entity.getAttributes().put(AbstractOrganizableObject.NAME, name);
+		entity.setName(name);
 		return entity;
 	}
 
