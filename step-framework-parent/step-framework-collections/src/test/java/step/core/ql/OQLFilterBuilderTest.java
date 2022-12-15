@@ -19,9 +19,7 @@
 package step.core.ql;
 
 import org.junit.Test;
-import step.core.collections.Filter;
 import step.core.collections.PojoFilter;
-import step.core.collections.PojoFilters.PojoFilterFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +33,8 @@ public class OQLFilterBuilderTest {
 		String property1 = "prop1";
 		String property2 = "prop with some \"\"";
 		Bean2 bean1 = new Bean2();
+		int int1 = 1;
+		int int10 = 10;
 		Map<String, String> map1 = new HashMap<>();
 		public Bean() {
 			super();
@@ -58,6 +58,23 @@ public class OQLFilterBuilderTest {
 		public void setBean1(Bean2 bean1) {
 			this.bean1 = bean1;
 		}
+
+		public int getInt1() {
+			return int1;
+		}
+
+		public void setInt1(int int1) {
+			this.int1 = int1;
+		}
+
+		public int getInt10() {
+			return int10;
+		}
+
+		public void setInt10(int int10) {
+			this.int10 = int10;
+		}
+
 		public Map<String, String> getMap1() {
 			return map1;
 		}
@@ -91,72 +108,179 @@ public class OQLFilterBuilderTest {
 	}
 
 	@Test
-	public void test2() {
+	public void testAnd() {
 		PojoFilter<Object> filter = filter("property1=prop1 and bean1.property1=prop1");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
 
 	@Test
-	public void test3() {
+	public void testMultipleandWithNestedAttributes() {
 		PojoFilter<Object> filter = filter("property1=prop1 and bean1.property1=prop1 and map1.property2=prop2");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
 
 	@Test
-	public void test4() {
+	public void testNoMatch() {
 		PojoFilter<Object> filter = filter("property1=wrongValue and bean1.property1=prop1 and map1.property2=prop2");
 		boolean test = filter.test(new Bean());
 		assertFalse(test);
 	}
 
 	@Test
-	public void test5() {
+	public void testNoMatchNestedAttributes() {
 		PojoFilter<Object> filter = filter("map1.wrongProperty=prop2");
 		boolean test = filter.test(new Bean());
 		assertFalse(test);
 	}
 
 	@Test
-	public void test6() {
+	public void testEmptyStringFilter() {
 		PojoFilter<Object> filter = filter("");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
 
 	@Test
-	public void test7() {
+	public void testNullFilter() {
 		PojoFilter<Object> filter = filter(null);
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
 
 	@Test
-	public void test8() {
+	public void testNotFilter() {
 		PojoFilter<Object> filter = filter("not(property1=prop1)");
 		boolean test = filter.test(new Bean());
 		assertFalse(test);
 	}
 
 	@Test
-	public void test9() {
+	public void testOrFilter() {
 		PojoFilter<Object> filter = filter("not(property1=prop1) or bean1.property1=prop1");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
 
 	@Test
-	public void test10() {
+	public void testQuotedStringFilter() {
 		PojoFilter<Object> filter = filter("property1=\"prop1\"");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
 
 	@Test
-	public void test11() {
+	public void testManyQuotedStringFilter() {
 		PojoFilter<Object> filter = filter("property2=\"prop with some \"\"\"\"\"");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);
 	}
+
+
+	@Test
+	public void testRegexFilter() {
+		PojoFilter<Object> filter = filter("property2 ~ \".*with.*\"");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testNotEqualFilter() {
+		PojoFilter<Object> filter = filter("property1 != \"prop2\"");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testLTFilter() {
+		PojoFilter<Object> filter = filter("int1 < 2");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testLTFilterNegative() {
+		PojoFilter<Object> filter = filter("int1 < 1");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testLTEFilter() {
+		PojoFilter<Object> filter = filter("int1 <= 1");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testLTEFilterNegative() {
+		PojoFilter<Object> filter = filter("int1 <= 0");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testGTFilter() {
+		PojoFilter<Object> filter = filter("int10 > 2");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testGTFilterNegative() {
+		PojoFilter<Object> filter = filter("int10 > 10");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testGTEFilter() {
+		PojoFilter<Object> filter = filter("int1 >= 1");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testGTEFilterNegative() {
+		PojoFilter<Object> filter = filter("int10 >= 11");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testBetween() {
+		PojoFilter<Object> filter = filter("int1 < 2 and int1 >= 1");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testIn() {
+		PojoFilter<Object> filter = filter("property1 in ( \"prop1\", \"prop2\" )");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testInFail() {
+		PojoFilter<Object> filter = filter("property1 in ( \"prop3\", \"prop2\" )");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
+	@Test
+	public void testNotIn() {
+		PojoFilter<Object> filter = filter("not (property1 in ( \"prop3\", \"prop2\" ))");
+		boolean test = filter.test(new Bean());
+		assertTrue(test);
+	}
+
+	@Test
+	public void testNotInFail() {
+		PojoFilter<Object> filter = filter("not (property1 in ( \"prop1\", \"prop2\" ))");
+		boolean test = filter.test(new Bean());
+		assertFalse(test);
+	}
+
 }

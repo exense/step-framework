@@ -51,6 +51,13 @@ public class OQLBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements OQ
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitInExpr(OQLParser.InExprContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitAtomExpr(OQLParser.AtomExprContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -59,6 +66,13 @@ public class OQLBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements OQ
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitOrExpr(OQLParser.OrExprContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitComparisonExpr(OQLParser.ComparisonExprContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

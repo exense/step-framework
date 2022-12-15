@@ -50,6 +50,18 @@ public interface OQLListener extends ParseTreeListener {
 	 */
 	void exitNotExpr(OQLParser.NotExprContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code inExpr}
+	 * labeled alternative in {@link OQLParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterInExpr(OQLParser.InExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code inExpr}
+	 * labeled alternative in {@link OQLParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitInExpr(OQLParser.InExprContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code atomExpr}
 	 * labeled alternative in {@link OQLParser#expr}.
 	 * @param ctx the parse tree
@@ -73,6 +85,18 @@ public interface OQLListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitOrExpr(OQLParser.OrExprContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code comparisonExpr}
+	 * labeled alternative in {@link OQLParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterComparisonExpr(OQLParser.ComparisonExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code comparisonExpr}
+	 * labeled alternative in {@link OQLParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitComparisonExpr(OQLParser.ComparisonExprContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code equalityExpr}
 	 * labeled alternative in {@link OQLParser#expr}.
