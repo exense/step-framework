@@ -35,7 +35,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         return this;
     }
 
-    @Deprecated
     @Override
     public TimeSeriesAggregationQuery filter(Map<String, String> filters) {
         super.filter(filters);

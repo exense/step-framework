@@ -4,9 +4,11 @@ import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
+import step.core.collections.filters.And;
 import step.core.ql.OQLFilterBuilder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -70,16 +72,26 @@ public class TimeSeries {
         return Filters.and(filters);
     }
 
-    public static Filter buildFilter(String oqlExpression, Long from, Long to) {
-        ArrayList<Filter> filters = new ArrayList<>();
-        if (from != null) {
-            filters.add(Filters.gte("begin", from));
-        }
-        if (to != null) {
-            filters.add(Filters.lt("begin", to));
-        }
-        filters.add(OQLFilterBuilder.getFilter(oqlExpression));
+    public static Filter buildFilter(TimeSeriesAggregationQuery query) {
+        ArrayList<Filter> timestampClauses = new ArrayList<>();
+        Filter oqlFilter = OQLFilterBuilder.getFilter(query.getOqlFilter());
+        ArrayList<Filter> attributesClauses = new ArrayList<>();
 
-        return Filters.and(filters);
+        if (query.getFrom() != null) {
+            timestampClauses.add(Filters.gte("begin", query.getBucketIndexFrom()));
+        }
+        if (query.getTo() != null) {
+            timestampClauses.add(Filters.lt("begin", query.getBucketIndexTo()));
+        }
+
+        if (query.getFilters() != null) {
+            attributesClauses.addAll(query.getFilters().entrySet().stream()
+                    .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
+        }
+
+        Filter timestampFilter = Filters.and(timestampClauses);
+        Filter attributesFilter = Filters.and(attributesClauses);
+
+        return Filters.and(Arrays.asList(timestampFilter, attributesFilter, oqlFilter));
     }
 }
