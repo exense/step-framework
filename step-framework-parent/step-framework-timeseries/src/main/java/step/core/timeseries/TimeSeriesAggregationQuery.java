@@ -11,7 +11,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     // The resolution of the source time series
     private final long sourceResolution;
 
-    // if all buckets should be shrinked in one single bucket
+    // if all buckets should be shrunk in one single bucket
     private boolean shrink = false;
 
     // The resolution of the
@@ -35,6 +35,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         return this;
     }
 
+    @Deprecated
     @Override
     public TimeSeriesAggregationQuery filter(Map<String, String> filters) {
         super.filter(filters);

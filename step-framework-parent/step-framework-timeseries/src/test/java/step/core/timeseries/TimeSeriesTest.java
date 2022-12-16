@@ -79,7 +79,10 @@ public class TimeSeriesTest {
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             // Ingest 1M points in series 1
             int nPoints = 1000000;
-            Map<String, String> attributes = Map.of("key", "value1");
+            String key = "key";
+            String value1 = "value1";
+            Map<String, String> attributes = Map.of(key, value1);
+            String attributes1Oql = String.format("attributes.%s = %s", key, value1);
             long start = System.currentTimeMillis();
             for (int i = 0; i < nPoints; i++) {
                 ingestionPipeline.ingestPoint(attributes, 1L, 10L);
@@ -93,17 +96,19 @@ public class TimeSeriesTest {
             logger.info("Ingested " + nPoints + " points in " + (stop - start) + "ms. TPS = " + ((nPoints * 1000.0) / (stop - start)));
 
             // Ingest 1 point in series 2
-            Map<String, String> attributes2 = Map.of("key", "value2");
+            String value2 = "value2";
+            Map<String, String> attributes2 = Map.of(key, value2);
+            String attributes2Oql = String.format("attributes.%s = %s", key, value2);
             ingestionPipeline.ingestPoint(attributes2, 1L, 5L);
             ingestionPipeline.flush();
             assertEquals(2, ingestionPipeline.getFlushCount());
 
             // Query series 1
-            Map<Long, Bucket> series = pipeline.newQuery().range(0L, 10L).filter(attributes).window(1000).run().getFirstSeries();
+            Map<Long, Bucket> series = pipeline.newQuery().range(0L, 10L).filter(attributes1Oql).window(1000).run().getFirstSeries();
             assertEquals(nPoints, series.get(0L).getCount());
 
             // Query series 2
-            series = pipeline.newQuery().range(0L, 10L).filter(attributes2).window(1000).run().getFirstSeries();
+            series = pipeline.newQuery().range(0L, 10L).filter(attributes2Oql).window(1000).run().getFirstSeries();
             assertEquals(1, series.get(0L).getCount());
 
             // Query both series grouped together
@@ -130,8 +135,9 @@ public class TimeSeriesTest {
         LongAdder count = new LongAdder();
 
         Map<String, String> attributes = Map.of("key", "value1");
+        String oqlAttributes1 = "attributes.key = value1";
         Map<String, String> attributes2 = Map.of("key", "value2");
-
+        String oqlAttributes2 = "attributes.key = value2";
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline(10)) {
             ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
             for (int j = 0; j < nThreads; j++) {
@@ -152,12 +158,12 @@ public class TimeSeriesTest {
 
         long now = System.currentTimeMillis();
         // With a resolution equal to (now-start) the query can return 1 or 2 buckets
-        Map<Long, Bucket> series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).window(now - start).run().getFirstSeries();
+        Map<Long, Bucket> series1 = aggregationPipeline.newQuery().filter(oqlAttributes1).range(start, now).window(now - start).run().getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() <= 2);
 
         // Split in 1 point
-        series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).split(1).run().getFirstSeries();
+        series1 = aggregationPipeline.newQuery().filter(oqlAttributes1).range(start, now).split(1).run().getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertEquals(1, series1.size());
         Bucket firstBucket = series1.values().stream().findFirst().get();
@@ -165,7 +171,7 @@ public class TimeSeriesTest {
         assertEquals(start - start % timeSeriesResolution, firstBucket.getBegin());
 
         // Split in 2 points
-        TimeSeriesAggregationResponse response = aggregationPipeline.newQuery().filter(attributes).range(start, now).split(2).run();
+        TimeSeriesAggregationResponse response = aggregationPipeline.newQuery().filter(oqlAttributes1).range(start, now).split(2).run();
         series1 = response.getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() <=3);
@@ -173,18 +179,18 @@ public class TimeSeriesTest {
         assertEquals(response.getResolution(), firstBucket.getEnd() - firstBucket.getBegin());
 
         // Use source resolution
-        series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).run().getFirstSeries();
+        series1 = aggregationPipeline.newQuery().filter(oqlAttributes1).range(start, now).run().getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() > duration / timeSeriesResolution);
 
         // Use double source resolution
         int window = timeSeriesResolution * 2;
-        series1 = aggregationPipeline.newQuery().filter(attributes).range(start, now).window(window).run().getFirstSeries();
+        series1 = aggregationPipeline.newQuery().filter(oqlAttributes1).range(start, now).window(window).run().getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() > duration / window);
 
         // Use
-        Map<Long, Bucket> series2 = aggregationPipeline.newQuery().filter(attributes2).range(start, now).window(now - start).run().getFirstSeries();
+        Map<Long, Bucket> series2 = aggregationPipeline.newQuery().filter(oqlAttributes2).range(start, now).window(now - start).run().getFirstSeries();
         assertEquals(count.longValue(), countPoints(series2));
         assertTrue(series2.size() <= 2);
     }
@@ -319,12 +325,14 @@ public class TimeSeriesTest {
         assertEquals(2, countPoints(result.get(Map.of("name", "transaction2"))));
 
         // Filter status = PASSED and group by name
-        result = pipeline.newQuery().range(0, 10).filter(Map.of("status", "PASSED")).groupBy(Set.of("name")).window(10).run().getSeries();
+        String filter = "attributes.status = PASSED";
+        result = pipeline.newQuery().range(0, 10).filter(filter).groupBy(Set.of("name")).window(10).run().getSeries();
         assertEquals(1, countPoints(result.get(Map.of("name", "transaction1"))));
         assertEquals(1, countPoints(result.get(Map.of("name", "transaction2"))));
 
         // Filter status = PASSED and group by name
-        result = pipeline.newQuery().range(0, 2).filter(Map.of("status", "FAILED")).groupBy(Set.of("name", "status")).window(10).run().getSeries();
+        filter = "attributes.status = FAILED";
+        result = pipeline.newQuery().range(0, 2).filter(filter).groupBy(Set.of("name", "status")).window(10).run().getSeries();
         assertEquals(1, countPoints(result.get(Map.of("name", "transaction1", "status", "FAILED"))));
         assertEquals(1, countPoints(result.get(Map.of("name", "transaction2", "status", "FAILED"))));
         assertNull(result.get(Map.of("name", "transaction1", "status", "PASSED")));

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
+import step.core.ql.OQLFilterBuilder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +41,7 @@ public class TimeSeriesAggregationPipeline {
     protected TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
-        Filter filter = buildFilter(query.getOqlFilter(), query.getBucketIndexFrom(), query.getBucketIndexTo());
+        Filter filter = OQLFilterBuilder.getFilter(query.getOqlFilter());
         Function<Long, Long> projectionFunction = query.getProjectionFunction();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
