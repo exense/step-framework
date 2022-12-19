@@ -30,7 +30,7 @@ public class TimeSeriesTest {
         TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
 
         // Create 1M buckets
-        long nBuckets = 100000L;
+        long nBuckets = 100_000L;
         for (int i = 0; i < nBuckets; i++) {
             Bucket entity = new Bucket(1000L * i);
             entity.setCount(1);
