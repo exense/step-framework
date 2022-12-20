@@ -21,6 +21,7 @@ package step.core.timeseries;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class TimeSeriesQuery {
 
@@ -39,7 +40,9 @@ public class TimeSeriesQuery {
 	 * @return the builder
 	 */
 	public TimeSeriesQuery filter(Map<String, String> filters) {
-		this.filters.putAll(filters);
+        if (Objects.nonNull(filters)) {
+            this.filters.putAll(filters);
+        }
 		return this;
 	}
 
