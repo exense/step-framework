@@ -57,4 +57,21 @@ public class TimeSeriesAggergationQueryTest {
         Assert.assertEquals(Long.MAX_VALUE, bucketSize);
     }
 
+    @Test
+    public void emptyFiltersTest() {
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        String oql = null;
+        Map<String, String> params = null;
+        TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
+        long seriesSize = pipeline.newQuery()
+                .split(1)
+                .filter(oql)
+                .filter(params)
+                .run().getSeries().size();
+        // we want to make sure that the methods above are not failing
+        Assert.assertEquals(0, seriesSize);
+
+    }
+
 }
