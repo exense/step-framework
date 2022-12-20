@@ -115,7 +115,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     protected List<Long> drawAxis() {
         ArrayList<Long> legend = new ArrayList<>();
         if (from != null && to != null) {
-            if(shrink) {
+            if (shrink) {
                 legend.add(resultFrom);
             } else {
                 for (long index = resultFrom; index < resultTo; index += resultResolution) {
@@ -127,8 +127,8 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     }
 
     protected Function<Long, Long> getProjectionFunction() {
-        if(shrink) {
-            if(resultFrom != null) {
+        if (shrink) {
+            if (resultFrom != null) {
                 return t -> resultFrom;
             } else {
                 return t -> 0L;
@@ -139,8 +139,8 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     }
 
     protected long getBucketSize() {
-        if(shrink) {
-            if(resultFrom != null) {
+        if (shrink) {
+            if (resultFrom != null) {
                 return resultTo - resultFrom;
             } else {
                 return Long.MAX_VALUE;
@@ -152,7 +152,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     public TimeSeriesAggregationResponse run() {
         if (from != null && to != null) {
-            if(shrink) {
+            if (shrink) {
                 resultFrom = from - from % sourceResolution;
                 resultTo = to - to % sourceResolution + sourceResolution;
             } else {
