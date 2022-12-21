@@ -7,10 +7,7 @@ import step.core.collections.Filters;
 import step.core.collections.filters.And;
 import step.core.ql.OQLFilterBuilder;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class TimeSeries {
@@ -73,9 +70,9 @@ public class TimeSeries {
     }
 
     public static Filter buildFilter(TimeSeriesAggregationQuery query) {
-        ArrayList<Filter> timestampClauses = new ArrayList<>();
+        ArrayList<Filter> timestampClauses = new ArrayList<>(List.of(Filters.empty()));
         Filter oqlFilter = OQLFilterBuilder.getFilter(query.getOqlFilter());
-        ArrayList<Filter> attributesClauses = new ArrayList<>();
+        ArrayList<Filter> attributesClauses = new ArrayList<>(List.of(Filters.empty()));
 
         if (query.getFrom() != null) {
             timestampClauses.add(Filters.gte("begin", query.getBucketIndexFrom()));
