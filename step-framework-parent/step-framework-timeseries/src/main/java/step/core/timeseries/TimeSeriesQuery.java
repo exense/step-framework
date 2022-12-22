@@ -21,6 +21,7 @@ package step.core.timeseries;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class TimeSeriesQuery {
 
@@ -29,6 +30,7 @@ public class TimeSeriesQuery {
 	protected Long to;
 
 	// Filters
+    protected String oqlFilters;
 	protected final Map<String, String> filters = new HashMap<>();
 
 	/**
@@ -38,9 +40,18 @@ public class TimeSeriesQuery {
 	 * @return the builder
 	 */
 	public TimeSeriesQuery filter(Map<String, String> filters) {
-		this.filters.putAll(filters);
+        if (Objects.nonNull(filters)) {
+            this.filters.putAll(filters);
+        }
 		return this;
 	}
+
+    public TimeSeriesQuery filter(String oqlFilters) {
+        if (Objects.nonNull(oqlFilters)) {
+            this.oqlFilters = oqlFilters;
+        }
+        return this;
+    }
 
 	protected Map<String, String> getFilters() {
 		return filters;
@@ -67,4 +78,7 @@ public class TimeSeriesQuery {
 		return to;
 	}
 
+    public String getOqlFilter() {
+        return oqlFilters;
+    }
 }

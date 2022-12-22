@@ -23,6 +23,7 @@ import step.core.collections.Filters;
 import step.core.ql.OQLParser.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
 
@@ -41,7 +42,38 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
 	public Filter visitEqualityExpr(EqualityExprContext ctx) {
 		String text0 = unescapeStringIfNecessary(ctx.expr(0).getText());
 		String text1 = unescapeStringIfNecessary(ctx.expr(1).getText());
-		return Filters.equals(text0, text1);
+		if (ctx.EQ() != null) {
+			return Filters.equals(text0, text1);
+		} else if (ctx.NEQ() != null) {
+			return Filters.not(Filters.equals(text0, text1));
+		} else if (ctx.REGEX() != null) {
+			return Filters.regex(text0, text1,false);
+		} else {
+			throw new UnsupportedOperationException("Operation of the provided equality expression is not supported. Expression: " + ctx.getText());
+		}
+	}
+
+	@Override
+	public Filter visitComparisonExpr(ComparisonExprContext ctx) {
+		String text0 = unescapeStringIfNecessary(ctx.expr(0).getText());
+		String text1 = unescapeStringIfNecessary(ctx.expr(1).getText());
+		Long value;
+		try {
+			value = Long.parseLong(text1);
+		} catch (Exception e) {
+			throw new UnsupportedOperationException("Comparison expression only support long value. Expression: " + ctx.getText());
+		}
+		if (ctx.LT() != null) {
+			return Filters.lt(text0, value);
+		} else if (ctx.LTE() != null) {
+			return Filters.lte(text0, value);
+		} else if (ctx.GT() != null) {
+			return Filters.gt(text0, value);
+		} else if (ctx.GTE() != null) {
+			return Filters.gte(text0, value);
+		} else {
+			throw new UnsupportedOperationException("Operation of the provided comparison expression is not supported. Expression: " + ctx.getText());
+		}
 	}
 
 	protected String unescapeStringIfNecessary(String text1) {
@@ -56,6 +88,13 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
 		final Filter left = this.visit(ctx.expr(0));
 		final Filter right = this.visit(ctx.expr(1));
         return Filters.or(List.of(left, right));
+	}
+
+	@Override
+	public Filter visitInExpr(InExprContext ctx) {
+		String text0 = unescapeStringIfNecessary(ctx.expr().getText());
+		List<String> ins = ctx.STRING().stream().map(tn -> unescapeStringIfNecessary(tn.getText())).collect(Collectors.toList());
+		return Filters.in(text0, ins);
 	}
 
 	@Override
