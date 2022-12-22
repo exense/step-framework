@@ -18,8 +18,6 @@
  ******************************************************************************/
 package step.core.accessors;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,7 +48,6 @@ public class AbstractOrganizableObject extends AbstractIdentifiableObject {
 	/**
 	 * @return the name of this object's instance
 	 */
-	@JsonIgnore
 	public String getName() {
 		return getAttribute(NAME);
 	}
