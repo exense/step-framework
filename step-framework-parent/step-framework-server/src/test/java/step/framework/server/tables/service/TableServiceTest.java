@@ -384,7 +384,7 @@ public class TableServiceTest {
     private TableService tableService(ObjectFilter contextObjectFilter) {
         TableRegistry tableRegistry = new TableRegistry();
         tableRegistry.register(SIMPLE_TABLE, table);
-        return new TableService(tableRegistry, objectHookRegistryWithContextFilter(contextObjectFilter), new TestAccessManager());
+        return new TableService(tableRegistry, objectHookRegistryWithContextFilter(contextObjectFilter), new TestAuthorizationManager());
     }
 
 }
