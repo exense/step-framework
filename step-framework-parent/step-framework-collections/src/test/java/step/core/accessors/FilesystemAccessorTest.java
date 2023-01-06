@@ -24,6 +24,9 @@ import java.io.IOException;
 import org.junit.Before;
 
 import ch.exense.commons.io.FileHelper;
+import step.core.collections.Collection;
+import step.core.collections.Filters;
+import step.core.collections.VersionableEntity;
 import step.core.collections.filesystem.FilesystemCollection;
 
 public class FilesystemAccessorTest extends AbstractAccessorTest {
@@ -42,5 +45,6 @@ public class FilesystemAccessorTest extends AbstractAccessorTest {
 				new FilesystemCollection<>(repository, AbstractOrganizableObject.class));
 		beanAccessor = new AbstractAccessor<Bean>(
 				new FilesystemCollection<>(repository, Bean.class));
+		beanAccessor.setVersionedCollections(new FilesystemCollection<>(repository, VersionableEntity.class));
 	}
 }

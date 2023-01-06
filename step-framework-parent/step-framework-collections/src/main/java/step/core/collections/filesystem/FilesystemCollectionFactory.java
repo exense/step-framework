@@ -24,6 +24,7 @@ import java.util.Properties;
 
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
+import step.core.collections.VersionableEntity;
 
 public class FilesystemCollectionFactory implements CollectionFactory {
 
@@ -48,6 +49,13 @@ public class FilesystemCollectionFactory implements CollectionFactory {
 	@Override
 	public <T> Collection<T> getCollection(String name, Class<T> entityClass) {
 		return new FilesystemCollection<>(new File(workspace.getAbsolutePath()+"/"+name), entityClass);
+	}
+
+	@Override
+	public Collection<VersionableEntity> getVersionedCollection(String name) {
+		return new FilesystemCollection<>(
+				new File(workspace.getAbsolutePath() + "/" + name + CollectionFactory.VERSION_COLLECTION_SUFFIX),
+				VersionableEntity.class);
 	}
 
 }

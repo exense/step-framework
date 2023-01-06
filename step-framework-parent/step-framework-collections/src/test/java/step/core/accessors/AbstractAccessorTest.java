@@ -6,9 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.bson.types.ObjectId;
 import org.junit.Test;
+import step.core.collections.Filters;
+import step.core.collections.VersionableEntity;
 
 import static org.junit.Assert.*;
 
@@ -143,6 +147,106 @@ public abstract class AbstractAccessorTest {
 		
 		findManyByAttributes = findManyByAttributes(inMemoryAccessor, findAttributes, null);
 		assertEquals(2, StreamSupport.stream(findManyByAttributes, false).collect(Collectors.toList()).size());
+	}
+
+	@Test
+	public void testBeanAccessorHistory() {
+		Bean entity = new Bean();
+		ObjectId id = entity.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
+		entity.setProperty1("value 1");
+		beanAccessor.save(entity);
+		entity = new Bean();//required for inMemory collections tests or only the last value remain
+		entity.setId(id);
+		entity.setProperty1("value 2");
+		beanAccessor.save(entity);
+		entity = new Bean();//required for inMemory collections tests or only the last value remain
+		entity.setId(id);
+		entity.setProperty1("value 3");
+		beanAccessor.save(entity);
+		assertEquals("value 3", beanAccessor.get(entity.getId()).getProperty1());
+
+		List<VersionableEntity> history = beanAccessor.getHistory(entity.getId(), null, null).collect(Collectors.toList());
+		assertEquals(3, history.size());
+		int i = 3;
+		for (VersionableEntity v : history) {
+			assertEquals("value " + i, ((Bean) v.getEntity()).getProperty1());
+			assertEquals(v.getId().toHexString(),((Bean) v.getEntity()).getCustomField(VersionableEntity.VERSION_CUSTOM_FIELD).toString());
+			i--;
+		}
+		beanAccessor.remove(entity.getId());
+		assertEquals(null, beanAccessor.get(entity.getId()));
+		assertEquals(0,
+				beanAccessor.getHistory(entity.getId(), null, null).collect(Collectors.toList()).size());
+	}
+
+	@Test
+	public void testBeanAccessorBulkHistory() {
+		Bean entity = new Bean();
+		ObjectId id = entity.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
+		entity.setProperty1("value 1");
+
+		Bean entity1 = new Bean();
+		ObjectId id1 = entity1.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
+		entity1.setProperty1("value 11");
+
+		beanAccessor.save(List.of(entity, entity1));
+
+		entity = new Bean();//required for inMemory collections tests or only the last value remain
+		entity.setId(id);
+		entity.setProperty1("value 2");
+
+		entity1 = new Bean();
+		entity1.setId(id1);
+		entity1.setProperty1("value 12");
+
+		beanAccessor.save(List.of(entity, entity1));
+
+		assertEquals("value 2", beanAccessor.get(entity.getId()).getProperty1());
+		assertEquals("value 12", beanAccessor.get(entity1.getId()).getProperty1());
+
+		List<VersionableEntity> history = beanAccessor.getHistory(entity.getId(), null, null).collect(Collectors.toList());
+		assertEquals(2, history.size());
+		int i = 2;
+		for (VersionableEntity v : history) {
+			assertEquals("value " + i, ((Bean) v.getEntity()).getProperty1());
+			assertEquals(v.getId().toHexString(),((Bean) v.getEntity()).getCustomField(VersionableEntity.VERSION_CUSTOM_FIELD).toString());
+			i--;
+		}
+
+		List<VersionableEntity> history1 = beanAccessor.getHistory(entity1.getId(), null, null).collect(Collectors.toList());
+		assertEquals(2, history1.size());
+		i = 2;
+		for (VersionableEntity v : history1) {
+			assertEquals("value 1" + i, ((Bean) v.getEntity()).getProperty1());
+			assertEquals(v.getId().toHexString(),((Bean) v.getEntity()).getCustomField(VersionableEntity.VERSION_CUSTOM_FIELD).toString());
+			i--;
+		}
+	}
+
+	@Test
+	public void testBeanAccessorRestoreHistory() {
+		Bean entity = new Bean();
+		ObjectId id = entity.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
+		entity.setProperty1("value 1");
+		beanAccessor.save(entity);
+		entity = new Bean();//required for inMemory collections tests or only the last value remain
+		entity.setId(id);
+		entity.setProperty1("value 2");
+		beanAccessor.save(entity);
+		entity = new Bean();//required for inMemory collections tests or only the last value remain
+		entity.setId(id);
+		entity.setProperty1("value 3");
+		beanAccessor.save(entity);
+		assertEquals("value 3", beanAccessor.get(entity.getId()).getProperty1());
+
+		List<VersionableEntity> history = beanAccessor.getHistory(entity.getId(), null, null).collect(Collectors.toList());
+		assertEquals(3, history.size());
+
+		Bean bean = beanAccessor.restoreVersion(entity.getId(), history.get(1).getId());
+		assertEquals("value 2", bean.getProperty1());
+		assertEquals("value 2", beanAccessor.get(entity.getId()).getProperty1());
+		assertEquals(history.get(1).getId().toHexString(),bean.getCustomField(VersionableEntity.VERSION_CUSTOM_FIELD).toString());
+
 	}
 
 	private Spliterator<AbstractOrganizableObject> findManyByAttributes(Accessor<AbstractOrganizableObject> inMemoryAccessor, boolean findAttributes, HashMap<String, String> attributes) {

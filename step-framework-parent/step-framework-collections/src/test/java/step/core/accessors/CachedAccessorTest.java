@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Before;
 import org.junit.Test;
+import step.core.collections.inmemory.InMemoryCollection;
 
 public class CachedAccessorTest extends AbstractAccessorTest {
 
@@ -16,6 +17,7 @@ public class CachedAccessorTest extends AbstractAccessorTest {
 		accessor = new CachedAccessor<AbstractIdentifiableObject>(underlyingAccessor);
 		organizableObjectAccessor = new CachedAccessor<AbstractOrganizableObject>(underlyingOrganisableObjectAccessor);
 		beanAccessor = new CachedAccessor<Bean>(underlyingBeanAccessor);
+		underlyingBeanAccessor.setVersionedCollections(new InMemoryCollection<>());
 	}
 	
 	@Test

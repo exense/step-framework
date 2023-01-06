@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.SearchOrder;
-import step.core.collections.filesystem.AbstractCollection;
+import step.core.collections.AbstractCollection;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.ParameterizedType;
@@ -332,6 +332,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	public void drop() {
 		executeUpdateQuery("DROP TABLE " + collectionNameStr);
 
+	}
+
+	@Override
+	public Class<T> getEntityClass() {
+		return entityClass;
 	}
 
 	private void executeUpdateQuery(String query) {

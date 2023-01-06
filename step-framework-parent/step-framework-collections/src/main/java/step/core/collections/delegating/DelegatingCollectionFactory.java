@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
+import step.core.collections.VersionableEntity;
 
 public class DelegatingCollectionFactory implements CollectionFactory {
 
@@ -49,6 +50,16 @@ public class DelegatingCollectionFactory implements CollectionFactory {
 		}
 		CollectionFactory collectionFactory = collectionFactories.get(collectionId);
 		return collectionFactory.getCollection(name, entityClass);
+	}
+
+	@Override
+	public Collection<VersionableEntity> getVersionedCollection(String name) {
+		String collectionId = routes.getOrDefault(name, defaultCollectionFactory);
+		if (collectionId == null) {
+			throw new RuntimeException("No route found for collection " + name);
+		}
+		CollectionFactory collectionFactory = collectionFactories.get(collectionId);
+		return collectionFactory.getVersionedCollection(name);
 	}
 
 	@Override

@@ -18,6 +18,7 @@
  ******************************************************************************/
 package step.core.accessors;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,11 +32,15 @@ import org.bson.types.ObjectId;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
+import step.core.collections.SearchOrder;
+import step.core.collections.VersionableEntity;
 import step.core.collections.filters.Equals;
 
 public class AbstractAccessor<T extends AbstractIdentifiableObject> implements Accessor<T> {
 
 	protected final Collection<T> collectionDriver;
+
+	protected Collection<VersionableEntity> versionedCollectionDriver;
 
 	public AbstractAccessor(Collection<T> collectionDriver) {
 		super();
@@ -123,6 +128,9 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	@Override
 	public void remove(ObjectId id) {
 		collectionDriver.remove(byId(id));
+		if (versionedCollectionDriver != null) {
+			versionedCollectionDriver.remove(getHistoryFilterById(id));
+		}
 	}
 
 	private Equals byId(ObjectId id) {
@@ -131,12 +139,60 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 
 	@Override
 	public T save(T entity) {
+		if (versionedCollectionDriver != null) {
+			VersionableEntity version = versionedCollectionDriver.save(new VersionableEntity(entity));
+		}
 		return collectionDriver.save(entity);
 	}
 
 	@Override
 	public void save(Iterable<T> entities) {
-		collectionDriver.save((Iterable<T>)entities);
+		if (versionedCollectionDriver != null) {
+			List<VersionableEntity> versionedEntities = new ArrayList<>();
+			entities.forEach(e->versionedEntities.add(new VersionableEntity<>(e)));
+			versionedCollectionDriver.save(versionedEntities);
+		}
+		collectionDriver.save(entities);
+	}
+
+	@Override
+	public Stream<VersionableEntity> getHistory(ObjectId id, Integer skip, Integer limit) {
+		if (versionedCollectionDriver != null) {
+			SearchOrder order = new SearchOrder(AbstractIdentifiableObject.ID, -1);
+			return versionedCollectionDriver.find(getHistoryFilterById(id), order, skip, limit, 0);
+		} else {
+			throw getVersioningNotSupportedException();
+		}
+	}
+
+	@Override
+	public T restoreVersion(ObjectId entityId, ObjectId versionId) {
+		if (versionedCollectionDriver != null) {
+			VersionableEntity versionableEntity = versionedCollectionDriver.find(byId(versionId),
+					null, null, null, 0).findFirst().orElse(null);
+			T entity = (T) versionableEntity.getEntity();
+			if (entity.getId().equals(entityId)) {
+				//save directly with the collection to not create a new version
+				return collectionDriver.save(entity);
+			} else {
+				throw new UnsupportedOperationException("Restore a version from a different entity is not supported, source entity '" +
+						entity.getId() + "', target entity '" + entityId + "'.");
+			}
+		} else {
+			throw getVersioningNotSupportedException();
+		}
+	}
+
+	private Filter getHistoryFilterById(ObjectId id) {
+		return Filters.equals("entity._id", id);
+	}
+
+	private UnsupportedOperationException getVersioningNotSupportedException() {
+		String entityName = (getCollectionDriver() != null && getCollectionDriver().getEntityClass() != null) ?
+				getCollectionDriver().getEntityClass().getSimpleName() :
+				"unknown";
+		return new UnsupportedOperationException("Versioning for the current accessor '" + this.getClass().getName() +
+				" and entity '" + entityName + "' is not enabled");
 	}
 
 	@Override
@@ -150,5 +206,10 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	
 	protected void createOrUpdateCompoundIndex(String... fields) {
 		collectionDriver.createOrUpdateCompoundIndex(fields);
+	}
+
+	@Override
+	public void setVersionedCollections(Collection<VersionableEntity> versionedCollection) {
+		this.versionedCollectionDriver =  versionedCollection;
 	}
 }

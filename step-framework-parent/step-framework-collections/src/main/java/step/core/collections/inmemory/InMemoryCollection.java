@@ -31,7 +31,7 @@ import step.core.accessors.DefaultJacksonMapperProvider;
 import step.core.collections.*;
 import step.core.collections.Collection;
 import step.core.collections.PojoFilters.PojoFilterFactory;
-import step.core.collections.filesystem.AbstractCollection;
+import step.core.collections.AbstractCollection;
 
 public class InMemoryCollection<T> extends AbstractCollection<T> implements Collection<T> {
 
@@ -171,5 +171,10 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	public void drop() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public Class<T> getEntityClass() {
+		return entityClass;
 	}
 }

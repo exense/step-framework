@@ -19,10 +19,16 @@
 package step.core.collections.mongodb;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
+import step.core.collections.VersionableEntity;
 
 public class MongoDBCollectionFactory implements CollectionFactory {
 
@@ -40,6 +46,12 @@ public class MongoDBCollectionFactory implements CollectionFactory {
 	@Override
 	public <T> Collection<T> getCollection(String name, Class<T> entityClass) {
 		return mongoClientSession.getEntityCollection(name, entityClass);
+	}
+
+	@Override
+	public Collection<VersionableEntity> getVersionedCollection(String baseName) {
+		return mongoClientSession.getEntityCollection(baseName + CollectionFactory.VERSION_COLLECTION_SUFFIX,
+				VersionableEntity.class);
 	}
 
 	@Override

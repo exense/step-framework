@@ -5,7 +5,10 @@ import step.core.accessors.AbstractAccessor;
 import step.core.accessors.AbstractAccessorTest;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.AbstractOrganizableObject;
+import step.core.collections.Collection;
 import step.core.collections.Filters;
+import step.core.collections.VersionableEntity;
+import step.core.collections.inmemory.InMemoryCollection;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 
 import java.io.IOException;
@@ -25,13 +28,20 @@ public class MongoDBAccessorTest extends AbstractAccessorTest {
 		accessor.getCollectionDriver().remove(Filters.empty());
 		organizableObjectAccessor.getCollectionDriver().remove(Filters.empty());
 		beanAccessor.getCollectionDriver().remove(Filters.empty());
+		Collection<VersionableEntity> versionedBeanCollection = mongoDBCollectionFactory.getVersionedCollection("bean");
+		versionedBeanCollection.remove(Filters.empty());
+		beanAccessor.setVersionedCollections(versionedBeanCollection);
 	}
 
 
 	private static Properties getProperties() throws IOException {
 		Properties properties = new Properties();
-		properties.put("host", "localhost");
+		properties.put("host", "central-mongodb.stepcloud-test.ch");
+		//properties.put("host", "localhost");
 		properties.put("database", "test");
+		//properties.put("credentialsDB", "step");
+		properties.put("username", "myTester");
+		properties.put("password", "5dB(rs+4YRJe");
 		return properties;
 	}
 }

@@ -44,7 +44,7 @@ import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.SearchOrder;
-import step.core.collections.filesystem.AbstractCollection;
+import step.core.collections.AbstractCollection;
 
 public class MongoDBCollection<T> extends AbstractCollection<T> implements Collection<T> {
 	
@@ -53,6 +53,7 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	protected static final String CSV_DELIMITER = ";";
 	
 	private final MongoClientSession mongoClientSession;
+	private final Class<T> entityClass;
 
 	private JacksonMongoCollection<T> collection;
 	
@@ -62,7 +63,7 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	 */
 	public MongoDBCollection(MongoClientSession mongoClientSession, String collectionName, Class<T> entityClass) {
 		this.mongoClientSession = mongoClientSession;
-		
+		this.entityClass = entityClass;
 		collection = JacksonMongoCollection.builder()
 				.withObjectMapper(ObjectMapperConfigurer.configureObjectMapper(MongoDBCollectionJacksonMapperProvider.getObjectMapper()))
 				.withSerializationOptions(SerializationOptions.builder().withSimpleFilterSerialization(true).build())
@@ -283,7 +284,12 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	public void drop() {
 		collection.drop();
 	}
-	
+
+	@Override
+	public Class<T> getEntityClass() {
+		return entityClass;
+	}
+
 //	/**
 //	 * Export data to CSV
 //	 * @param query

@@ -112,6 +112,9 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 				b.append("->'").append(previous).append("'");
 			}
 			previous = m.group(1);
+			if (previous.equals("_id")) {
+				previous = "id";
+			}
 		}
 		if (previous == null) {
 			throw new RuntimeException("Failed to format jsonb field: " + field);

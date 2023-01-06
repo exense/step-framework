@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package step.core.collections.filesystem;
+package step.core.collections;
 
 import java.lang.reflect.InvocationTargetException;
 

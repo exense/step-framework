@@ -22,7 +22,13 @@ import java.io.IOException;
 
 public interface CollectionFactory {
 
+	//Suffix used to create versioned collections.
+	//For compatibility with mongo, psql...avoid upper case, dot,-,_
+	public static String VERSION_COLLECTION_SUFFIX = "versions";
+
 	public <T> Collection<T> getCollection(String name, Class<T> entityClass);
+
+	public Collection<VersionableEntity> getVersionedCollection(String name);
 
 	public void close() throws IOException;
 	

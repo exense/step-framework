@@ -57,10 +57,11 @@ public class MongoClientSession implements Closeable {
 		batchSize = getIntegerProperty(properties, "batchSize", 1000);
 
 		db = properties.getProperty("database","step");
+		String credentialsDB = properties.getProperty("credentialsDB", db);
 		
 		Builder builder = MongoClientSettings.builder();
 		if(user!=null) {
-			MongoCredential credential = MongoCredential.createCredential(user, db, pwd.toCharArray());
+			MongoCredential credential = MongoCredential.createCredential(user, credentialsDB, pwd.toCharArray());
 			builder.credential(credential);
 		}
 		builder.applyConnectionString(new ConnectionString("mongodb://"+host+":"+port));

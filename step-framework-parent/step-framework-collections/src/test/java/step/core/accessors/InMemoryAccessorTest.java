@@ -19,6 +19,7 @@
 package step.core.accessors;
 
 import org.junit.Before;
+import step.core.collections.inmemory.InMemoryCollection;
 
 
 public class InMemoryAccessorTest extends AbstractAccessorTest {
@@ -28,6 +29,8 @@ public class InMemoryAccessorTest extends AbstractAccessorTest {
 		accessor = new InMemoryAccessor<>();
 		organizableObjectAccessor = new InMemoryAccessor<>();
 		beanAccessor = new InMemoryAccessor<>();
+		//enable versioning
+		beanAccessor.setVersionedCollections(new InMemoryCollection<>());
 	}
 
 }

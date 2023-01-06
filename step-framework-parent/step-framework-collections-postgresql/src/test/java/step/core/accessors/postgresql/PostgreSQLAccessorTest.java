@@ -7,20 +7,20 @@ import step.core.accessors.AbstractAccessor;
 import step.core.accessors.AbstractAccessorTest;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.AbstractOrganizableObject;
+import step.core.collections.Collection;
 import step.core.collections.Filters;
+import step.core.collections.VersionableEntity;
 import step.core.collections.postgresql.PostgreSQLCollectionFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Properties;
-import java.util.stream.Stream;
 
 //Currently no psql server installed on build server and no mocks implemented
-public class PostgreSQLAccessorTest { //extends AbstractAccessorTest {
+public class PostgreSQLAccessorTest extends AbstractAccessorTest {
 
 	PostgreSQLCollectionFactory jdbcDBCollectionFactory;
-	/*@Before
+	@Before
 	public void before() throws IOException {
 		jdbcDBCollectionFactory = new PostgreSQLCollectionFactory(getProperties());
 
@@ -29,6 +29,9 @@ public class PostgreSQLAccessorTest { //extends AbstractAccessorTest {
 				jdbcDBCollectionFactory.getCollection("abstractOrganizableObject", AbstractOrganizableObject.class));
 		beanAccessor = new AbstractAccessor<AbstractAccessorTest.Bean>(
 				jdbcDBCollectionFactory.getCollection("bean", AbstractAccessorTest.Bean.class));
+		Collection<VersionableEntity> versionedCollection = jdbcDBCollectionFactory.getVersionedCollection("bean");
+		versionedCollection.remove(Filters.empty());
+		beanAccessor.setVersionedCollections(versionedCollection);
 		accessor.getCollectionDriver().remove(Filters.empty());
 		organizableObjectAccessor.getCollectionDriver().remove(Filters.empty());
 		beanAccessor.getCollectionDriver().remove(Filters.empty());
@@ -37,13 +40,13 @@ public class PostgreSQLAccessorTest { //extends AbstractAccessorTest {
 	@After
 	public void after() throws IOException {
 		jdbcDBCollectionFactory.close();
-	}*/
+	}
 
 	private static Properties getProperties()  {
 		Properties properties = new Properties();
-		properties.put("jdbcUrl", "jdbc:postgresql://localhost/Test");
-		properties.put("user", "postgres");
-		properties.put("password", "init");
+		properties.put("jdbcUrl", "jdbc:postgresql://central-postgresql.stepcloud-test.ch/Test");
+		properties.put("user", "step");
+		properties.put("password", "Jua4Nr!46V");
 		return properties;
 	}
 

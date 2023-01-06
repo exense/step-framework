@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
 import step.core.collections.Collection;
+import step.core.collections.VersionableEntity;
 
 /**
  * This {@link Accessor} loads all the entities of the provided underlying
@@ -125,6 +126,23 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	@Override
 	public void save(Iterable<T> entities) {
 		entities.forEach(e -> save(e));
+	}
+
+	@Override
+	public Stream<VersionableEntity> getHistory(ObjectId id, Integer skip, Integer limit) {
+		return underlyingAccessor.getHistory(id, skip, limit);
+	}
+
+	@Override
+	public T restoreVersion(ObjectId entityId, ObjectId versionId) {
+		T result = underlyingAccessor.restoreVersion(entityId, versionId);
+		cache.save(result);
+		return result;
+	}
+
+	@Override
+	public void setVersionedCollections(Collection<VersionableEntity> versionedCollection) {
+		throw new UnsupportedOperationException("The versioned collections cannot be set on the cached accessor, but on its underlying accessors only");
 	}
 
 	@Override
