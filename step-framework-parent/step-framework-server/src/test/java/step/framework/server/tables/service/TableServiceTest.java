@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import step.core.AbstractContext;
 import step.core.collections.Collection;
@@ -17,10 +18,14 @@ import step.framework.server.Session;
 import step.framework.server.access.NoAuthorizationManager;
 import step.framework.server.tables.Table;
 import step.framework.server.tables.TableRegistry;
+import step.framework.server.tables.service.bulk.TableBulkOperationReport;
+import step.framework.server.tables.service.bulk.TableBulkOperationRequest;
+import step.framework.server.tables.service.bulk.TableBulkOperationTargetType;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 
@@ -36,18 +41,29 @@ public class TableServiceTest {
     private static final String ENRICHED_ATTRIBUTE_KEY = "entichedAttributes";
     private static final String ENRICHED_ATTRIBUTE_VALUE = "value";
     private static final String TABLE_WITH_FILTER_FACTORY = "tableWithFilterFactory";
+    private Bean bean1;
+    private Bean bean2;
+    private Bean bean3;
+    private Collection<Bean> collection;
 
-    @Test
-    public void request() throws TableServiceException {
-        Collection<Bean> collection = new InMemoryCollection<>();
-        Bean bean1 = new Bean(VALUE_1);
-        Bean bean2 = new Bean(VALUE_2);
-        Bean bean3 = new Bean(VALUE_3);
+    private final List<String> processedIds = new ArrayList<>();
+    private Table<Bean> table;
+
+    @Before
+    public void before() throws TableServiceException {
+        collection = new InMemoryCollection<>();
+        bean1 = new Bean(VALUE_1);
+        bean2 = new Bean(VALUE_2);
+        bean3 = new Bean(VALUE_3);
 
         collection.save(bean1);
         collection.save(bean2);
         collection.save(bean3);
+        table = new Table<>(collection, TEST_RIGHT, true);
+    }
 
+    @Test
+    public void request() throws TableServiceException {
         TableRegistry tableRegistry = new TableRegistry();
         Table<Bean> table = new Table<>(collection, null, false);
         tableRegistry.register(SIMPLE_TABLE, table);
@@ -62,28 +78,7 @@ public class TableServiceTest {
         Table<Bean> tableWithAccessRight = new Table<>(collection, TEST_RIGHT, false);
         tableRegistry.register(TABLE_WITH_ACCESS_RIGHT, tableWithAccessRight);
 
-        ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
-        objectHookRegistry.add(new ObjectHook() {
-            @Override
-            public ObjectFilter getObjectFilter(AbstractContext context) {
-                return () -> "property1 = " + VALUE_2;
-            }
-
-            @Override
-            public ObjectEnricher getObjectEnricher(AbstractContext context) {
-                return null;
-            }
-
-            @Override
-            public void rebuildContext(AbstractContext context, EnricheableObject object) {
-            }
-
-            @Override
-            public boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object) {
-                return false;
-            }
-        });
-        TableService tableService = new TableService(tableRegistry, objectHookRegistry, new TestAuthorizationManager());
+        TableService tableService = new TableService(tableRegistry, objectHookRegistryWithContextFilter(() -> "property1 = " + VALUE_2), new TestAuthorizationManager());
 
         // Test empty request
         TableRequest request = new TableRequest();
@@ -211,6 +206,140 @@ public class TableServiceTest {
         assertNotNull(tableRequest.getTableParameters());
     }
 
+    @Test
+    public void performBulkOperation() throws TableServiceException {
+        TableBulkOperationRequest parameters = new TableBulkOperationRequest(false, TableBulkOperationTargetType.LIST);
+        assertThrows(TableServiceException.class, () -> tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight()));
+
+        // performBulkOperation by table
+        List<String> targetIds = List.of(bean1.getId().toString(), bean2.getId().toString());
+        parameters.setIds(targetIds);
+        TableBulkOperationReport exportStatus = tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight());
+        assertEquals(targetIds, processedIds);
+        assertEquals(2, exportStatus.getCount());
+
+        // performBulkOperation by table name
+        processedIds.clear();
+        exportStatus = tableService().performBulkOperation(SIMPLE_TABLE, parameters, processedIds::add, sessionWithRight());
+        assertEquals(targetIds, processedIds);
+        assertEquals(2, exportStatus.getCount());
+
+        // performBulkOperationWithCustomPreview by table name
+        processedIds.clear();
+        exportStatus = tableService().performBulkOperationWithCustomPreview(SIMPLE_TABLE, parameters, (id, preview) -> processedIds.add(id), sessionWithRight());
+        assertEquals(targetIds, processedIds);
+        assertEquals(2, exportStatus.getCount());
+    }
+
+    @Test
+    public void performBulkOperationPreview() throws TableServiceException {
+        TableBulkOperationRequest parameters = new TableBulkOperationRequest(true, TableBulkOperationTargetType.LIST);
+        parameters.setIds(List.of(bean1.getId().toString(), bean2.getId().toString()));
+        TableBulkOperationReport exportStatus = tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight());
+        // Ensure that no processing has been done in preview mode
+        assertEquals(List.of(), processedIds);
+        assertEquals(2, exportStatus.getCount());
+
+        // performBulkOperation by table name
+        processedIds.clear();
+        exportStatus = tableService().performBulkOperation(SIMPLE_TABLE, parameters, processedIds::add, sessionWithRight());
+        // Ensure that no processing has been done in preview mode
+        assertEquals(List.of(), processedIds);
+        assertEquals(2, exportStatus.getCount());
+
+        // performBulkOperationWithCustomPreview by table name
+        processedIds.clear();
+        exportStatus = tableService().performBulkOperationWithCustomPreview(SIMPLE_TABLE, parameters, (id, preview) -> processedIds.add(id), sessionWithRight());
+        assertEquals(List.of(bean1.getId().toString(), bean2.getId().toString()), processedIds);
+        assertEquals(2, exportStatus.getCount());
+    }
+
+    @Test
+    public void performBulkOperationWithCustomPreview() throws TableServiceException {
+        TableBulkOperationRequest parameters = new TableBulkOperationRequest(true, TableBulkOperationTargetType.LIST);
+        List<String> targetIds = List.of(bean1.getId().toString(), bean2.getId().toString());
+        parameters.setIds(targetIds);
+        AtomicBoolean actualPreview = new AtomicBoolean();
+        TableBulkOperationReport exportStatus = tableService().performBulkOperationWithCustomPreview(table, parameters, (id, preview) -> {
+            processedIds.add(id);
+            actualPreview.set(preview);
+        }, sessionWithRight());
+        assertEquals(targetIds, processedIds);
+        assertEquals(2, exportStatus.getCount());
+        assertTrue(actualPreview.get());
+
+        processedIds.clear();
+        parameters.setPreview(false);
+        exportStatus = tableService().performBulkOperationWithCustomPreview(table, parameters, (id, preview) -> {
+            processedIds.add(id);
+            actualPreview.set(preview);
+        }, sessionWithRight());
+        assertEquals(targetIds, processedIds);
+        assertEquals(2, exportStatus.getCount());
+        assertFalse(actualPreview.get());
+    }
+
+    @Test
+    public void performBulkOperationFilter() throws TableServiceException {
+        // Missing filters
+        TableBulkOperationRequest parameters = new TableBulkOperationRequest(false, TableBulkOperationTargetType.FILTER);
+        assertThrows(TableServiceException.class, () -> tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight()));
+
+        // Test one filter
+        parameters.setFilters(List.of(new FieldFilter("property1", "value1", true)));
+        TableBulkOperationReport exportStatus = tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight());
+        assertEquals(List.of(bean1.getId().toString()), processedIds);
+        assertEquals(1, exportStatus.getCount());
+
+        // Test multiple filters
+        processedIds.clear();
+        parameters.setFilters(List.of(new FieldFilter("property1", "value1", true),
+                new FieldFilter("property1", "value2", true)));
+        exportStatus = tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight());
+        assertEquals(List.of(), processedIds);
+        assertEquals(0, exportStatus.getCount());
+
+        // Test context filter
+        processedIds.clear();
+        parameters.setFilters(List.of());
+        exportStatus = tableService(() -> "property1 = 'value1'").performBulkOperation(table, parameters, processedIds::add, sessionWithRight());
+        assertEquals(List.of(bean1.getId().toString()), processedIds);
+        assertEquals(1, exportStatus.getCount());
+
+        // Test one filter and context filter
+        processedIds.clear();
+        parameters.setFilters(List.of(new FieldFilter("property1", "value1", true)));
+        exportStatus = tableService(() -> "property1 = 'value2'").performBulkOperation(table, parameters, processedIds::add, sessionWithRight());
+        assertEquals(List.of(), processedIds);
+        assertEquals(0, exportStatus.getCount());
+    }
+
+    @Test
+    public void performBulkOperationAll() throws TableServiceException {
+        // All with specified Ids
+        TableBulkOperationRequest parameters = new TableBulkOperationRequest(false, TableBulkOperationTargetType.ALL);
+        parameters.setIds(List.of());
+        assertThrows(TableServiceException.class, () -> tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight()));
+
+        // All with specified filters
+        parameters.setIds(null);
+        parameters.setFilters(List.of(new FieldFilter()));
+        assertThrows(TableServiceException.class, () -> tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight()));
+
+        // All with valid parameters
+        parameters.setIds(null);
+        parameters.setFilters(null);
+        TableBulkOperationReport exportStatus = tableService(() -> "property1 = 'value1'").performBulkOperation(table, parameters, processedIds::add, sessionWithRight());
+        assertEquals(List.of(bean1.getId().toString()), processedIds);
+        assertEquals(1, exportStatus.getCount());
+    }
+
+    private Session<?> sessionWithRight() {
+        Session<?> session = new Session<>();
+        session.put(TEST_RIGHT, new Object());
+        return session;
+    }
+
     private static class MyTableParameters extends TableParameters {
 
     }
@@ -223,4 +352,39 @@ public class TableServiceTest {
         }
 
     }
+
+    private ObjectHookRegistry objectHookRegistryWithContextFilter(ObjectFilter contextObjectFilter) {
+        ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
+        objectHookRegistry.add(new ObjectHook() {
+            @Override
+            public ObjectFilter getObjectFilter(AbstractContext context) {
+                return contextObjectFilter;
+            }
+
+            @Override
+            public ObjectEnricher getObjectEnricher(AbstractContext context) {
+                return null;
+            }
+
+            @Override
+            public void rebuildContext(AbstractContext context, EnricheableObject object) {
+            }
+
+            @Override
+            public boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object) {
+                return false;
+            }
+        });
+        return objectHookRegistry;
+    }
+
+    private TableService tableService() {
+        return tableService(() -> "");
+    }
+    private TableService tableService(ObjectFilter contextObjectFilter) {
+        TableRegistry tableRegistry = new TableRegistry();
+        tableRegistry.register(SIMPLE_TABLE, table);
+        return new TableService(tableRegistry, objectHookRegistryWithContextFilter(contextObjectFilter), new TestAccessManager());
+    }
+
 }

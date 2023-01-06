@@ -11,7 +11,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     // The resolution of the source time series
     private final long sourceResolution;
 
-    // if all buckets should be shrinked in one single bucket
+    // if all buckets should be shrunk in one single bucket
     private boolean shrink = false;
 
     // The resolution of the
@@ -27,6 +27,12 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         this.aggregationPipeline = aggregationPipeline;
         this.sourceResolution = aggregationPipeline.getSourceResolution();
         this.resultResolution = sourceResolution;
+    }
+
+    @Override
+    public TimeSeriesAggregationQuery filter(String oqlFilter) {
+        super.filter(oqlFilter);
+        return this;
     }
 
     @Override
@@ -109,7 +115,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     protected List<Long> drawAxis() {
         ArrayList<Long> legend = new ArrayList<>();
         if (from != null && to != null) {
-            if(shrink) {
+            if (shrink) {
                 legend.add(resultFrom);
             } else {
                 for (long index = resultFrom; index < resultTo; index += resultResolution) {
@@ -121,8 +127,8 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     }
 
     protected Function<Long, Long> getProjectionFunction() {
-        if(shrink) {
-            if(resultFrom != null) {
+        if (shrink) {
+            if (resultFrom != null) {
                 return t -> resultFrom;
             } else {
                 return t -> 0L;
@@ -133,8 +139,8 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     }
 
     protected long getBucketSize() {
-        if(shrink) {
-            if(resultFrom != null) {
+        if (shrink) {
+            if (resultFrom != null) {
                 return resultTo - resultFrom;
             } else {
                 return Long.MAX_VALUE;
@@ -146,7 +152,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     public TimeSeriesAggregationResponse run() {
         if (from != null && to != null) {
-            if(shrink) {
+            if (shrink) {
                 resultFrom = from - from % sourceResolution;
                 resultTo = to - to % sourceResolution + sourceResolution;
             } else {

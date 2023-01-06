@@ -60,6 +60,18 @@ public class OQLBaseListener implements OQLListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterInExpr(OQLParser.InExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitInExpr(OQLParser.InExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterAtomExpr(OQLParser.AtomExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -79,6 +91,18 @@ public class OQLBaseListener implements OQLListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitOrExpr(OQLParser.OrExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterComparisonExpr(OQLParser.ComparisonExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitComparisonExpr(OQLParser.ComparisonExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
