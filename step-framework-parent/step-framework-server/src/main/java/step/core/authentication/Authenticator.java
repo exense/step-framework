@@ -13,9 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  ******************************************************************************/
-package step.core.auth;
+package step.core.authentication;
 
-public interface Authenticator {
-	public boolean authenticate(Credentials credentials) throws Exception;
+import step.core.auth.AbstractCredentials;
 
+public interface Authenticator<C extends AbstractCredentials> {
+	public AuthenticationResults authenticate(C credentials);
+
+	public String resetPassword(String userId);
+
+	public void changePassword(String userId, String password);
+
+	boolean implementOTP();
+
+	boolean supportPasswordManagement();
+
+	boolean useUiLoginMask();
+
+	void setRoleFromProvider(AuthenticationResults authenticationResults);
 }
