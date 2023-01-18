@@ -10,7 +10,7 @@ import step.core.objectenricher.ObjectFilter;
 import step.core.objectenricher.ObjectHookRegistry;
 import step.core.ql.OQLFilterBuilder;
 import step.framework.server.Session;
-import step.framework.server.access.AccessManager;
+import step.framework.server.access.AuthorizationManager;
 import step.framework.server.tables.Table;
 import step.framework.server.tables.TableRegistry;
 import step.framework.server.tables.service.bulk.TableBulkOperationReport;
@@ -27,19 +27,19 @@ public class TableService {
 
     private final TableRegistry tableRegistry;
     private final ObjectHookRegistry objectHookRegistry;
-    private final AccessManager accessManager;
+    private final AuthorizationManager authorizationManager;
 
     private final int defaultMaxFindDuration;
     private final int defaultMaxResultCount;
 
-    public TableService(TableRegistry tableRegistry, ObjectHookRegistry objectHookRegistry, AccessManager accessManager) {
-        this(tableRegistry, objectHookRegistry, accessManager, 10, 1000);
+    public TableService(TableRegistry tableRegistry, ObjectHookRegistry objectHookRegistry, AuthorizationManager authorizationManager) {
+        this(tableRegistry, objectHookRegistry, authorizationManager, 10, 1000);
     }
 
-    public TableService(TableRegistry tableRegistry, ObjectHookRegistry objectHookRegistry, AccessManager accessManager, int defaultMaxFindDuration, int defaultMaxResultCount) {
+    public TableService(TableRegistry tableRegistry, ObjectHookRegistry objectHookRegistry, AuthorizationManager authorizationManager, int defaultMaxFindDuration, int defaultMaxResultCount) {
         this.tableRegistry = tableRegistry;
         this.objectHookRegistry = objectHookRegistry;
-        this.accessManager = accessManager;
+        this.authorizationManager = authorizationManager;
         this.defaultMaxFindDuration = defaultMaxFindDuration;
         this.defaultMaxResultCount = defaultMaxResultCount;
     }
@@ -84,7 +84,7 @@ public class TableService {
         Table<T> table = getTable(tableName);
         return performBulkOperationWithCustomPreview(table, parameters, operationById, session);
     }
-    
+
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperationWithCustomPreview(
             Table<T> table, TableBulkOperationRequest parameters, BiConsumer<String, Boolean> operationById,
             Session<?> session) throws TableServiceException {
@@ -166,7 +166,7 @@ public class TableService {
 
     private <T> void assertSessionHasRequiredAccessRight(Table<T> table, Session<?> session) throws TableServiceException {
         String requiredAccessRight = table.getRequiredAccessRight();
-        boolean hasRequiredRight = requiredAccessRight == null || accessManager.checkRightInContext(session, requiredAccessRight);
+        boolean hasRequiredRight = requiredAccessRight == null || authorizationManager.checkRightInContext(session, requiredAccessRight);
         if (!hasRequiredRight) {
             throw new TableServiceException("Missing right " + requiredAccessRight + " to access table");
         }

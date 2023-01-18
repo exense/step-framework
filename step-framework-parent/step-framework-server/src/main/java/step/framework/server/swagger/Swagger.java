@@ -22,7 +22,6 @@ import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -39,8 +38,8 @@ public class Swagger {
 
     public static final String API_KEY = "Api key";
 
-    public static void setup(ResourceConfig resourceConfig, AbstractContext context) {
-        OpenAPI oas = getOpenApiInstance(context);
+    public static void setup(String serverUrl, ResourceConfig resourceConfig, AbstractContext context) {
+        OpenAPI oas = getOpenApiInstance(serverUrl, context);
 
         SwaggerConfiguration oasConfig = new SwaggerConfiguration()
                 .openAPI(oas)
@@ -51,7 +50,7 @@ public class Swagger {
         openApiResource.setOpenApiConfiguration(oasConfig);
         resourceConfig.register(openApiResource);
 
-        OpenAPI privateOas = getOpenApiInstance(context);
+        OpenAPI privateOas = getOpenApiInstance(serverUrl, context);
         PrivateOpenApiResource privateOpenApiResource = new PrivateOpenApiResource();
         SwaggerConfiguration privateOasConfig = new SwaggerConfiguration()
                 .openAPI(privateOas)
@@ -63,7 +62,7 @@ public class Swagger {
         ModelConverters.getInstance().addConverter(new ObjectIdAwareConverter());
     }
 
-    private static OpenAPI getOpenApiInstance(AbstractContext context) {
+    private static OpenAPI getOpenApiInstance(String serverUrl, AbstractContext context) {
         OpenAPI openAPI = new OpenAPI();
         Info info = new Info()
                 .title("step Controller REST API")
@@ -87,7 +86,7 @@ public class Swagger {
 
         openAPI.schemaRequirement(securitySchemeApiKey.getName(), securitySchemeApiKey);
 
-        Server server = new Server().url("/rest");
+        Server server = new Server().url(serverUrl);
         openAPI.servers(List.of(server));
         openAPI.security(List.of(new SecurityRequirement().addList(API_KEY)));
         return openAPI;

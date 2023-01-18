@@ -7,8 +7,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import step.core.AbstractContext;
-import step.core.access.Role;
-import step.core.access.RoleResolver;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
@@ -17,7 +15,7 @@ import step.core.collections.inmemory.InMemoryCollection;
 import step.core.entities.Bean;
 import step.core.objectenricher.*;
 import step.framework.server.Session;
-import step.framework.server.access.AccessManager;
+import step.framework.server.access.NoAuthorizationManager;
 import step.framework.server.tables.Table;
 import step.framework.server.tables.TableRegistry;
 import step.framework.server.tables.service.bulk.TableBulkOperationReport;
@@ -80,7 +78,7 @@ public class TableServiceTest {
         Table<Bean> tableWithAccessRight = new Table<>(collection, TEST_RIGHT, false);
         tableRegistry.register(TABLE_WITH_ACCESS_RIGHT, tableWithAccessRight);
 
-        TableService tableService = new TableService(tableRegistry, objectHookRegistryWithContextFilter(() -> "property1 = " + VALUE_2), new TestAccessManager());
+        TableService tableService = new TableService(tableRegistry, objectHookRegistryWithContextFilter(() -> "property1 = " + VALUE_2), new TestAuthorizationManager());
 
         // Test empty request
         TableRequest request = new TableRequest();
@@ -346,21 +344,13 @@ public class TableServiceTest {
 
     }
 
-    private static class TestAccessManager implements AccessManager {
-        @Override
-        public void setRoleResolver(RoleResolver roleResolver) {
-
-        }
+    private static class TestAuthorizationManager extends NoAuthorizationManager {
 
         @Override
         public boolean checkRightInContext(Session session, String right) {
             return session != null && session.get(right) != null;
         }
 
-        @Override
-        public Role getRoleInContext(Session session) {
-            return null;
-        }
     }
 
     private ObjectHookRegistry objectHookRegistryWithContextFilter(ObjectFilter contextObjectFilter) {
@@ -394,7 +384,7 @@ public class TableServiceTest {
     private TableService tableService(ObjectFilter contextObjectFilter) {
         TableRegistry tableRegistry = new TableRegistry();
         tableRegistry.register(SIMPLE_TABLE, table);
-        return new TableService(tableRegistry, objectHookRegistryWithContextFilter(contextObjectFilter), new TestAccessManager());
+        return new TableService(tableRegistry, objectHookRegistryWithContextFilter(contextObjectFilter), new TestAuthorizationManager());
     }
 
 }

@@ -69,6 +69,7 @@ import jakarta.servlet.http.HttpSessionListener;
 
 public class ControllerServer {
 
+	private final String contextRoot;
 	private Configuration configuration;
 	
 	private Server server;
@@ -116,6 +117,7 @@ public class ControllerServer {
 		super();
 		this.configuration = configuration;
 		this.port = configuration.getPropertyAsInteger("port", 8080);
+		this.contextRoot = configuration.getProperty("ui.context.root","/");
 		this.webAppRoots = new HashSet<>();
 		this.webAppRoots.add(configuration.getProperty("ui.resource.root","dist/step-app"));
 	}
@@ -215,7 +217,7 @@ public class ControllerServer {
 		List<Resource> resources = webAppRoots.stream().map(r -> Resource.newClassPathResource(r)).collect(Collectors.toList());
 		ResourceCollection resourceCollection = new ResourceCollection(resources);
 		servletContextHandler.setBaseResource(resourceCollection);
-		servletContextHandler.setContextPath("/");
+		servletContextHandler.setContextPath(contextRoot);
 		addHandler(servletContextHandler);
 	}
 
@@ -301,7 +303,7 @@ public class ControllerServer {
 		});
 
 		webAppRoots.add("swagger/webapp");
-		Swagger.setup(resourceConfig, serverContext);
+		Swagger.setup(contextRoot + "rest", resourceConfig, serverContext);
 
 		// Lastly, the default servlet for root content (always needed, to satisfy servlet spec)
 		// It is important that this is last.
