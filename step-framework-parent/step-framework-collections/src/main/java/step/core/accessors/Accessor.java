@@ -154,5 +154,5 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	 */
 	T restoreVersion(ObjectId entityId, ObjectId versionId);
 
-	void setVersionedCollections(Collection<VersionableEntity> versionedCollection);
+	void enableVersioning(Collection<VersionableEntity> versionedCollection, Long newVersionThresholdMs);
 }

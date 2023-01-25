@@ -91,6 +91,19 @@ public abstract class AbstractAccessorTest {
 	}
 
 	@Test
+	public void testDataIntegrity() {
+		Bean bean = new Bean();
+		bean.setProperty1("value to save");
+		beanAccessor.save(bean);
+		bean.setProperty1("local modif");
+		Bean beanInDB = beanAccessor.get(bean.getId());
+		assertEquals("value to save", beanInDB.getProperty1());
+		beanInDB.setProperty1("local modif from retrieved DB bean");
+		beanInDB = beanAccessor.get(bean.getId());
+		assertEquals("value to save", beanInDB.getProperty1());
+	}
+
+	@Test
 	public void testFindByAttributes() {
 		AbstractOrganizableObject entity = new AbstractOrganizableObject();
 		entity.addAttribute("att1", "val1");
@@ -155,12 +168,10 @@ public abstract class AbstractAccessorTest {
 		ObjectId id = entity.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
 		entity.setProperty1("value 1");
 		beanAccessor.save(entity);
-		entity = new Bean();//required for inMemory collections tests or only the last value remain
-		entity.setId(id);
+
 		entity.setProperty1("value 2");
 		beanAccessor.save(entity);
-		entity = new Bean();//required for inMemory collections tests or only the last value remain
-		entity.setId(id);
+
 		entity.setProperty1("value 3");
 		beanAccessor.save(entity);
 		assertEquals("value 3", beanAccessor.get(entity.getId()).getProperty1());
@@ -182,23 +193,13 @@ public abstract class AbstractAccessorTest {
 	@Test
 	public void testBeanAccessorBulkHistory() {
 		Bean entity = new Bean();
-		ObjectId id = entity.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
 		entity.setProperty1("value 1");
-
 		Bean entity1 = new Bean();
-		ObjectId id1 = entity1.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
 		entity1.setProperty1("value 11");
-
 		beanAccessor.save(List.of(entity, entity1));
 
-		entity = new Bean();//required for inMemory collections tests or only the last value remain
-		entity.setId(id);
 		entity.setProperty1("value 2");
-
-		entity1 = new Bean();
-		entity1.setId(id1);
 		entity1.setProperty1("value 12");
-
 		beanAccessor.save(List.of(entity, entity1));
 
 		assertEquals("value 2", beanAccessor.get(entity.getId()).getProperty1());
@@ -226,15 +227,12 @@ public abstract class AbstractAccessorTest {
 	@Test
 	public void testBeanAccessorRestoreHistory() {
 		Bean entity = new Bean();
-		ObjectId id = entity.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
 		entity.setProperty1("value 1");
 		beanAccessor.save(entity);
-		entity = new Bean();//required for inMemory collections tests or only the last value remain
-		entity.setId(id);
+
 		entity.setProperty1("value 2");
 		beanAccessor.save(entity);
-		entity = new Bean();//required for inMemory collections tests or only the last value remain
-		entity.setId(id);
+
 		entity.setProperty1("value 3");
 		beanAccessor.save(entity);
 		assertEquals("value 3", beanAccessor.get(entity.getId()).getProperty1());

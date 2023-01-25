@@ -8,7 +8,6 @@ import step.core.accessors.AbstractOrganizableObject;
 import step.core.collections.Collection;
 import step.core.collections.Filters;
 import step.core.collections.VersionableEntity;
-import step.core.collections.inmemory.InMemoryCollection;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 
 import java.io.IOException;
@@ -30,7 +29,7 @@ public class MongoDBAccessorTest extends AbstractAccessorTest {
 		beanAccessor.getCollectionDriver().remove(Filters.empty());
 		Collection<VersionableEntity> versionedBeanCollection = mongoDBCollectionFactory.getVersionedCollection("bean");
 		versionedBeanCollection.remove(Filters.empty());
-		beanAccessor.setVersionedCollections(versionedBeanCollection);
+		beanAccessor.enableVersioning(versionedBeanCollection, 1l);
 	}
 
 
@@ -39,8 +38,7 @@ public class MongoDBAccessorTest extends AbstractAccessorTest {
 		properties.put("host", "central-mongodb.stepcloud-test.ch");
 		//properties.put("host", "localhost");
 		properties.put("database", "test");
-		//properties.put("credentialsDB", "step");
-		properties.put("username", "myTester");
+		properties.put("username", "tester");
 		properties.put("password", "5dB(rs+4YRJe");
 		return properties;
 	}

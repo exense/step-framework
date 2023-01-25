@@ -17,7 +17,7 @@ public class CachedAccessorTest extends AbstractAccessorTest {
 		accessor = new CachedAccessor<AbstractIdentifiableObject>(underlyingAccessor);
 		organizableObjectAccessor = new CachedAccessor<AbstractOrganizableObject>(underlyingOrganisableObjectAccessor);
 		beanAccessor = new CachedAccessor<Bean>(underlyingBeanAccessor);
-		underlyingBeanAccessor.setVersionedCollections(new InMemoryCollection<>());
+		underlyingBeanAccessor.enableVersioning(new InMemoryCollection<>(), 1l);
 	}
 	
 	@Test

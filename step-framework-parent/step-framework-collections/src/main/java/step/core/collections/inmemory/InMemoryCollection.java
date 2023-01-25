@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.bson.types.ObjectId;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,8 +42,8 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	
 	public InMemoryCollection() {
 		super();
-		entityClass = null;
-		entities = new ConcurrentHashMap<>();
+		this.entityClass = null;
+		this.entities = new ConcurrentHashMap<>();
 	}
 	
 	public InMemoryCollection(Class<T> entityClass, Map<ObjectId, T> entities) {
@@ -100,7 +101,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 			} else if(e instanceof Document && entityClass != Document.class) {
 				return mapper.convertValue(e, entityClass);
 			} else {
-				return e;
+				return clone(e);
 			}
 		});
 	}
@@ -129,8 +130,16 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 		if (getId(entity) == null) {
 			setId(entity, new ObjectId());
 		}
-		entities.put(getId(entity), entity);
+		entities.put(getId(entity), clone(entity));
 		return entity;
+	}
+
+	private T clone(T entity) {
+		try {
+			return (T) mapper.readValue(mapper.writeValueAsString(entity), entity.getClass());
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("Unable to clone entity before saving into the inMemory collection", e);
+		}
 	}
 
 	@Override

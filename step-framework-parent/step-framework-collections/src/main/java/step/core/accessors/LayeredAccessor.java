@@ -160,7 +160,7 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 	}
 
 	@Override
-	public void setVersionedCollections(Collection<VersionableEntity> versionedCollection) {
+	public void enableVersioning(Collection<VersionableEntity> versionedCollection, Long newVersionThresholdMs) {
 		throw new UnsupportedOperationException("The versioned collections cannot be set on the layered accessor, but on individual accessors only");
 	}
 

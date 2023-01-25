@@ -141,7 +141,7 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	}
 
 	@Override
-	public void setVersionedCollections(Collection<VersionableEntity> versionedCollection) {
+	public void enableVersioning(Collection<VersionableEntity> versionedCollection, Long newVersionThresholdMs) {
 		throw new UnsupportedOperationException("The versioned collections cannot be set on the cached accessor, but on its underlying accessors only");
 	}
 

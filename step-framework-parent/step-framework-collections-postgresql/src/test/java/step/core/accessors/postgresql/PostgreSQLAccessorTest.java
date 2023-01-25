@@ -2,7 +2,6 @@ package step.core.accessors.postgresql;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 import step.core.accessors.AbstractAccessor;
 import step.core.accessors.AbstractAccessorTest;
 import step.core.accessors.AbstractIdentifiableObject;
@@ -31,7 +30,7 @@ public class PostgreSQLAccessorTest extends AbstractAccessorTest {
 				jdbcDBCollectionFactory.getCollection("bean", AbstractAccessorTest.Bean.class));
 		Collection<VersionableEntity> versionedCollection = jdbcDBCollectionFactory.getVersionedCollection("bean");
 		versionedCollection.remove(Filters.empty());
-		beanAccessor.setVersionedCollections(versionedCollection);
+		beanAccessor.enableVersioning(versionedCollection, 1l);
 		accessor.getCollectionDriver().remove(Filters.empty());
 		organizableObjectAccessor.getCollectionDriver().remove(Filters.empty());
 		beanAccessor.getCollectionDriver().remove(Filters.empty());

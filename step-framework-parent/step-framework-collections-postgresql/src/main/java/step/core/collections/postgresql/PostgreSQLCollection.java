@@ -34,6 +34,7 @@ import step.core.collections.AbstractCollection;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -304,12 +305,16 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		return getFieldClass(currentClass,previous);
 	}
 
-	protected Class getFieldClass(Class clazz, String field) {
+	protected Class getFieldClass(Class clazz, String _field) {
+		String field = _field.equals("_id") ? "id" : _field;
 		for (PropertyDescriptor propertyDescriptor: PropertyUtils.getPropertyDescriptors(clazz)) {
 			if (propertyDescriptor.getName().equals(field)) {
 				Type genericReturnType = propertyDescriptor.getReadMethod().getGenericReturnType();
 				if (genericReturnType instanceof ParameterizedType) {
 					return (Class) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
+				} else if (genericReturnType instanceof TypeVariable) {
+					return (Class) Arrays.stream(((TypeVariable) genericReturnType).getBounds()).findFirst()
+							.orElseThrow(() -> new RuntimeException("Reflection failed for clazz '" + clazz + "' and field '" + field + "'" ));
 				} else {
 					Class fieldClass = (Class) genericReturnType;
 					return (fieldClass.isEnum()) ? String.class: fieldClass;

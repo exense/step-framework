@@ -36,11 +36,15 @@ import step.core.collections.SearchOrder;
 import step.core.collections.VersionableEntity;
 import step.core.collections.filters.Equals;
 
+import static step.core.collections.VersionableEntity.VERSION_BULK_TIME_MS;
+import static step.core.collections.VersionableEntity.VERSION_CUSTOM_FIELD;
+
 public class AbstractAccessor<T extends AbstractIdentifiableObject> implements Accessor<T> {
 
 	protected final Collection<T> collectionDriver;
 
 	protected Collection<VersionableEntity> versionedCollectionDriver;
+	protected Long newVersionThresholdMs;
 
 	public AbstractAccessor(Collection<T> collectionDriver) {
 		super();
@@ -140,7 +144,7 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	@Override
 	public T save(T entity) {
 		if (versionedCollectionDriver != null) {
-			VersionableEntity version = versionedCollectionDriver.save(new VersionableEntity(entity));
+			versionedCollectionDriver.save(getVersionForEntity(entity));
 		}
 		return collectionDriver.save(entity);
 	}
@@ -149,10 +153,28 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	public void save(Iterable<T> entities) {
 		if (versionedCollectionDriver != null) {
 			List<VersionableEntity> versionedEntities = new ArrayList<>();
-			entities.forEach(e->versionedEntities.add(new VersionableEntity<>(e)));
+			entities.forEach(e->versionedEntities.add(getVersionForEntity(e)));
 			versionedCollectionDriver.save(versionedEntities);
 		}
 		collectionDriver.save(entities);
+	}
+
+	private VersionableEntity getVersionForEntity(T entity) {
+		Long current = System.currentTimeMillis();
+		//If current version of entity is older than 1 minute create a new one
+		String versionId = entity.getCustomField(VERSION_CUSTOM_FIELD, String.class);
+		VersionableEntity versionableEntity = (versionId != null && ((versionableEntity = getVersionById(versionId)) != null)
+				&& versionableEntity.getUpdateTime() > (current - newVersionThresholdMs)) ?
+				versionableEntity : new VersionableEntity();
+
+		versionableEntity.setUpdateTime(current);
+		versionableEntity.setEntity(entity);
+		entity.addCustomField(VERSION_CUSTOM_FIELD, versionableEntity.getId().toHexString());
+		return versionableEntity;
+	}
+
+	private VersionableEntity getVersionById(String versionId) {
+		return versionedCollectionDriver.find(byId(new ObjectId(versionId)), null, null, 1, 0).findFirst().orElse(null);
 	}
 
 	@Override
@@ -209,7 +231,9 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	}
 
 	@Override
-	public void setVersionedCollections(Collection<VersionableEntity> versionedCollection) {
+	public void enableVersioning(Collection<VersionableEntity> versionedCollection, Long newVersionThresholdMs) {
 		this.versionedCollectionDriver =  versionedCollection;
+		versionedCollection.createOrUpdateIndex("entity._id");
+		this.newVersionThresholdMs = (newVersionThresholdMs != null) ? newVersionThresholdMs : VERSION_BULK_TIME_MS;
 	}
 }

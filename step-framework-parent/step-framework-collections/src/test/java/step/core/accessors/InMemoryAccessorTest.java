@@ -30,7 +30,7 @@ public class InMemoryAccessorTest extends AbstractAccessorTest {
 		organizableObjectAccessor = new InMemoryAccessor<>();
 		beanAccessor = new InMemoryAccessor<>();
 		//enable versioning
-		beanAccessor.setVersionedCollections(new InMemoryCollection<>());
+		beanAccessor.enableVersioning(new InMemoryCollection<>(), 1l);
 	}
 
 }

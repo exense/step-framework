@@ -120,7 +120,8 @@ public class TableServiceTest {
         request.setFilters(List.of(new FieldFilter("property1", VALUE_1, false)));
         response = tableService.request(SIMPLE_TABLE, request, null);
         assertEquals(List.of(bean1), response.getData());
-        assertEquals(ENRICHED_ATTRIBUTE_VALUE, bean1.getAttribute(ENRICHED_ATTRIBUTE_KEY));
+        Bean actualBean = (Bean) response.getData().get(0);
+        assertEquals(ENRICHED_ATTRIBUTE_VALUE, actualBean.getAttribute(ENRICHED_ATTRIBUTE_KEY));
 
         // Test custom ResultListFactory
         ArrayList<Bean> customResultList = new ArrayList<>();
