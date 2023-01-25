@@ -28,6 +28,8 @@ import org.bson.types.ObjectId;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import step.core.accessors.DefaultJacksonMapperProvider;
 import step.core.collections.*;
 import step.core.collections.Collection;
@@ -36,6 +38,7 @@ import step.core.collections.AbstractCollection;
 
 public class InMemoryCollection<T> extends AbstractCollection<T> implements Collection<T> {
 
+	private static final Logger logger = LoggerFactory.getLogger(InMemoryCollection.class);
 	private final Class<T> entityClass;
 	private final Map<ObjectId, T> entities;
 	private final ObjectMapper mapper = DefaultJacksonMapperProvider.getObjectMapper();
@@ -138,7 +141,11 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 		try {
 			return (T) mapper.readValue(mapper.writeValueAsString(entity), entity.getClass());
 		} catch (JsonProcessingException e) {
-			throw new RuntimeException("Unable to clone entity before saving into the inMemory collection", e);
+			logger.warn("Unable to clone entity before saving into the inMemory collection, returning same instance.");
+			if (logger.isDebugEnabled()) {
+				logger.debug("Unable to clone entity before saving into the inMemory collection", e);
+			}
+			return entity;
 		}
 	}
 
