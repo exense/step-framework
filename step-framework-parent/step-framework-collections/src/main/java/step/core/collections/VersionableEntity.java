@@ -10,6 +10,8 @@ public class VersionableEntity<T extends AbstractIdentifiableObject> extends Abs
 	public static long VERSION_BULK_TIME_MS = 60000;
 
 	protected long updateTime;
+	protected long updateGroupTime;
+
 	@JsonTypeInfo(use= JsonTypeInfo.Id.CLASS,property="type")
 	protected T entity;
 
@@ -32,4 +34,11 @@ public class VersionableEntity<T extends AbstractIdentifiableObject> extends Abs
 		this.entity = entity;
 	}
 
+	public long getUpdateGroupTime() {
+		return updateGroupTime;
+	}
+
+	public void setUpdateGroupTime(long updateGroupTime) {
+		this.updateGroupTime = updateGroupTime;
+	}
 }

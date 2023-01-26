@@ -161,13 +161,15 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 
 	private VersionableEntity getVersionForEntity(T entity) {
 		Long current = System.currentTimeMillis();
+		Long currentTsGroup = ((long) (current / newVersionThresholdMs)) * newVersionThresholdMs;
 		//If current version of entity is older than 1 minute create a new one
 		String versionId = entity.getCustomField(VERSION_CUSTOM_FIELD, String.class);
 		VersionableEntity versionableEntity = (versionId != null && ((versionableEntity = getVersionById(versionId)) != null)
-				&& versionableEntity.getUpdateTime() > (current - newVersionThresholdMs)) ?
+				&& versionableEntity.getUpdateGroupTime() == currentTsGroup) ?
 				versionableEntity : new VersionableEntity();
 
 		versionableEntity.setUpdateTime(current);
+		versionableEntity.setUpdateGroupTime(currentTsGroup);
 		versionableEntity.setEntity(entity);
 		entity.addCustomField(VERSION_CUSTOM_FIELD, versionableEntity.getId().toHexString());
 		return versionableEntity;
