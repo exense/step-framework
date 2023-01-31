@@ -160,6 +160,8 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 		collectionDriver.save(entities);
 	}
 
+	//This methods update or create the Version for a given entity
+	//Note that the entity itself is modified and need to be saved by the caller
 	private EntityVersion getVersionForEntity(T entity) {
 		Long current = System.currentTimeMillis();
 		Long currentTsGroup = ((long) (current / newVersionThresholdMs)) * newVersionThresholdMs;
