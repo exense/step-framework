@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.AbstractOrganizableObject;
 
-public class VersionableEntity<T extends AbstractIdentifiableObject> extends AbstractOrganizableObject {
+public class EntityVersion<T extends AbstractIdentifiableObject> extends AbstractOrganizableObject {
 
 	public static String VERSION_CUSTOM_FIELD = "versionId";
 	public static long VERSION_BULK_TIME_MS = 60000;
@@ -15,7 +15,7 @@ public class VersionableEntity<T extends AbstractIdentifiableObject> extends Abs
 	@JsonTypeInfo(use= JsonTypeInfo.Id.CLASS,property="type")
 	protected T entity;
 
-	public VersionableEntity() {
+	public EntityVersion() {
 	}
 
 	public long getUpdateTime() {

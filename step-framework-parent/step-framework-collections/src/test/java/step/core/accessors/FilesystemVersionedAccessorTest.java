@@ -18,16 +18,15 @@
  ******************************************************************************/
 package step.core.accessors;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.junit.Before;
-
 import ch.exense.commons.io.FileHelper;
+import org.junit.Before;
 import step.core.collections.EntityVersion;
 import step.core.collections.filesystem.FilesystemCollection;
 
-public class FilesystemAccessorTest extends AbstractAccessorTest {
+import java.io.File;
+import java.io.IOException;
+
+public class FilesystemVersionedAccessorTest extends AbstractVersionedAccessorTest {
 
 	@Before
 	public void before() {
@@ -43,5 +42,6 @@ public class FilesystemAccessorTest extends AbstractAccessorTest {
 				new FilesystemCollection<>(repository, AbstractOrganizableObject.class));
 		beanAccessor = new AbstractAccessor<Bean>(
 				new FilesystemCollection<>(repository, Bean.class));
+		beanAccessor.enableVersioning(new FilesystemCollection<>(repository, EntityVersion.class), 1l);
 	}
 }

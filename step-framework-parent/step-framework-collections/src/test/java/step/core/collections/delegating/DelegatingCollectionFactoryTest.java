@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
-import step.core.collections.VersionableEntity;
+import step.core.collections.EntityVersion;
 import step.core.collections.inmemory.InMemoryCollection;
 
 public class DelegatingCollectionFactoryTest {
@@ -15,7 +15,7 @@ public class DelegatingCollectionFactoryTest {
 	@Test
 	public void test() throws IOException {
 		InMemoryCollection<Object> collectionFromFactory1 = new InMemoryCollection<Object>();
-		InMemoryCollection<VersionableEntity> collectionFromFactory1Versioned = new InMemoryCollection<>();
+		InMemoryCollection<EntityVersion> collectionFromFactory1Versioned = new InMemoryCollection<>();
 		CollectionFactory collectionFactory1 = newCollectionFactory(collectionFromFactory1, collectionFromFactory1Versioned);
 
 		InMemoryCollection<Object> collectionFromFactory2 = new InMemoryCollection<Object>();
@@ -32,7 +32,7 @@ public class DelegatingCollectionFactoryTest {
 		Collection<Object> actualCollection = collectionFactory.getCollection("myCollection1", null);
 		Assert.assertTrue(actualCollection == collectionFromFactory1);
 
-		Collection<VersionableEntity> actualVersionedCollection = collectionFactory.getVersionedCollection("myCollection1");
+		Collection<EntityVersion> actualVersionedCollection = collectionFactory.getVersionedCollection("myCollection1");
 		Assert.assertTrue(actualVersionedCollection == collectionFromFactory1Versioned);
 
 		actualCollection = collectionFactory.getCollection("myCollection2", null);
@@ -64,7 +64,7 @@ public class DelegatingCollectionFactoryTest {
 	}
 
 	private CollectionFactory newCollectionFactory(InMemoryCollection<Object> collectionFromFactory1,
-												   InMemoryCollection<VersionableEntity>  collectionFromFactory1Versioned) {
+												   InMemoryCollection<EntityVersion>  collectionFromFactory1Versioned) {
 		return new CollectionFactory() {
 
 			@Override
@@ -78,8 +78,8 @@ public class DelegatingCollectionFactoryTest {
 			}
 
 			@Override
-			public Collection<VersionableEntity> getVersionedCollection(String name) {
-				return (Collection<VersionableEntity>) collectionFromFactory1Versioned;
+			public Collection<EntityVersion> getVersionedCollection(String name) {
+				return (Collection<EntityVersion>) collectionFromFactory1Versioned;
 			}
 		};
 	}

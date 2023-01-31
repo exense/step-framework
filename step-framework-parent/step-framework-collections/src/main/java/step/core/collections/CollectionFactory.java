@@ -28,7 +28,7 @@ public interface CollectionFactory {
 
 	public <T> Collection<T> getCollection(String name, Class<T> entityClass);
 
-	public Collection<VersionableEntity> getVersionedCollection(String name);
+	public Collection<EntityVersion> getVersionedCollection(String name);
 
 	public void close() throws IOException;
 	

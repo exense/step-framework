@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
 import step.core.collections.Collection;
-import step.core.collections.VersionableEntity;
+import step.core.collections.EntityVersion;
 
 public interface Accessor<T extends AbstractIdentifiableObject> {
 
@@ -143,7 +143,7 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	 * @param id the UID of the object
 	 * @return the list of versioned objects
 	 */
-	Stream<VersionableEntity> getHistory(ObjectId id, Integer skip, Integer limit);
+	Stream<EntityVersion> getHistory(ObjectId id, Integer skip, Integer limit);
 
 	/**
 	 * Restore a version
@@ -154,5 +154,7 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	 */
 	T restoreVersion(ObjectId entityId, ObjectId versionId);
 
-	void enableVersioning(Collection<VersionableEntity> versionedCollection, Long newVersionThresholdMs);
+	boolean isVersioningEnabled();
+
+	void enableVersioning(Collection<EntityVersion> versionedCollection, Long newVersionThresholdMs);
 }

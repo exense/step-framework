@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
-import step.core.collections.VersionableEntity;
+import step.core.collections.EntityVersion;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -56,10 +56,10 @@ public class PostgreSQLCollectionFactory implements CollectionFactory {
 	}
 
 	@Override
-	public Collection<VersionableEntity> getVersionedCollection(String name) {
+	public Collection<EntityVersion> getVersionedCollection(String name) {
 		try {
 			return new PostgreSQLCollection(ds, name + CollectionFactory.VERSION_COLLECTION_SUFFIX,
-					VersionableEntity.class);
+					EntityVersion.class);
 		} catch (SQLException e) {
 			throw new RuntimeException("Unable to get Jdbc Collection", e);
 		}

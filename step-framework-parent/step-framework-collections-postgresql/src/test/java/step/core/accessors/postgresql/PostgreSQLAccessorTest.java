@@ -8,7 +8,7 @@ import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.AbstractOrganizableObject;
 import step.core.collections.Collection;
 import step.core.collections.Filters;
-import step.core.collections.VersionableEntity;
+import step.core.collections.EntityVersion;
 import step.core.collections.postgresql.PostgreSQLCollectionFactory;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class PostgreSQLAccessorTest extends AbstractAccessorTest {
 				jdbcDBCollectionFactory.getCollection("abstractOrganizableObject", AbstractOrganizableObject.class));
 		beanAccessor = new AbstractAccessor<AbstractAccessorTest.Bean>(
 				jdbcDBCollectionFactory.getCollection("bean", AbstractAccessorTest.Bean.class));
-		Collection<VersionableEntity> versionedCollection = jdbcDBCollectionFactory.getVersionedCollection("bean");
+		Collection<EntityVersion> versionedCollection = jdbcDBCollectionFactory.getVersionedCollection("bean");
 		versionedCollection.remove(Filters.empty());
 		beanAccessor.enableVersioning(versionedCollection, 1l);
 		accessor.getCollectionDriver().remove(Filters.empty());

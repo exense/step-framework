@@ -29,8 +29,6 @@ public class InMemoryAccessorTest extends AbstractAccessorTest {
 		accessor = new InMemoryAccessor<>();
 		organizableObjectAccessor = new InMemoryAccessor<>();
 		beanAccessor = new InMemoryAccessor<>();
-		//enable versioning
-		beanAccessor.enableVersioning(new InMemoryCollection<>(), 1l);
 	}
 
 }

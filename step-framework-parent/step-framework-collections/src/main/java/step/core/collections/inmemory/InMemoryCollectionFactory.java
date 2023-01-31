@@ -27,7 +27,7 @@ import org.bson.types.ObjectId;
 
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
-import step.core.collections.VersionableEntity;
+import step.core.collections.EntityVersion;
 
 public class InMemoryCollectionFactory implements CollectionFactory {
 
@@ -50,9 +50,9 @@ public class InMemoryCollectionFactory implements CollectionFactory {
 	}
 
 	@Override
-	public Collection<VersionableEntity> getVersionedCollection(String name) {
+	public Collection<EntityVersion> getVersionedCollection(String name) {
 		Map<ObjectId, Object> entities = collections.computeIfAbsent(name + CollectionFactory.VERSION_COLLECTION_SUFFIX, k->new ConcurrentHashMap());
-		return new InMemoryCollection(VersionableEntity.class, entities);
+		return new InMemoryCollection(EntityVersion.class, entities);
 	}
 
 }

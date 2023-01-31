@@ -7,7 +7,7 @@ import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.AbstractOrganizableObject;
 import step.core.collections.Collection;
 import step.core.collections.Filters;
-import step.core.collections.VersionableEntity;
+import step.core.collections.EntityVersion;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class MongoDBAccessorTest extends AbstractAccessorTest {
 		accessor.getCollectionDriver().remove(Filters.empty());
 		organizableObjectAccessor.getCollectionDriver().remove(Filters.empty());
 		beanAccessor.getCollectionDriver().remove(Filters.empty());
-		Collection<VersionableEntity> versionedBeanCollection = mongoDBCollectionFactory.getVersionedCollection("bean");
+		Collection<EntityVersion> versionedBeanCollection = mongoDBCollectionFactory.getVersionedCollection("bean");
 		versionedBeanCollection.remove(Filters.empty());
 		beanAccessor.enableVersioning(versionedBeanCollection, 1l);
 	}
