@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
 import step.core.collections.Collection;
+import step.core.collections.EntityVersion;
 
 public interface Accessor<T extends AbstractIdentifiableObject> {
 
@@ -135,4 +136,25 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	 * @param entities the list of entities to be saved
 	 */
 	void save(Iterable<T> entities);
+
+	/**
+	 * Get all object's versions by id
+	 *
+	 * @param id the UID of the object
+	 * @return the list of versioned objects
+	 */
+	Stream<EntityVersion> getHistory(ObjectId id, Integer skip, Integer limit);
+
+	/**
+	 * Restore a version
+	 *
+	 * @param entityId the UID of the object to be restored
+	 * @param entityId the UID of the object to be restored
+	 * @return the restored object
+	 */
+	T restoreVersion(ObjectId entityId, ObjectId versionId);
+
+	boolean isVersioningEnabled();
+
+	void enableVersioning(Collection<EntityVersion> versionedCollection, Long newVersionThresholdMs);
 }

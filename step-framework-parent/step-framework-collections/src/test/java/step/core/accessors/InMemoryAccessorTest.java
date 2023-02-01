@@ -19,6 +19,7 @@
 package step.core.accessors;
 
 import org.junit.Before;
+import step.core.collections.inmemory.InMemoryCollection;
 
 
 public class InMemoryAccessorTest extends AbstractAccessorTest {

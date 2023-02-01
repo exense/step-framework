@@ -18,30 +18,19 @@
  ******************************************************************************/
 package step.core.accessors;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
+import step.core.collections.inmemory.InMemoryCollection;
 
-import ch.exense.commons.io.FileHelper;
-import step.core.collections.EntityVersion;
-import step.core.collections.filesystem.FilesystemCollection;
 
-public class FilesystemAccessorTest extends AbstractAccessorTest {
+public class InMemoryVersionedAccessorTest extends AbstractVersionedAccessorTest {
 
 	@Before
 	public void before() {
-		File repository;
-		try {
-			repository = FileHelper.createTempFolder();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		accessor = new AbstractAccessor<AbstractIdentifiableObject>(
-				new FilesystemCollection<>(repository, AbstractIdentifiableObject.class));
-		organizableObjectAccessor = new AbstractAccessor<AbstractOrganizableObject>(
-				new FilesystemCollection<>(repository, AbstractOrganizableObject.class));
-		beanAccessor = new AbstractAccessor<Bean>(
-				new FilesystemCollection<>(repository, Bean.class));
+		accessor = new InMemoryAccessor<>();
+		organizableObjectAccessor = new InMemoryAccessor<>();
+		beanAccessor = new InMemoryAccessor<>();
+		//enable versioning
+		beanAccessor.enableVersioning(new InMemoryCollection<>(), 1l);
 	}
+
 }

@@ -44,6 +44,8 @@ public class PojoUtils {
                     throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
                 if (name.equals("_class")) {
                     return bean.getClass().getName();
+                } else if (name.equals("_id")) {
+                    return super.getSimpleProperty(bean, "id");
                 } else {
                     return super.getSimpleProperty(bean, name);
                 }

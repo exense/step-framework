@@ -25,8 +25,11 @@ public class MongoDBCollectionTest extends AbstractCollectionTest {
 	
 	private static Properties getProperties() throws IOException {
 		Properties properties = new Properties();
-		properties.put("host", "localhost");
+		properties.put("host", "central-mongodb.stepcloud-test.ch");
+		//properties.put("host", "localhost");
 		properties.put("database", "test");
+		properties.put("username", "tester");
+		properties.put("password", "5dB(rs+4YRJe");
 		return properties;
 	}
 

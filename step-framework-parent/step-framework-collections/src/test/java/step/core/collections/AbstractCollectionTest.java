@@ -56,13 +56,13 @@ public abstract class AbstractCollectionTest {
 		assertEquals(0, count);
 		
 		count = beanCollection.estimatedCount();
-		assertEquals(0, count);
+		assertTrue(-1 <= count && count <= 1); //psql estimate are based on stats can be -1
 		
 		Bean bean1 = new Bean(VALUE1);
 		beanCollection.save(bean1);
 
 		count = beanCollection.estimatedCount();
-		assertEquals(1, count);
+		assertTrue(-1 <= count && count <= 1); //psql estimate are based on stats and can be -1
 		
 		count = beanCollection.count(Filters.empty(), 10);
 		assertEquals(1, count);

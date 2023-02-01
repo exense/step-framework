@@ -8,7 +8,9 @@ import java.util.Spliterator;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.bson.types.ObjectId;
 import org.junit.Test;
+import step.core.collections.EntityVersion;
 
 import static org.junit.Assert.*;
 
@@ -84,6 +86,19 @@ public abstract class AbstractAccessorTest {
 
 		actualEntity = beanAccessor.findByCriteria(new HashMap<> ());
 		assertEquals(entity, actualEntity);
+	}
+
+	@Test
+	public void testDataIntegrity() {
+		Bean bean = new Bean();
+		bean.setProperty1("value to save");
+		beanAccessor.save(bean);
+		bean.setProperty1("local modif");
+		Bean beanInDB = beanAccessor.get(bean.getId());
+		assertEquals("value to save", beanInDB.getProperty1());
+		beanInDB.setProperty1("local modif from retrieved DB bean");
+		beanInDB = beanAccessor.get(bean.getId());
+		assertEquals("value to save", beanInDB.getProperty1());
 	}
 
 	@Test

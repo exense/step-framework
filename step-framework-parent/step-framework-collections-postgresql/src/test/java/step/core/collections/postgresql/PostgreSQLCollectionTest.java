@@ -37,18 +37,17 @@ import static org.junit.Assert.assertEquals;
 import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatField;
 import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatFieldForValueAsText;
 
-//Currently no psql server installed on build server and no mocks implemented
-public class PostgreSQLCollectionTest { //extends AbstractCollectionTest {
+public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 
-	/*public PostgreSQLCollectionTest() {
+	public PostgreSQLCollectionTest() {
 		super(new PostgreSQLCollectionFactory(PostgreSQLCollectionTest.getProperties()));
 	}
 
 	private static Properties getProperties()  {
 		Properties properties = new Properties();
-		properties.put("jdbcUrl", "jdbc:postgresql://localhost/Test");
-		properties.put("user", "postgres");
-		properties.put("password", "init");
+		properties.put("jdbcUrl", "jdbc:postgresql://central-postgresql.stepcloud-test.ch/Test");
+		properties.put("user", "step");
+		properties.put("password", "Jua4Nr!46V");
 		return properties;
 	}
 
@@ -115,7 +114,7 @@ public class PostgreSQLCollectionTest { //extends AbstractCollectionTest {
 
 		Assert.assertEquals(String.class,beanCollection.getFieldClass("attributes.property1"));
 
-	}*/
+	}
 
 	@Test
 	public void testFieldFormatter() {
@@ -125,6 +124,12 @@ public class PostgreSQLCollectionTest { //extends AbstractCollectionTest {
 
 		test = formatField("id", ObjectId.class);
 		assertEquals("id",test);
+
+		test = formatField("_id", String.class);
+		assertEquals("object->>'id'", test);
+
+		test = formatField("entity._id", String.class);
+		assertEquals("object->'entity'->>'id'", test);
 
 		test = formatFieldForValueAsText("id");
 		assertEquals("id",test);

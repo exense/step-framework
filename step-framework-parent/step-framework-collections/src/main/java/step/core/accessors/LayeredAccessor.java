@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
 import step.core.collections.Collection;
+import step.core.collections.EntityVersion;
 
 public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Accessor<T> {
 
@@ -146,6 +147,26 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 	@Override
 	public void save(Iterable<T> entities) {
 		getAccessorForPersistence().save(entities);
+	}
+
+	@Override
+	public Stream<EntityVersion> getHistory(ObjectId id, Integer skip, Integer limit) {
+		return layeredLookup(a->a.isVersioningEnabled() ? a.getHistory(id, skip, limit): null);
+	}
+
+	@Override
+	public T restoreVersion(ObjectId entityId, ObjectId versionId) {
+		return layeredLookup(a->a.isVersioningEnabled() ? a.restoreVersion(entityId, versionId) : null);
+	}
+
+	@Override
+	public boolean isVersioningEnabled() {
+		return false;
+	}
+
+	@Override
+	public void enableVersioning(Collection<EntityVersion> versionedCollection, Long newVersionThresholdMs) {
+		throw new UnsupportedOperationException("The versioned collections cannot be set on the layered accessor, but on individual accessors only");
 	}
 
 	protected Accessor<T> getAccessorForPersistence() {

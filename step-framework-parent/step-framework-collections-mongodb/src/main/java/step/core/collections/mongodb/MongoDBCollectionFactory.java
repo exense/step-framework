@@ -23,6 +23,7 @@ import java.util.Properties;
 
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
+import step.core.collections.EntityVersion;
 
 public class MongoDBCollectionFactory implements CollectionFactory {
 
@@ -40,6 +41,12 @@ public class MongoDBCollectionFactory implements CollectionFactory {
 	@Override
 	public <T> Collection<T> getCollection(String name, Class<T> entityClass) {
 		return mongoClientSession.getEntityCollection(name, entityClass);
+	}
+
+	@Override
+	public Collection<EntityVersion> getVersionedCollection(String baseName) {
+		return mongoClientSession.getEntityCollection(baseName + CollectionFactory.VERSION_COLLECTION_SUFFIX,
+				EntityVersion.class);
 	}
 
 	@Override

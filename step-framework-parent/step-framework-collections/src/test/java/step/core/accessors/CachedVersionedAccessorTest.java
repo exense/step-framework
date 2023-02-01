@@ -1,12 +1,13 @@
 package step.core.accessors;
 
-import static org.junit.Assert.*;
-
 import org.junit.Before;
 import org.junit.Test;
 import step.core.collections.inmemory.InMemoryCollection;
 
-public class CachedAccessorTest extends AbstractAccessorTest {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+public class CachedVersionedAccessorTest extends AbstractVersionedAccessorTest {
 
 	private InMemoryAccessor<AbstractIdentifiableObject> underlyingAccessor = new InMemoryAccessor<>();
 	private InMemoryAccessor<AbstractOrganizableObject> underlyingOrganisableObjectAccessor = new InMemoryAccessor<>();
@@ -17,6 +18,7 @@ public class CachedAccessorTest extends AbstractAccessorTest {
 		accessor = new CachedAccessor<AbstractIdentifiableObject>(underlyingAccessor);
 		organizableObjectAccessor = new CachedAccessor<AbstractOrganizableObject>(underlyingOrganisableObjectAccessor);
 		beanAccessor = new CachedAccessor<Bean>(underlyingBeanAccessor);
+		underlyingBeanAccessor.enableVersioning(new InMemoryCollection<>(), 1l);
 	}
 	
 	@Test

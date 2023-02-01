@@ -76,4 +76,6 @@ public interface Collection<T> {
 	void rename(String newName);
 	
 	void drop();
+
+	Class<T> getEntityClass();
 }

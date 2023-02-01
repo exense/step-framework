@@ -32,6 +32,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import step.core.accessors.DefaultJacksonMapperProvider;
 import step.core.collections.*;
+import step.core.collections.AbstractCollection;
 import step.core.collections.Collection;
 import step.core.collections.PojoFilters.PojoFilterFactory;
 
@@ -220,5 +221,10 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	public void drop() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public Class<T> getEntityClass() {
+		return entityClass;
 	}
 }
