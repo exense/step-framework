@@ -196,8 +196,10 @@ public class TimeSeriesTest {
     @Test
     public void ingestionPipelineMongoDB() throws Exception {
         Properties properties = new Properties();
-        properties.put("host", "localhost");
-        properties.put("database", "time-series-test");
+        properties.put("host", "central-mongodb.stepcloud-test.ch");
+        properties.put("database", "test");
+        properties.put("username", "tester");
+        properties.put("password", "5dB(rs+4YRJe");
         Collection<Bucket> bucketCollection = new MongoDBCollectionFactory(properties).getCollection("series", Bucket.class);
         bucketCollection.drop();
         ingestionPipelineParallel(bucketCollection);
