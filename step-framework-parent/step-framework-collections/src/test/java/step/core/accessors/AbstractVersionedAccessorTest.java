@@ -79,13 +79,17 @@ public abstract class AbstractVersionedAccessorTest extends AbstractAccessorTest
 	}
 
 	@Test
-	public void testBeanAccessorRestoreHistory() {
+	public void testBeanAccessorRestoreHistory() throws InterruptedException {
 		Bean entity = new Bean();
 		entity.setProperty1("value 1");
 		beanAccessor.save(entity);
 
+		Thread.sleep(2l);
+
 		entity.setProperty1("value 2");
 		beanAccessor.save(entity);
+
+		Thread.sleep(2l);
 
 		entity.setProperty1("value 3");
 		beanAccessor.save(entity);

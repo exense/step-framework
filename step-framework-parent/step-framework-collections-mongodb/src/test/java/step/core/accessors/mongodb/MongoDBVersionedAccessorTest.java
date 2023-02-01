@@ -2,18 +2,18 @@ package step.core.accessors.mongodb;
 
 import org.junit.Before;
 import step.core.accessors.AbstractAccessor;
-import step.core.accessors.AbstractAccessorTest;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.accessors.AbstractOrganizableObject;
+import step.core.accessors.AbstractVersionedAccessorTest;
 import step.core.collections.Collection;
-import step.core.collections.Filters;
 import step.core.collections.EntityVersion;
+import step.core.collections.Filters;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 
 import java.io.IOException;
 import java.util.Properties;
 
-public class MongoDBAccessorTest extends AbstractAccessorTest {
+public class MongoDBVersionedAccessorTest extends AbstractVersionedAccessorTest {
 
 	@Before
 	public void before() throws IOException {
@@ -29,6 +29,7 @@ public class MongoDBAccessorTest extends AbstractAccessorTest {
 		beanAccessor.getCollectionDriver().remove(Filters.empty());
 		Collection<EntityVersion> versionedBeanCollection = mongoDBCollectionFactory.getVersionedCollection("bean");
 		versionedBeanCollection.remove(Filters.empty());
+		beanAccessor.enableVersioning(versionedBeanCollection, 1l);
 	}
 
 
