@@ -52,9 +52,9 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 
 	public CachedAccessor(Accessor<T> underlyingAccessor, boolean byPassCloning) {
 		super();
+		cache = new InMemoryAccessor<T>(byPassCloning);
 		this.underlyingAccessor = underlyingAccessor;
 		reloadCache();
-		 cache = new InMemoryAccessor<T>(byPassCloning);
 	}
 
 	/**

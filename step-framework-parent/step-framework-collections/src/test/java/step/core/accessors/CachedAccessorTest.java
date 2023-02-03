@@ -50,4 +50,17 @@ public class CachedAccessorTest extends AbstractAccessorTest {
 		assertNull(actual);
 	}
 
+	@Test
+	public void testCachingWithExistingAccessor() {
+
+		InMemoryAccessor<AbstractIdentifiableObject> underlyingBeanAccessor2 = new InMemoryAccessor<>(false);
+		AbstractIdentifiableObject entity = new AbstractOrganizableObject();
+		underlyingBeanAccessor2.save(entity);
+
+		CachedAccessor<AbstractIdentifiableObject> cachedAccessor2 = new CachedAccessor<>(underlyingBeanAccessor2, false);
+
+		AbstractIdentifiableObject actual = cachedAccessor2.get(entity.getId());
+		assertEquals(entity, actual);
+	}
+
 }
