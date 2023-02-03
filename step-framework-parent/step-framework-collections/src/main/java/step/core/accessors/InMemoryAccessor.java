@@ -26,4 +26,8 @@ public class InMemoryAccessor<T extends AbstractIdentifiableObject> extends Abst
 		super(new InMemoryCollection<T>());
 	}
 
+	public InMemoryAccessor(boolean byPassCloning) {
+		super(new InMemoryCollection<T>(byPassCloning));
+	}
+
 }

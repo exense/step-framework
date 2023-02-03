@@ -4,19 +4,18 @@ import static org.junit.Assert.*;
 
 import org.junit.Before;
 import org.junit.Test;
-import step.core.collections.inmemory.InMemoryCollection;
 
 public class CachedAccessorTest extends AbstractAccessorTest {
 
-	private InMemoryAccessor<AbstractIdentifiableObject> underlyingAccessor = new InMemoryAccessor<>();
-	private InMemoryAccessor<AbstractOrganizableObject> underlyingOrganisableObjectAccessor = new InMemoryAccessor<>();
-	private InMemoryAccessor<Bean> underlyingBeanAccessor = new InMemoryAccessor<>();
+	private InMemoryAccessor<AbstractIdentifiableObject> underlyingAccessor = new InMemoryAccessor<>(false);
+	private InMemoryAccessor<AbstractOrganizableObject> underlyingOrganisableObjectAccessor = new InMemoryAccessor<>(false);
+	private InMemoryAccessor<Bean> underlyingBeanAccessor = new InMemoryAccessor<>(false);
 	
 	@Before
 	public void before() {
 		accessor = new CachedAccessor<AbstractIdentifiableObject>(underlyingAccessor);
 		organizableObjectAccessor = new CachedAccessor<AbstractOrganizableObject>(underlyingOrganisableObjectAccessor);
-		beanAccessor = new CachedAccessor<Bean>(underlyingBeanAccessor);
+		beanAccessor = new CachedAccessor<Bean>(underlyingBeanAccessor, false);
 	}
 	
 	@Test

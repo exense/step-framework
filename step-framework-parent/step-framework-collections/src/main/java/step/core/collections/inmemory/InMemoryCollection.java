@@ -42,11 +42,18 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	private final Class<T> entityClass;
 	private final Map<ObjectId, T> entities;
 	private final ObjectMapper mapper = DefaultJacksonMapperProvider.getObjectMapper();
+
+	private boolean byPassCloning;
 	
 	public InMemoryCollection() {
+		this(true);
+	}
+
+	public InMemoryCollection(boolean byPassCloning) {
 		super();
 		this.entityClass = null;
 		this.entities = new ConcurrentHashMap<>();
+		this.byPassCloning = byPassCloning;
 	}
 	
 	public InMemoryCollection(Class<T> entityClass, Map<ObjectId, T> entities) {
@@ -104,7 +111,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 			} else if(e instanceof Document && entityClass != Document.class) {
 				return mapper.convertValue(e, entityClass);
 			} else {
-				return clone(e);
+				return (byPassCloning) ? e : clone(e);
 			}
 		});
 	}
@@ -133,7 +140,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 		if (getId(entity) == null) {
 			setId(entity, new ObjectId());
 		}
-		entities.put(getId(entity), clone(entity));
+		entities.put(getId(entity), (byPassCloning) ? entity : clone(entity));
 		return entity;
 	}
 

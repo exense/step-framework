@@ -26,11 +26,11 @@ public class InMemoryVersionedAccessorTest extends AbstractVersionedAccessorTest
 
 	@Before
 	public void before() {
-		accessor = new InMemoryAccessor<>();
-		organizableObjectAccessor = new InMemoryAccessor<>();
-		beanAccessor = new InMemoryAccessor<>();
+		accessor = new InMemoryAccessor<>(false);
+		organizableObjectAccessor = new InMemoryAccessor<>(false);
+		beanAccessor = new InMemoryAccessor<>(false);
 		//enable versioning
-		beanAccessor.enableVersioning(new InMemoryCollection<>(), 1l);
+		beanAccessor.enableVersioning(new InMemoryCollection<>(false), 1l);
 	}
 
 }

@@ -38,7 +38,7 @@ import step.core.collections.EntityVersion;
  */
 public class CachedAccessor<T extends AbstractIdentifiableObject> implements Accessor<T> {
 
-	private final Accessor<T> cache = new InMemoryAccessor<T>();
+	private final Accessor<T> cache;
 
 	private final Accessor<T> underlyingAccessor;
 
@@ -47,9 +47,14 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	 *                           be loaded
 	 */
 	public CachedAccessor(Accessor<T> underlyingAccessor) {
+		this(underlyingAccessor, true);
+	}
+
+	public CachedAccessor(Accessor<T> underlyingAccessor, boolean byPassCloning) {
 		super();
 		this.underlyingAccessor = underlyingAccessor;
 		reloadCache();
+		 cache = new InMemoryAccessor<T>(byPassCloning);
 	}
 
 	/**
