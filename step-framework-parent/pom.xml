@@ -47,7 +47,7 @@
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<!-- internal dependencies -->
-		<exense-commons.version>2023.2.9-63e4f25984876105ae79215d</exense-commons.version>
+		<exense-commons.version>2023.2.9-63e4f33d84876105ae79796f</exense-commons.version>
 		<!-- external dependencies -->
 		<junit.version>4.13.1</junit.version>
 		<mongodb.bson.version>4.6.0</mongodb.bson.version>
