@@ -5,7 +5,7 @@
 	"FOLDER": "step-framework-parent/",
 	"PARAMETERS": [
 		{
-			"NAME": "DEVELOPMENT",
+			"NAME": "ALL",
 			"URL": "nexus-staging::https://nexus-enterprise.exense.ch/repository/staging-maven/",
 			"CONFIG": "DefaultBuild"
 		},
