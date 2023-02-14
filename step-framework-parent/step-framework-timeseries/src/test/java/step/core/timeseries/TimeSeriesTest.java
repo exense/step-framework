@@ -126,7 +126,7 @@ public class TimeSeriesTest {
         TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), timeSeriesResolution);
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
 
-        long start = System.currentTimeMillis();
+        long start;
         LongAdder count = new LongAdder();
 
         Map<String, String> attributes = Map.of("key", "value1");
@@ -134,6 +134,7 @@ public class TimeSeriesTest {
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline(10)) {
             ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
+            start = System.currentTimeMillis();
             for (int j = 0; j < nThreads; j++) {
                 executorService.submit(() -> {
                     long currentTime;
