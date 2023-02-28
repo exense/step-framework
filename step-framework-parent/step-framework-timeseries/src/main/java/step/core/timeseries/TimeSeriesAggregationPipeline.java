@@ -8,7 +8,10 @@ import step.core.collections.Filter;
 import step.core.collections.Filters;
 import step.core.ql.OQLFilterBuilder;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,7 +25,7 @@ public class TimeSeriesAggregationPipeline {
     private final long sourceResolution;
     private final Collection<Bucket> collection;
 
-    public TimeSeriesAggregationPipeline(Collection<Bucket> collectionDriver, long resolution) {
+    protected TimeSeriesAggregationPipeline(Collection<Bucket> collectionDriver, long resolution) {
         this.collection = collectionDriver;
         this.sourceResolution = resolution;
     }
@@ -31,21 +34,13 @@ public class TimeSeriesAggregationPipeline {
         return sourceResolution;
     }
 
-    public TimeSeriesAggregationQueryBuilder newQueryBuilder() {
-        return new TimeSeriesAggregationQueryBuilder(this);
+    public TimeSeriesAggregationQuery newQuery() {
+        return new TimeSeriesAggregationQuery(this);
     }
 
     protected TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
-
-        ArrayList<Filter> timestampClauses = new ArrayList<>(List.of(Filters.empty()));
-        if (query.getFrom() != null) {
-            timestampClauses.add(Filters.gte("begin", query.getBucketIndexFrom()));
-        }
-        if (query.getTo() != null) {
-            timestampClauses.add(Filters.lt("begin", query.getBucketIndexTo()));
-        }
-        Filter filter = Filters.and(Arrays.asList(Filters.and(timestampClauses), query.getFilter()));
+        Filter filter = TimeSeries.buildFilter(query);
         Function<Long, Long> projectionFunction = query.getProjectionFunction();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();

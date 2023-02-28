@@ -1,7 +1,5 @@
 package step.core.timeseries;
 
-import step.core.collections.Filter;
-
 import java.util.*;
 import java.util.function.Function;
 
@@ -11,7 +9,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     private Set<String> groupDimensions;
 
     // The resolution of the source time series
-//    private final long sourceResolution;
+    private final long sourceResolution;
 
     // if all buckets should be shrunk in one single bucket
     private boolean shrink = false;
@@ -23,31 +21,12 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     // The timestamp of the upper bound bucket (exclusive)
     private Long resultTo;
 
-    private Filter filter;
-
     private final TimeSeriesAggregationPipeline aggregationPipeline;
 
-    protected TimeSeriesAggregationQuery(TimeSeriesAggregationPipeline aggregationPipeline,
-                                         Filter filter,
-                                         Set<String> groupDimensions,
-                                         Long from,
-                                         Long to,
-                                         Long resultFrom,
-                                         Long resultTo,
-                                         long resultResolution,
-                                         boolean shrink
-    ) {
+    protected TimeSeriesAggregationQuery(TimeSeriesAggregationPipeline aggregationPipeline) {
         this.aggregationPipeline = aggregationPipeline;
-        this.shrink = shrink;
-//        this.sourceResolution = aggregationPipeline.getSourceResolution();
-//        this.resultResolution = sourceResolution;
-        this.filter = filter;
-        this.groupDimensions = groupDimensions;
-        this.from = from;
-        this.to = to;
-        this.resultFrom = resultFrom;
-        this.resultTo = resultTo;
-        this.resultResolution = resultResolution;
+        this.sourceResolution = aggregationPipeline.getSourceResolution();
+        this.resultResolution = sourceResolution;
     }
 
     @Override
@@ -83,7 +62,43 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         return this;
     }
 
+    /**
+     * Defines the desired resolution. <br>
+     * If the desired resolution isn't a multiple of the source resolution it will floored to the closest valid resolution
+     *
+     * @param resolution the desired resolution in ms
+     * @return the builder
+     */
+    public TimeSeriesAggregationQuery window(long resolution) {
+        if (resolution < sourceResolution) {
+            throw new IllegalArgumentException("The resolution cannot be lower than the source resolution of " + sourceResolution + "ms");
+        }
+        this.resultResolution = Math.max(sourceResolution, resolution - resolution % sourceResolution);
+        return this;
+    }
 
+    /**
+     * Specifies the desired number of buckets in the result.
+     * - For targetNumberOfBuckets = 1 the resulting number of buckets will be exactly 1
+     * - For targetNumberOfBuckets > 1 the resulting number of buckets will be as close as possible to the specified target
+     *
+     * @param targetNumberOfBuckets the desired number of buckets in the result
+     * @return the builder
+     */
+    public TimeSeriesAggregationQuery split(long targetNumberOfBuckets) {
+        if (targetNumberOfBuckets == 1) {
+            shrink = true;
+            window(Long.MAX_VALUE);
+        } else {
+            if (from == null || to == null) {
+                throw new IllegalArgumentException("No range specified. The method range() should be called before calling split()");
+            }
+            long targetResolution = (long) Math.ceil((double) (to - from) / targetNumberOfBuckets);
+            long resolution = targetResolution - targetResolution % sourceResolution;
+            this.resultResolution = Math.max(sourceResolution, resolution);
+        }
+        return this;
+    }
 
     protected Set<String> getGroupDimensions() {
         return groupDimensions;
@@ -135,11 +150,17 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         }
     }
 
-    public Filter getFilter() {
-        return filter;
-    }
-
     public TimeSeriesAggregationResponse run() {
+        if (from != null && to != null) {
+            if (shrink) {
+                resultFrom = from - from % sourceResolution;
+                resultTo = to - to % sourceResolution + sourceResolution;
+            } else {
+                resultFrom = from - from % resultResolution;
+                resultTo = to - (to - resultFrom) % resultResolution + resultResolution;
+            }
+        }
+
         return aggregationPipeline.collect(this);
     }
 }
