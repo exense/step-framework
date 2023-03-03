@@ -291,17 +291,17 @@ public class TimeSeriesTest {
         assertEquals(Arrays.asList(0L, 2L, 4L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(0, 5).split(2).build().run();
-        assertEquals(Arrays.asList(0L, 3), response.getAxis());
+        assertEquals(Arrays.asList(0L, 3L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(1, 5).split(2).build().run();
-        assertEquals(Arrays.asList(0, 2, 4), response.getAxis());
+        assertEquals(Arrays.asList(0L, 2L, 4L), response.getAxis());
         Map<Long, Bucket> firstSeries = response.getFirstSeries();
         assertEquals(2, firstSeries.get(0L).getCount());
         assertEquals(2, firstSeries.get(2L).getCount());
     }
 
     @Test
-    public void testwithGroupDimensions() {
+    public void testWithGroupDimensions() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 10);
 
