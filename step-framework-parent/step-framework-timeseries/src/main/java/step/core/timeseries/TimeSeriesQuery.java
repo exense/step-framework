@@ -19,6 +19,8 @@
 
 package step.core.timeseries;
 
+import step.core.collections.Filter;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -33,42 +35,53 @@ public class TimeSeriesQuery {
     protected String oqlFilters;
 	protected final Map<String, String> filters = new HashMap<>();
 
-	/**
-	 * Specifies the mandatory list of key-value attributes that the series should match
-	 *
-	 * @param filters the mandatory key-value attributes that the series should match
-	 * @return the builder
-	 */
-	public TimeSeriesQuery filter(Map<String, String> filters) {
-        if (Objects.nonNull(filters)) {
-            this.filters.putAll(filters);
-        }
-		return this;
-	}
+    protected Filter filter;
 
-    public TimeSeriesQuery filter(String oqlFilters) {
-        if (Objects.nonNull(oqlFilters)) {
-            this.oqlFilters = oqlFilters;
-        }
-        return this;
+    public TimeSeriesQuery(Long from, Long to, Filter filter) {
+        Objects.requireNonNull(filter);
+
+        this.from = from;
+        this.to = to;
+        this.filter = filter;
     }
 
-	protected Map<String, String> getFilters() {
-		return filters;
-	}
-
-	/**
-	 * Specifies a time range for the query
-	 *
-	 * @param from the beginning of the time range in ms (Epoch time)
-	 * @param to   the end of the time range (Epoch time)
-	 * @return the builder
-	 */
-	public TimeSeriesQuery range(long from, long to) {
-		this.from = from;
-		this.to = to;
-		return this;
-	}
+//    /**
+//	 * Specifies the mandatory list of key-value attributes that the series should match
+//	 *
+//	 * @param filters the mandatory key-value attributes that the series should match
+//	 * @return the builder
+//	 */
+//	public TimeSeriesQuery filter(Map<String, String> filters) {
+//        if (Objects.nonNull(filters)) {
+//            this.filters.putAll(filters);
+//        }
+//		return this;
+//	}
+//
+//    public TimeSeriesQuery filter(String oqlFilters) {
+//        if (Objects.nonNull(oqlFilters)) {
+//            this.oqlFilters = oqlFilters;
+//        }
+//        return this;
+//    }
+//
+//
+//	protected Map<String, String> getFilters() {
+//		return filters;
+//	}
+//
+//	/**
+//	 * Specifies a time range for the query
+//	 *
+//	 * @param from the beginning of the time range in ms (Epoch time)
+//	 * @param to   the end of the time range (Epoch time)
+//	 * @return the builder
+//	 */
+//	public TimeSeriesQuery range(long from, long to) {
+//		this.from = from;
+//		this.to = to;
+//		return this;
+//	}
 
 	public Long getFrom() {
 		return from;
@@ -78,7 +91,8 @@ public class TimeSeriesQuery {
 		return to;
 	}
 
-    public String getOqlFilter() {
-        return oqlFilters;
+    public Filter getFilter() {
+        return filter;
     }
+
 }

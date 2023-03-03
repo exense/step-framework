@@ -5,18 +5,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
-import step.core.collections.Filters;
-import step.core.ql.OQLFilterBuilder;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static step.core.timeseries.TimeSeries.buildFilter;
 
 public class TimeSeriesAggregationPipeline {
 
@@ -25,7 +19,7 @@ public class TimeSeriesAggregationPipeline {
     private final long sourceResolution;
     private final Collection<Bucket> collection;
 
-    protected TimeSeriesAggregationPipeline(Collection<Bucket> collectionDriver, long resolution) {
+    public TimeSeriesAggregationPipeline(Collection<Bucket> collectionDriver, long resolution) {
         this.collection = collectionDriver;
         this.sourceResolution = resolution;
     }
@@ -34,13 +28,14 @@ public class TimeSeriesAggregationPipeline {
         return sourceResolution;
     }
 
-    public TimeSeriesAggregationQuery newQuery() {
-        return new TimeSeriesAggregationQuery(this);
+    public TimeSeriesAggregationQueryBuilder newQueryBuilder() {
+        return new TimeSeriesAggregationQueryBuilder(this);
     }
 
     protected TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
-        Filter filter = TimeSeries.buildFilter(query);
+
+        Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
         Function<Long, Long> projectionFunction = query.getProjectionFunction();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();

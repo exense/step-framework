@@ -3,6 +3,7 @@ package step.core.timeseries;
 import org.junit.Assert;
 import org.junit.Test;
 import step.core.collections.inmemory.InMemoryCollection;
+import step.core.ql.OQLFilterBuilder;
 
 import java.util.Map;
 import java.util.Set;
@@ -16,7 +17,7 @@ public class TimeSeriesAggergationQueryTest {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 10);
         timeSeries.getAggregationPipeline()
-                .newQuery()
+                .newQueryBuilder()
                 .window(9);
     }
 
@@ -25,7 +26,7 @@ public class TimeSeriesAggergationQueryTest {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 10);
         timeSeries.getAggregationPipeline()
-                .newQuery()
+                .newQueryBuilder()
                 .window(10);
     }
 
@@ -34,7 +35,7 @@ public class TimeSeriesAggergationQueryTest {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 10);
         timeSeries.getAggregationPipeline()
-                .newQuery()
+                .newQueryBuilder()
                 .split(10);
     }
 
@@ -51,8 +52,9 @@ public class TimeSeriesAggergationQueryTest {
         }
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        long bucketSize = pipeline.newQuery()
+        long bucketSize = pipeline.newQueryBuilder()
                 .split(1)
+                .build()
                 .getBucketSize();
         Assert.assertEquals(Long.MAX_VALUE, bucketSize);
     }
@@ -64,10 +66,10 @@ public class TimeSeriesAggergationQueryTest {
         String oql = null;
         Map<String, String> params = null;
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        long seriesSize = pipeline.newQuery()
+        long seriesSize = pipeline.newQueryBuilder()
                 .split(1)
-                .filter(oql)
-                .filter(params)
+                .withFilter(OQLFilterBuilder.getFilter(oql))
+                .build()
                 .run().getSeries().size();
         // we want to make sure that the methods above are not failing
         Assert.assertEquals(0, seriesSize);

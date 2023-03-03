@@ -34,7 +34,8 @@ public class TimeSeries {
     }
 
     public void performHousekeeping(TimeSeriesQuery housekeepingQuery) {
-        collection.remove(TimeSeries.buildFilter(housekeepingQuery.getFilters(), housekeepingQuery.getFrom(), housekeepingQuery.getTo()));
+        Filter filter = TimeSeriesFilterBuilder.buildFilter(housekeepingQuery);
+        collection.remove(filter);
     }
 
     public TimeSeriesIngestionPipeline newIngestionPipeline() {
@@ -53,42 +54,4 @@ public class TimeSeries {
         return timestamp - timestamp % resolution;
     }
 
-    public static Filter buildFilter(Map<String, String> attributes, Long from, Long to) {
-        ArrayList<Filter> filters = new ArrayList<>();
-        if (from != null) {
-            filters.add(Filters.gte("begin", from));
-        }
-        if (to != null) {
-            filters.add(Filters.lt("begin", to));
-        }
-
-        if (attributes != null) {
-            filters.addAll(attributes.entrySet().stream()
-                    .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
-        }
-        return Filters.and(filters);
-    }
-
-    public static Filter buildFilter(TimeSeriesAggregationQuery query) {
-        ArrayList<Filter> timestampClauses = new ArrayList<>(List.of(Filters.empty()));
-        Filter oqlFilter = OQLFilterBuilder.getFilter(query.getOqlFilter());
-        ArrayList<Filter> attributesClauses = new ArrayList<>(List.of(Filters.empty()));
-
-        if (query.getFrom() != null) {
-            timestampClauses.add(Filters.gte("begin", query.getBucketIndexFrom()));
-        }
-        if (query.getTo() != null) {
-            timestampClauses.add(Filters.lt("begin", query.getBucketIndexTo()));
-        }
-
-        if (query.getFilters() != null) {
-            attributesClauses.addAll(query.getFilters().entrySet().stream()
-                    .map(e -> Filters.equals("attributes." + e.getKey(), e.getValue())).collect(Collectors.toList()));
-        }
-
-        Filter timestampFilter = Filters.and(timestampClauses);
-        Filter attributesFilter = Filters.and(attributesClauses);
-
-        return Filters.and(Arrays.asList(timestampFilter, attributesFilter, oqlFilter));
-    }
 }

@@ -40,7 +40,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         this.sourceResolution = resolutionInMs;
     }
 
-    public void ingestPoint(Map<String, String> attributes, long timestamp, long value) {
+    public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
         ingestPoint(new BucketAttributes(attributes), timestamp, value);
     }
 
