@@ -46,23 +46,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         this.resultResolution = resultResolution;
     }
 
-    /**
-     * Group all the selected series in one series
-     *
-     * @return the builder
-     */
-    public TimeSeriesAggregationQuery group() {
-        this.groupDimensions = Set.of();
-        return this;
-    }
-
-    public TimeSeriesAggregationQuery groupBy(Set<String> dimensions) {
-        this.groupDimensions = dimensions;
-        return this;
-    }
-
-
-
     public Set<String> getGroupDimensions() {
         return groupDimensions;
     }

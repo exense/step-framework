@@ -5,8 +5,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
+import step.core.collections.CollectionFactory;
 import step.core.collections.Filters;
 import step.core.collections.inmemory.InMemoryCollection;
+import step.core.collections.inmemory.InMemoryCollectionFactory;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 import step.core.ql.OQLFilterBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
@@ -16,10 +18,7 @@ import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -436,8 +435,8 @@ public class TimeSeriesTest {
 
     @Test
     public void oqlTestWithFilter() {
-        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        InMemoryCollectionFactory collectionFactory = new InMemoryCollectionFactory(new Properties());
+        TimeSeries timeSeries = new TimeSeries(collectionFactory, "buckets", Set.of("f1", "f2"), 1);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
@@ -455,4 +454,13 @@ public class TimeSeriesTest {
                 .run();
         assertEquals(1, response.getSeries().size());
     }
+
+    @Test
+    public void collectionFactoryConstructorTest() {
+        Properties properties = new Properties();
+        InMemoryCollectionFactory inMemoryCollectionFactory = new InMemoryCollectionFactory(properties);
+        TimeSeries timeSeries = new TimeSeries(inMemoryCollectionFactory, "buckets", Collections.emptySet(), 1000);
+        TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
+    }
+
 }
