@@ -2,7 +2,9 @@ package step.core.timeseries;
 
 import step.core.collections.Filter;
 import step.core.collections.Filters;
-import step.core.timeseries.oql.OQLTimeSeriesFilterBuilder;
+import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
+import step.core.timeseries.query.OQLTimeSeriesFilterBuilder;
+import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,23 +33,23 @@ public class TimeSeriesFilterBuilder {
     }
 
     public static Filter buildFilter(Map<String, Object> attributes) {
-        List<Filter> filters = new ArrayList<>();
-        if (attributes != null) {
-            filters = attributes.entrySet().stream()
-                    .map(e -> {
-                        Object value = e.getValue();
-                        if (value instanceof Boolean) {
-                            return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), (Boolean) e.getValue());
-                        } else if (value instanceof Integer) {
-                            return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), ((Integer) e.getValue()).longValue());
-                        } else if (value instanceof Long) {
-                            return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), (Long) e.getValue());
-                        } else {
-                            return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), e.getValue().toString());
-                        }
-
-                    }).collect(Collectors.toList());
+        if (attributes == null || attributes.isEmpty()) {
+            return Filters.empty();
         }
+        List<Filter> filters = attributes.entrySet().stream()
+                .map(e -> {
+                    Object value = e.getValue();
+                    if (value instanceof Boolean) {
+                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), (Boolean) e.getValue());
+                    } else if (value instanceof Integer) {
+                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), ((Integer) e.getValue()).longValue());
+                    } else if (value instanceof Long) {
+                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), (Long) e.getValue());
+                    } else {
+                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), e.getValue().toString());
+                    }
+
+                }).collect(Collectors.toList());
         return Filters.and(filters);
     }
 

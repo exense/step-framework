@@ -3,12 +3,11 @@ package step.core.timeseries;
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
 import step.core.collections.Filter;
-import step.core.collections.Filters;
-import step.core.collections.filters.And;
-import step.core.ql.OQLFilterBuilder;
+import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
+import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class TimeSeries {
 
@@ -50,7 +49,7 @@ public class TimeSeries {
         return new TimeSeriesAggregationPipeline(collection, timeSeriesResolution);
     }
 
-    protected static long timestampToBucketTimestamp(long timestamp, long resolution) {
+    public static long timestampToBucketTimestamp(long timestamp, long resolution) {
         return timestamp - timestamp % resolution;
     }
 

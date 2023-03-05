@@ -1,6 +1,8 @@
-package step.core.timeseries;
+package step.core.timeseries.aggregation;
 
 import step.core.collections.Filter;
+import step.core.timeseries.TimeSeries;
+import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.util.*;
 import java.util.function.Function;
@@ -61,19 +63,19 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
 
 
-    protected Set<String> getGroupDimensions() {
+    public Set<String> getGroupDimensions() {
         return groupDimensions;
     }
 
-    protected Long getBucketIndexFrom() {
+    public Long getBucketIndexFrom() {
         return resultFrom;
     }
 
-    protected Long getBucketIndexTo() {
+    public Long getBucketIndexTo() {
         return resultTo;
     }
 
-    protected List<Long> drawAxis() {
+    public List<Long> drawAxis() {
         ArrayList<Long> legend = new ArrayList<>();
         if (from != null && to != null) {
             if (shrink) {
@@ -87,7 +89,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         return legend;
     }
 
-    protected Function<Long, Long> getProjectionFunction() {
+    public Function<Long, Long> getProjectionFunction() {
         if (shrink) {
             return t -> Objects.requireNonNullElse(resultFrom, 0L);
         } else {
@@ -95,7 +97,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         }
     }
 
-    protected long getBucketSize() {
+    public long getBucketSize() {
         if (shrink) {
             if (resultFrom != null) {
                 return resultTo - resultFrom;

@@ -4,7 +4,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.ql.OQLFilterBuilder;
-import step.core.timeseries.oql.OQLTimeSeriesFilterBuilder;
+import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
+import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
+import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.query.OQLTimeSeriesFilterBuilder;
 
 import java.util.*;
 

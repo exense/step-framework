@@ -1,4 +1,4 @@
-package step.core.timeseries;
+package step.core.timeseries.bucket;
 
 import java.util.HashMap;
 import java.util.Map;

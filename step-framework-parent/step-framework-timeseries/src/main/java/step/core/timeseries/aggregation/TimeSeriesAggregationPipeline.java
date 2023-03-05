@@ -1,10 +1,14 @@
-package step.core.timeseries;
+package step.core.timeseries.aggregation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
+import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.bucket.BucketAttributes;
+import step.core.timeseries.bucket.BucketBuilder;
+import step.core.timeseries.TimeSeriesFilterBuilder;
 
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;

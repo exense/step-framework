@@ -1,4 +1,4 @@
-package step.core.timeseries;
+package step.core.timeseries.query;
 
 import step.core.collections.Filter;
 import step.core.collections.Filters;

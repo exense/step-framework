@@ -9,6 +9,12 @@ import step.core.collections.Filters;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 import step.core.ql.OQLFilterBuilder;
+import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
+import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
+import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.bucket.BucketAttributes;
+import step.core.timeseries.query.TimeSeriesQuery;
+import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
 import java.util.Arrays;
 import java.util.Map;

@@ -17,7 +17,7 @@
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-package step.core.timeseries;
+package step.core.timeseries.query;
 
 import step.core.collections.Filter;
 

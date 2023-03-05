@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
-import step.core.timeseries.oql.OQLTimeSeriesFilterBuilder;
+import step.core.timeseries.query.OQLTimeSeriesFilterBuilder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +34,12 @@ public class OQLTimeSeriesFilterBuilderTest {
         List<String> filterAttributes = OQLTimeSeriesFilterBuilder.getFilterAttributes(oql);
         Assert.assertEquals(4, filterAttributes.size());
         Assert.assertTrue(filterAttributes.containsAll(Arrays.asList("field1", "field2", "field3", "field4")));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void invalidOqlTest() {
+        String oql = "field5)";
+        OQLTimeSeriesFilterBuilder.getFilterAttributes(oql);
     }
 
 

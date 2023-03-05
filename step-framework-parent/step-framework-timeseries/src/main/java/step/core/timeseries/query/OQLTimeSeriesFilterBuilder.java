@@ -1,4 +1,4 @@
-package step.core.timeseries.oql;
+package step.core.timeseries.query;
 
 import org.antlr.v4.runtime.*;
 import step.core.collections.*;
