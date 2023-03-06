@@ -31,10 +31,6 @@ public class TimeSeriesQuery {
     protected Long from;
     protected Long to;
 
-    // Filters
-    protected String oqlFilters;
-    protected final Map<String, String> filters = new HashMap<>();
-
     protected Filter filter;
 
     public TimeSeriesQuery(Long from, Long to, Filter filter) {

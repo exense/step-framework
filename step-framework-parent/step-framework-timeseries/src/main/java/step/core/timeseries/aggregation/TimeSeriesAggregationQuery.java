@@ -27,7 +27,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     private final TimeSeriesAggregationPipeline aggregationPipeline;
 
-    public TimeSeriesAggregationQuery(TimeSeriesAggregationPipeline aggregationPipeline,
+    protected TimeSeriesAggregationQuery(TimeSeriesAggregationPipeline aggregationPipeline,
                                          Filter filter,
                                          Set<String> groupDimensions,
                                          Long from,
