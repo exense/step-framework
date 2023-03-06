@@ -40,13 +40,13 @@ public class TimeSeriesFilterBuilder {
                 .map(e -> {
                     Object value = e.getValue();
                     if (value instanceof Boolean) {
-                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), (Boolean) e.getValue());
+                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), (Boolean) value);
                     } else if (value instanceof Integer) {
-                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), ((Integer) e.getValue()).longValue());
+                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), ((Integer) value).longValue());
                     } else if (value instanceof Long) {
-                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), (Long) e.getValue());
+                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), (Long) value);
                     } else {
-                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), e.getValue().toString());
+                        return Filters.equals(ATTRIBUTES_PREFIX + e.getKey(), value.toString());
                     }
 
                 }).collect(Collectors.toList());

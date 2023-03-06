@@ -8,7 +8,7 @@ import step.core.collections.filters.Equals;
 
 import java.util.Arrays;
 
-public class OqlAttributesAwareFilterVisitorTest {
+public class OQLAttributesAwareFilterVisitorTest {
 
     @Test
     public void baseVisitorTest() {

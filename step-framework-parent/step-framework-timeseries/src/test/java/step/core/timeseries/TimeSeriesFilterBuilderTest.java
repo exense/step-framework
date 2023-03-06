@@ -36,9 +36,10 @@ public class TimeSeriesFilterBuilderTest {
         params.put("field1", "abc");
         params.put("field2", true);
         params.put("field3", 15);
+        params.put("field4", 15L);
         filter = TimeSeriesFilterBuilder.buildFilter(params);
         Assert.assertTrue(filter instanceof And);
-        Assert.assertEquals(3, filter.getChildren().size());
+        Assert.assertEquals(4, filter.getChildren().size());
     }
 
     @Test
