@@ -33,16 +33,16 @@ public class AuditLogger {
     private static final Logger auditLogger = LoggerFactory.getLogger("AuditLogger");
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static void logResponse(HttpServletRequest req, int status) {
-        if ((auditLogger.isTraceEnabled() || req.getRequestURI().equals("/rest/access/login")) &&
-                !req.getRequestURI().equals("/rest/access/logout")) {
-          log(req, status);  
+    public static void trace(HttpServletRequest req, int status) {
+        if (auditLogger.isTraceEnabled()) {
+            String log = getLogMessage(req, status);
+            auditLogger.trace(log);
         }
     }
     
     public static void log(HttpServletRequest req, int status) {
         String log = getLogMessage(req, status);
-        if (status < 400){
+        if (status < 400) {
             auditLogger.info(log);
         } else {
             auditLogger.warn(log);

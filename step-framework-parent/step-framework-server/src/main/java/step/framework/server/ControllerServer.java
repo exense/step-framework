@@ -59,6 +59,7 @@ import step.core.plugins.ModuleChecker;
 import step.core.plugins.PluginManager;
 import step.core.scanner.CachedAnnotationScanner;
 import step.framework.server.audit.AuditLogger;
+import step.framework.server.audit.AuditResponseFilter;
 import step.framework.server.swagger.Swagger;
 
 import jakarta.servlet.DispatcherType;
@@ -228,6 +229,7 @@ public class ControllerServer {
 
 		resourceConfig.register(JacksonFeature.class);
 		resourceConfig.register(CORSRequestResponseFilter.class);
+		resourceConfig.register(AuditResponseFilter.class);
 		resourceConfig.register(MultiPartFeature.class);
 		resourceConfig.register(new AbstractBinder() {
 			@Override

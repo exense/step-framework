@@ -43,6 +43,6 @@ public class AuditResponseFilter<U extends AbstractUser> extends AbstractService
 
 	public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
 			throws IOException {
-		AuditLogger.logResponse(sr, responseContext.getStatus());
+		AuditLogger.trace(sr, responseContext.getStatus());
 	}
 }
