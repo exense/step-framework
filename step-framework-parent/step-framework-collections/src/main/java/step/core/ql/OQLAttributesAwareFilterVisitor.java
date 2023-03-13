@@ -57,20 +57,6 @@ public class OQLAttributesAwareFilterVisitor extends OQLFilterVisitor {
         return processComparisonExp(ctx, text0, text1);
     }
 
-    protected String unescapeStringIfNecessary(String text1) {
-        if(text1.startsWith("\"") && text1.endsWith("\"")) {
-            text1 = unescapeStringAtom(text1);
-        }
-        return text1;
-    }
-
-    @Override
-    public Filter visitOrExpr(OQLParser.OrExprContext ctx) {
-        final Filter left = this.visit(ctx.expr(0));
-        final Filter right = this.visit(ctx.expr(1));
-        return Filters.or(List.of(left, right));
-    }
-
     @Override
     public Filter visitInExpr(OQLParser.InExprContext ctx) {
         String text0 = transform(unescapeStringIfNecessary(ctx.expr().getText()));
@@ -79,34 +65,6 @@ public class OQLAttributesAwareFilterVisitor extends OQLFilterVisitor {
         }
         attributes.add(text0);
         return processInExpr(ctx, text0);
-    }
-
-    @Override
-    public Filter visitNotExpr(OQLParser.NotExprContext ctx) {
-        final Filter expr = this.visit(ctx.expr());
-        return Filters.not(expr);
-    }
-
-    @Override
-    public Filter visitParExpr(OQLParser.ParExprContext ctx) {
-        return this.visit(ctx.expr());
-    }
-
-    @Override
-    public Filter visitNonQuotedStringAtom(OQLParser.NonQuotedStringAtomContext ctx) {
-        return Filters.fulltext(ctx.getText());
-    }
-
-    @Override
-    public Filter visitStringAtom(OQLParser.StringAtomContext ctx) {
-        String str = unescapeStringAtom(ctx.getText());
-        return Filters.fulltext(str);
-    }
-
-    protected String unescapeStringAtom(String str) {
-        // strip quotes
-        str = str.substring(1, str.length() - 1).replace("\"\"", "\"");
-        return str;
     }
 
     public List<String> getAttributes() {

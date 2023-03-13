@@ -28,12 +28,11 @@ import java.util.Objects;
 public class TimeSeriesQuery {
 
     // Specified range
-    protected Long from;
-    protected Long to;
+    protected final Long from;
+    protected final Long to;
+    protected final Filter filter;
 
-    protected Filter filter;
-
-    public TimeSeriesQuery(Long from, Long to, Filter filter) {
+    protected TimeSeriesQuery(Long from, Long to, Filter filter) {
         Objects.requireNonNull(filter);
 
         this.from = from;
