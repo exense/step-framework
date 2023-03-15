@@ -115,7 +115,7 @@ public class OQLFilterBuilderTest {
 	}
 
 	@Test
-	public void testMultipleandWithNestedAttributes() {
+	public void testMultipleAndWithNestedAttributes() {
 		PojoFilter<Object> filter = filter("property1=prop1 and bean1.property1=prop1 and map1.property2=prop2");
 		boolean test = filter.test(new Bean());
 		assertTrue(test);

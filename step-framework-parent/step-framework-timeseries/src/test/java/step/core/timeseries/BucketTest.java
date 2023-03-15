@@ -1,6 +1,7 @@
 package step.core.timeseries;
 
 import org.junit.Test;
+import step.core.timeseries.bucket.Bucket;
 
 import java.util.concurrent.ConcurrentHashMap;
 

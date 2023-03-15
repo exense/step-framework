@@ -1,16 +1,16 @@
-package step.core.timeseries;
+package step.core.timeseries.bucket;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class BucketAttributes extends HashMap<String, String> {
+public class BucketAttributes extends HashMap<String, Object> {
 
     public BucketAttributes() {
         super();
     }
 
-    public BucketAttributes(Map<String, String> map) {
+    public BucketAttributes(Map<String, Object> map) {
         super(map);
     }
 

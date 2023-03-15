@@ -2,6 +2,9 @@ package step.core.timeseries;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
+import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.bucket.BucketAttributes;
+import step.core.timeseries.bucket.BucketBuilder;
 
 import java.util.Map;
 

@@ -3,6 +3,9 @@ package step.core.timeseries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
+import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.bucket.BucketAttributes;
+import step.core.timeseries.bucket.BucketBuilder;
 
 import java.io.Closeable;
 import java.util.Map;
@@ -40,7 +43,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         this.sourceResolution = resolutionInMs;
     }
 
-    public void ingestPoint(Map<String, String> attributes, long timestamp, long value) {
+    public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
         ingestPoint(new BucketAttributes(attributes), timestamp, value);
     }
 

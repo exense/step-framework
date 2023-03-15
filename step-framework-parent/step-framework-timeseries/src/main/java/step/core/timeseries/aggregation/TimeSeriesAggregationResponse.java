@@ -1,4 +1,7 @@
-package step.core.timeseries;
+package step.core.timeseries.aggregation;
+
+import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.bucket.BucketAttributes;
 
 import java.util.List;
 import java.util.Map;
