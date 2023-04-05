@@ -36,7 +36,7 @@ public class TimeSeriesTest {
         TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
 
         // Create 1M buckets
-        long nBuckets = 100_000L;
+        long nBuckets = 1_000_000L;
         for (int i = 0; i < nBuckets; i++) {
             Bucket entity = new Bucket(1000L * i);
             entity.setCount(1);
@@ -49,7 +49,12 @@ public class TimeSeriesTest {
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         // Query the time series with resolution = bucket size
-        Map<Long, Bucket> query = pipeline.newQueryBuilder().range(0, nBuckets * 1000).window(1000).build().run().getSeries().get(new BucketAttributes(Map.of()));
+        Map<Long, Bucket> query = pipeline.newQueryBuilder().range(0, nBuckets * 1000)
+                .window(1000)
+                .build()
+                .run()
+                .getSeries()
+                .get(new BucketAttributes(Map.of()));
         assertEquals(nBuckets, query.size());
         // Get the 2nd bucket
         Bucket actual = query.get(1000L);
@@ -58,7 +63,7 @@ public class TimeSeriesTest {
 
         // Query the time series with resolution = bucket size on a smaller time frame
         query = pipeline.newQueryBuilder().range(1000, (nBuckets - 2) * 1000).window(1000).build().run().getSeries().get(new BucketAttributes(Map.of()));
-        assertEquals(nBuckets - 2, query.size());
+        assertEquals(nBuckets - 3, query.size()); // -2 in the end an -1 in the beginning
 
         // Query the time series with resolution = size of the whole time frame
         query = pipeline.newQueryBuilder().range(0, nBuckets * 1000).window(nBuckets * 1000).build().run().getSeries().get(new BucketAttributes(Map.of()));
@@ -164,7 +169,14 @@ public class TimeSeriesTest {
         assertTrue(series1.size() <= 2);
 
         // Split in 1 point
-        series1 = aggregationPipeline.newQueryBuilder().withFilter(TimeSeriesFilterBuilder.buildFilter(attributes)).range(start, now).split(1).build().run().getFirstSeries();
+        series1 = aggregationPipeline
+                .newQueryBuilder()
+                .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes))
+                .range(start, now)
+                .split(1)
+                .build()
+                .run()
+                .getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertEquals(1, series1.size());
         Bucket firstBucket = series1.values().stream().findFirst().get();
@@ -172,7 +184,13 @@ public class TimeSeriesTest {
         assertEquals(start - start % timeSeriesResolution, firstBucket.getBegin());
 
         // Split in 2 points
-        TimeSeriesAggregationResponse response = aggregationPipeline.newQueryBuilder().withFilter(TimeSeriesFilterBuilder.buildFilter(attributes)).range(start, now).split(2).build().run();
+        TimeSeriesAggregationResponse response = aggregationPipeline
+                .newQueryBuilder()
+                .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes))
+                .range(start, now)
+                .split(2)
+                .build()
+                .run();
         series1 = response.getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() <=3);
@@ -272,13 +290,13 @@ public class TimeSeriesTest {
         TimeSeriesAggregationResponse response;
 
         response = pipeline.newQueryBuilder().range(0, 10).window(5).build().run();
-        assertEquals(Arrays.asList(0L, 5L, 10L), response.getAxis());
+        assertEquals(Arrays.asList(0L, 5L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(0, 9).window(5).build().run();
         assertEquals(Arrays.asList(0L, 5L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(1, 9).window(5).build().run();
-        assertEquals(Arrays.asList(0L, 5L), response.getAxis());
+        assertEquals(Arrays.asList(1L, 6L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(0, 10).split(1).build().run();
         assertEquals(Arrays.asList(0L), response.getAxis());
@@ -287,10 +305,10 @@ public class TimeSeriesTest {
         assertEquals(Arrays.asList(0L, 5L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(1, 3).split(2).build().run();
-        assertEquals(Arrays.asList(1L, 2L, 3L), response.getAxis());
+        assertEquals(Arrays.asList(1L, 2L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(0, 5).window(1).build().run();
-        assertEquals(Arrays.asList(0L, 1L, 2L, 3L, 4L, 5L), response.getAxis());
+        assertEquals(Arrays.asList(0L, 1L, 2L, 3L, 4L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(0, 5).window(2).build().run();
         assertEquals(Arrays.asList(0L, 2L, 4L), response.getAxis());
@@ -299,10 +317,10 @@ public class TimeSeriesTest {
         assertEquals(Arrays.asList(0L, 3L), response.getAxis());
 
         response = pipeline.newQueryBuilder().range(1, 5).split(2).build().run();
-        assertEquals(Arrays.asList(0L, 2L, 4L), response.getAxis());
+        assertEquals(Arrays.asList(1L, 3L), response.getAxis());
         Map<Long, Bucket> firstSeries = response.getFirstSeries();
-        assertEquals(2, firstSeries.get(0L).getCount());
-        assertEquals(2, firstSeries.get(2L).getCount());
+        assertEquals(2, firstSeries.get(1L).getCount());
+        assertEquals(2, firstSeries.get(3L).getCount());
     }
 
     @Test
@@ -383,8 +401,8 @@ public class TimeSeriesTest {
         assertEquals(1, result.get(Map.of("name", "transaction1")).size());
 
         // Split
-        assertThrows(IllegalArgumentException.class, () -> pipeline.newQueryBuilder().split(2l).build().run());
-        result = pipeline.newQueryBuilder().withGroupDimensions(Set.of("name")).range(0, 2).split(1l).build().run().getSeries();
+        assertThrows(IllegalArgumentException.class, () -> pipeline.newQueryBuilder().split(2).build().run());
+        result = pipeline.newQueryBuilder().withGroupDimensions(Set.of("name")).range(0, 2).split(1).build().run().getSeries();
         assertEquals(1, result.get(Map.of("name", "transaction1")).size());
     }
 

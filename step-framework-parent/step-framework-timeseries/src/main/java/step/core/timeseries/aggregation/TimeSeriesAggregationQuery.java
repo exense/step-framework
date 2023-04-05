@@ -20,10 +20,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     // The resolution of the
     private final long resultResolution;
-    // The timestamp of the lower bound bucket to be included in the result
-    private final Long resultFrom;
-    // The timestamp of the upper bound bucket (exclusive)
-    private final Long resultTo;
 
     private final TimeSeriesAggregationPipeline aggregationPipeline;
 
@@ -32,8 +28,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
                                          Set<String> groupDimensions,
                                          Long from,
                                          Long to,
-                                         Long resultFrom,
-                                         Long resultTo,
                                          long resultResolution,
                                          boolean shrink
     ) {
@@ -41,8 +35,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         this.aggregationPipeline = aggregationPipeline;
         this.shrink = shrink;
         this.groupDimensions = groupDimensions;
-        this.resultFrom = resultFrom;
-        this.resultTo = resultTo;
         this.resultResolution = resultResolution;
     }
 
@@ -50,21 +42,13 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         return groupDimensions;
     }
 
-    public Long getBucketIndexFrom() {
-        return resultFrom;
-    }
-
-    public Long getBucketIndexTo() {
-        return resultTo;
-    }
-
     public List<Long> drawAxis() {
         ArrayList<Long> legend = new ArrayList<>();
         if (from != null && to != null) {
             if (shrink) {
-                legend.add(resultFrom);
+                legend.add(from);
             } else {
-                for (long index = resultFrom; index < resultTo; index += resultResolution) {
+                for (long index = from; index < to; index += resultResolution) {
                     legend.add(index);
                 }
             }
@@ -73,23 +57,31 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     }
 
     public Function<Long, Long> getProjectionFunction() {
+        long start = Objects.requireNonNullElse(from, 0L);
         if (shrink) {
-            return t -> Objects.requireNonNullElse(resultFrom, 0L);
+            return t -> start;
         } else {
-            return t -> TimeSeries.timestampToBucketTimestamp(t, resultResolution);
+            return t -> {
+                long distanceFromStart = t - start;
+                return distanceFromStart - distanceFromStart % resultResolution + start;
+            };
         }
     }
 
     public long getBucketSize() {
         if (shrink) {
-            if (resultFrom != null) {
-                return resultTo - resultFrom;
+            if (from != null) {
+                return to - from;
             } else {
                 return Long.MAX_VALUE;
             }
         } else {
             return resultResolution;
         }
+    }
+
+    public long getResolution() {
+        return resultResolution;
     }
 
     public Filter getFilter() {

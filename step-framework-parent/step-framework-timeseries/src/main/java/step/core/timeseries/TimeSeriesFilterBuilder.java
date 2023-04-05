@@ -60,7 +60,7 @@ public class TimeSeriesFilterBuilder {
     }
 
     public static Filter buildFilter(TimeSeriesAggregationQuery query) {
-        Filter timestampFilter = TimeSeriesFilterBuilder.buildFilter(query.getBucketIndexFrom(), query.getBucketIndexTo());
+        Filter timestampFilter = TimeSeriesFilterBuilder.buildFilter(query.getFrom(), query.getTo());
 
         return Filters.and(Arrays.asList(query.getFilter(), timestampFilter));
     }
