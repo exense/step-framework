@@ -80,15 +80,12 @@ public class TimeSeriesAggregationQueryBuilder {
             resultFrom = from - from % sourceResolution;
             resultTo = (long) Math.ceil((double) to / sourceResolution) * sourceResolution;
             if (shrink) { // we expand the interval to the closest completed resolutions
-//                resultFrom = from - from % sourceResolution;
-//                resultTo = to - to % sourceResolution + sourceResolution;
                 resultResolution = Long.MAX_VALUE;
             } else {
                 if (this.bucketsCount != null && this.bucketsCount > 0) {
                     resultFrom = from - from % sourceResolution;
                     resultTo = (long) Math.ceil((double) to / sourceResolution) * sourceResolution;
                     if ((resultTo - resultFrom) / sourceResolution <= this.bucketsCount) { // not enough buckets
-//                        resultTo = resultFrom + this.bucketsCount * sourceResolution;
                         resultResolution = sourceResolution;
                     } else {
                         long difference = resultTo - resultFrom;
