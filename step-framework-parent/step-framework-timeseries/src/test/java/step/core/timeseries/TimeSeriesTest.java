@@ -198,18 +198,37 @@ public class TimeSeriesTest {
         assertEquals(response.getResolution(), firstBucket.getEnd() - firstBucket.getBegin());
 
         // Use source resolution
-        series1 = aggregationPipeline.newQueryBuilder().withFilter(TimeSeriesFilterBuilder.buildFilter(attributes)).range(start, now).build().run().getFirstSeries();
+        series1 = aggregationPipeline
+                .newQueryBuilder()
+                .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes))
+                .range(start, now).build()
+                .run()
+                .getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() > duration / timeSeriesResolution);
 
         // Use double source resolution
         int window = timeSeriesResolution * 2;
-        series1 = aggregationPipeline.newQueryBuilder().withFilter(TimeSeriesFilterBuilder.buildFilter(attributes)).range(start, now).window(window).build().run().getFirstSeries();
+        series1 = aggregationPipeline
+                .newQueryBuilder()
+                .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes))
+                .range(start, now)
+                .window(window)
+                .build()
+                .run()
+                .getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() > duration / window);
 
         // Use
-        Map<Long, Bucket> series2 = aggregationPipeline.newQueryBuilder().withFilter(TimeSeriesFilterBuilder.buildFilter(attributes2)).range(start, now).window(now - start).build().run().getFirstSeries();
+        Map<Long, Bucket> series2 = aggregationPipeline
+                .newQueryBuilder()
+                .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes2))
+                .range(start, now)
+                .window(now - start)
+                .build()
+                .run()
+                .getFirstSeries();
         assertEquals(count.longValue(), countPoints(series2));
         assertTrue(series2.size() <= 2);
     }

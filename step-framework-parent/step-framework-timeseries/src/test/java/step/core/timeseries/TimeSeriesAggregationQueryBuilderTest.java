@@ -98,6 +98,15 @@ public class TimeSeriesAggregationQueryBuilderTest {
         Assert.assertEquals(1000, query.getResolution());
         Assert.assertEquals(500, query.getFrom().longValue());
         Assert.assertEquals(5500, query.getTo().longValue());
+
+        query = createPipeline(500)
+                .newQueryBuilder()
+                .range(800, 6000) // should be transformed to 500-6000
+                .split(5)
+                .build();
+        Assert.assertEquals(1000, query.getResolution());
+        Assert.assertEquals(500, query.getFrom().longValue());
+        Assert.assertEquals(6000, query.getTo().longValue());
     }
 
     @Test
@@ -110,6 +119,42 @@ public class TimeSeriesAggregationQueryBuilderTest {
         Assert.assertEquals(500, query.getResolution());
         Assert.assertEquals(4000, query.getFrom().longValue());
         Assert.assertEquals(5000, query.getTo().longValue());
+
+        query = createPipeline(500)
+                .newQueryBuilder()
+                .range(4000, 5100) // there is not enough space for 4 minimum buckets
+                .split(5)
+                .build();
+        Assert.assertEquals(500, query.getResolution());
+        Assert.assertEquals(4000, query.getFrom().longValue());
+        Assert.assertEquals(5500, query.getTo().longValue());
+
+        query = createPipeline(300)
+                .newQueryBuilder()
+                .range(1000, 2000) // there is not enough space for 4 minimum buckets
+                .split(15)
+                .build();
+        Assert.assertEquals(300, query.getResolution());
+        Assert.assertEquals(900, query.getFrom().longValue());
+        Assert.assertEquals(2100, query.getTo().longValue());
+
+        query = createPipeline(500)
+                .newQueryBuilder()
+                .range(1000, 2600) // there is not enough space for 4 minimum buckets
+                .split(3)
+                .build();
+        Assert.assertEquals(500, query.getResolution());
+        Assert.assertEquals(1000, query.getFrom().longValue());
+        Assert.assertEquals(3000, query.getTo().longValue());
+
+        query = createPipeline(500)
+                .newQueryBuilder()
+                .range(0, 2900) // there is not enough space for 4 minimum buckets
+                .split(3)
+                .build();
+        Assert.assertEquals(1000, query.getResolution());
+        Assert.assertEquals(0, query.getFrom().longValue());
+        Assert.assertEquals(3000, query.getTo().longValue());
     }
 
     /**
@@ -125,7 +170,7 @@ public class TimeSeriesAggregationQueryBuilderTest {
                 .build();
         Assert.assertEquals(600, query.getResolution());
         Assert.assertEquals(900, query.getFrom().longValue());
-        Assert.assertEquals(3300, query.getTo().longValue());
+        Assert.assertEquals(3000, query.getTo().longValue());
     }
 
     private static TimeSeriesAggregationPipeline createPipeline(int sourceResolution) {

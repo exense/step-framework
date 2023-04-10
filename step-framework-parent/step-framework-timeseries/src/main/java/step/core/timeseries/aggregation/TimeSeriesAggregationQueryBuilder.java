@@ -87,11 +87,12 @@ public class TimeSeriesAggregationQueryBuilder {
                     resultTo = (long) Math.ceil((double) to / sourceResolution) * sourceResolution;
                     if ((resultTo - resultFrom) / sourceResolution <= this.bucketsCount) { // not enough buckets
                         resultResolution = sourceResolution;
+                        resultTo = (long) Math.ceil((double)to / sourceResolution) * sourceResolution;
                     } else {
                         long difference = resultTo - resultFrom;
-                        resultResolution = (long) Math.ceil(difference / (double) bucketsCount);
-                        resultResolution = (long) Math.ceil((double) resultResolution / sourceResolution) * sourceResolution;
-                        resultTo = resultFrom + (resultResolution * bucketsCount);
+                        resultResolution =  Math.round(difference / (double) bucketsCount);
+                        resultResolution =  Math.round((double) resultResolution / sourceResolution) * sourceResolution; // round to nearest multiple
+//                        resultTo = resultFrom + (resultResolution * bucketsCount);
 
                     }
                 } else if (this.proposedResolution != null && this.proposedResolution != 0) {
