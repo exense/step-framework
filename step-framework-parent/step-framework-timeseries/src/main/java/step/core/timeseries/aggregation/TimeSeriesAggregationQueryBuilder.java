@@ -77,34 +77,35 @@ public class TimeSeriesAggregationQueryBuilder {
             throw new IllegalArgumentException("While splitting, from and to params must be set");
         }
         if (from != null && to != null) {
-            resultFrom = from - from % sourceResolution;
-            resultTo = (long) Math.ceil((double) to / sourceResolution) * sourceResolution;
+            resultFrom = roundDownToMultiple(from, sourceResolution);
+            resultTo = roundUpToMultiple(to, sourceResolution);
             if (shrink) { // we expand the interval to the closest completed resolutions
                 resultResolution = Long.MAX_VALUE;
             } else {
                 if (this.bucketsCount != null && this.bucketsCount > 0) {
-                    resultFrom = from - from % sourceResolution;
-                    resultTo = (long) Math.ceil((double) to / sourceResolution) * sourceResolution;
                     if ((resultTo - resultFrom) / sourceResolution <= this.bucketsCount) { // not enough buckets
                         resultResolution = sourceResolution;
-                        resultTo = (long) Math.ceil((double)to / sourceResolution) * sourceResolution;
                     } else {
                         long difference = resultTo - resultFrom;
                         resultResolution =  Math.round(difference / (double) bucketsCount);
-                        resultResolution =  Math.round((double) resultResolution / sourceResolution) * sourceResolution; // round to nearest multiple
-//                        resultTo = resultFrom + (resultResolution * bucketsCount);
-
+                        resultResolution =  Math.round((double) resultResolution / sourceResolution) * sourceResolution; // round to nearest multiple, up or down
                     }
                 } else if (this.proposedResolution != null && this.proposedResolution != 0) {
-                    resultResolution = Math.max(sourceResolution, proposedResolution - proposedResolution % sourceResolution);
-                    resultResolution = resultResolution - resultResolution % sourceResolution;
-                    resultFrom = from - from % sourceResolution;
-                    resultTo = (long) Math.ceil((double) to / resultResolution) * resultResolution;
+                    resultResolution = Math.max(sourceResolution, roundDownToMultiple(proposedResolution, sourceResolution));
+                    resultResolution = roundDownToMultiple(resultResolution, sourceResolution);
+                    resultTo = roundUpToMultiple(to, resultResolution);
                 }
             }
         }
-
         return new TimeSeriesAggregationQuery(pipeline, filter, groupDimensions, resultFrom, resultTo, resultResolution, shrink);
+    }
+
+    private static long roundUpToMultiple(long value, long multiple) {
+        return (long) Math.ceil((double) value / multiple) * multiple;
+    }
+
+    private static long roundDownToMultiple(long value, long multiple) {
+        return value - value % multiple;
     }
 
 
