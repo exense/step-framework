@@ -46,6 +46,15 @@ public class Table<T> {
     }
 
     /**
+     * @param tableFiltersFactory a factory for additional filters to be applied at each table request
+     * @return this instance
+     */
+    public Table<T> withTableFiltersFactory(Function<TableParameters, Filter> tableFiltersFactory) {
+        this.tableFiltersFactory = (parameters, session) -> tableFiltersFactory.apply(parameters);
+        return this;
+    }
+
+    /**
      * @param maxFindDuration the maximal duration of the table requests in ms
      * @return this instance
      */

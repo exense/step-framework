@@ -73,7 +73,7 @@ public class TableServiceTest {
         tableRegistry.register(FILTERED_TABLE, filteredTable);
 
         Table<Bean> tableWithFilterFactory = new Table<>(collection, null, false);
-        tableWithFilterFactory.withTableFiltersFactory((p, ignored) ->Filters.equals("property1", VALUE_1));
+        tableWithFilterFactory.withTableFiltersFactory(p->Filters.equals("property1", VALUE_1));
         tableRegistry.register(TABLE_WITH_FILTER_FACTORY, tableWithFilterFactory);
 
         Table<Bean> tableWithFilterFactoryWithSession = new Table<>(collection, null, false);
