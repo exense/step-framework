@@ -2,10 +2,12 @@ package step.framework.server.tables;
 
 import step.core.collections.Collection;
 import step.core.collections.Filter;
+import step.framework.server.Session;
 import step.framework.server.tables.service.TableParameters;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -15,7 +17,7 @@ public class Table<T> {
     private final String requiredAccessRight;
 
     private final boolean filtered;
-    private Function<TableParameters, Filter> tableFiltersFactory;
+    private BiFunction<TableParameters, Session<?>, Filter> tableFiltersFactory;
 
     private Integer maxFindDuration;
     private Integer countLimit;
@@ -38,7 +40,7 @@ public class Table<T> {
      * @param tableFiltersFactory a factory for additional filters to be applied at each table request
      * @return this instance
      */
-    public Table<T> withTableFiltersFactory(Function<TableParameters, Filter> tableFiltersFactory) {
+    public Table<T> withTableFiltersFactory(BiFunction<TableParameters, Session<?>, Filter> tableFiltersFactory) {
         this.tableFiltersFactory = tableFiltersFactory;
         return this;
     }
@@ -95,7 +97,7 @@ public class Table<T> {
         return filtered;
     }
 
-    public Optional<Function<TableParameters, Filter>> getTableFiltersFactory() {
+    public Optional<BiFunction<TableParameters, Session<?>, Filter>> getTableFiltersFactory() {
         return Optional.ofNullable(tableFiltersFactory);
     }
 

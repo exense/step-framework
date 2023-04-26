@@ -41,6 +41,7 @@ public class TableServiceTest {
     private static final String ENRICHED_ATTRIBUTE_KEY = "entichedAttributes";
     private static final String ENRICHED_ATTRIBUTE_VALUE = "value";
     private static final String TABLE_WITH_FILTER_FACTORY = "tableWithFilterFactory";
+    private static final String TABLE_WITH_FILTER_FACTORY_WITH_SESSION = "tableWithFilterFactoryWithSession";
     private Bean bean1;
     private Bean bean2;
     private Bean bean3;
@@ -72,8 +73,13 @@ public class TableServiceTest {
         tableRegistry.register(FILTERED_TABLE, filteredTable);
 
         Table<Bean> tableWithFilterFactory = new Table<>(collection, null, false);
-        tableWithFilterFactory.withTableFiltersFactory(p->Filters.equals("property1", VALUE_1));
+        tableWithFilterFactory.withTableFiltersFactory((p, ignored) ->Filters.equals("property1", VALUE_1));
         tableRegistry.register(TABLE_WITH_FILTER_FACTORY, tableWithFilterFactory);
+
+        Table<Bean> tableWithFilterFactoryWithSession = new Table<>(collection, null, false);
+        tableWithFilterFactoryWithSession.withTableFiltersFactory((p, session) -> Filters.and(List.of(Filters.equals("property1", VALUE_1),
+                (session != null && session.get(TEST_RIGHT) != null) ? Filters.empty() : Filters.falseFilter())));
+        tableRegistry.register(TABLE_WITH_FILTER_FACTORY_WITH_SESSION, tableWithFilterFactoryWithSession);
 
         Table<Bean> tableWithAccessRight = new Table<>(collection, TEST_RIGHT, false);
         tableRegistry.register(TABLE_WITH_ACCESS_RIGHT, tableWithAccessRight);
@@ -134,6 +140,18 @@ public class TableServiceTest {
         request = new TableRequest();
         response = tableService.request(TABLE_WITH_FILTER_FACTORY, request, null);
         assertEquals(List.of(bean1), response.getData());
+
+        request = new TableRequest();
+        response = tableService.request(TABLE_WITH_FILTER_FACTORY_WITH_SESSION, request, sessionWithRight());
+        assertEquals(List.of(bean1), response.getData());
+
+        request = new TableRequest();
+        response = tableService.request(TABLE_WITH_FILTER_FACTORY_WITH_SESSION, request, null);
+        assertEquals(List.of(), response.getData());
+
+        request = new TableRequest();
+        response = tableService.request(TABLE_WITH_FILTER_FACTORY_WITH_SESSION, request, new Session<>());
+        assertEquals(List.of(), response.getData());
 
         // Test filtered table
         request = new TableRequest();
