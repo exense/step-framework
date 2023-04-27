@@ -1,6 +1,5 @@
 package step.framework.server.tables.service;
 
-import step.core.AbstractContext;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
@@ -183,17 +182,17 @@ public class TableService {
         return searchOrder;
     }
 
-    protected Filter createFilter(TableQueryRequest request, AbstractContext context, Table<?> table) {
+    protected Filter createFilter(TableQueryRequest request, Session<?> session, Table<?> table) {
         ArrayList<Filter> filters = new ArrayList<>();
 
         // Add object filter from context
         if (table.isFiltered()) {
-            ObjectFilter objectFilter = objectHookRegistry.getObjectFilter(context);
+            ObjectFilter objectFilter = objectHookRegistry.getObjectFilter(session);
             filters.add(OQLFilterBuilder.getFilter(objectFilter.getOQLFilter()));
         }
 
         // Add table specific filters
-        table.getTableFiltersFactory().ifPresent(factory -> filters.add(factory.apply(request.getTableParameters())));
+        table.getTableFiltersFactory().ifPresent(factory -> filters.add(factory.apply(request.getTableParameters(), session)));
 
         // Add requested filters
         List<TableFilter> requestFilters = request.getFilters();
