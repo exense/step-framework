@@ -144,8 +144,15 @@ public class ControllerServer {
 			}
 		}));
 	}
-	
+
+	private boolean stopping = false;
 	private void stop() {
+		// prevent multiple executions of shutdown hooks when stopped programmatically
+		if (stopping) {
+			return;
+		}
+		stopping = true;
+
 		try {
 			initPluginProxy.preShutdownHook(serverContext);
 		} catch (Exception e) {
