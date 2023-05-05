@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 public class TableService {
@@ -63,8 +64,9 @@ public class TableService {
 
         // Perform the search
         Collection<T> collection = table.getCollection();
+        BiFunction<T, Session<?>, T> enricher = table.getResultItemEnricher().orElse((a, b) -> a);
         collection.find(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
-                .map(table.getResultItemEnricher().orElse(a -> a)).forEachOrdered(result::add);
+                .map(t -> enricher.apply(t, session)).forEachOrdered(result::add);
 
         long estimatedTotalCount = collection.estimatedCount();
         long count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));

@@ -23,7 +23,7 @@ public class Table<T> {
     private Integer countLimit;
 
     private Supplier<List<T>> resultListFactory;
-    private Function<T, T> resultItemEnricher;
+    private BiFunction<T, Session<?>, T> resultItemEnricher;
 
     /**
      * @param collection the collection backing this table
@@ -90,6 +90,11 @@ public class Table<T> {
      * @return this instance
      */
     public Table<T> withResultItemEnricher(Function<T, T> resultItemEnricher) {
+        this.resultItemEnricher = (data, session) -> resultItemEnricher.apply(data);
+        return this;
+    }
+
+    public Table<T> withResultItemEnricher(BiFunction<T, Session<?>, T> resultItemEnricher) {
         this.resultItemEnricher = resultItemEnricher;
         return this;
     }
@@ -122,7 +127,7 @@ public class Table<T> {
         return Optional.ofNullable(resultListFactory);
     }
 
-    public Optional<Function<T, T>> getResultItemEnricher() {
+    public Optional<BiFunction<T, Session<?>, T>> getResultItemEnricher() {
         return Optional.ofNullable(resultItemEnricher);
     }
 }
