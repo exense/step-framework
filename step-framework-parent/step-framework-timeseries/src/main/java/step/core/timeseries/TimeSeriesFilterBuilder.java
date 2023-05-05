@@ -29,7 +29,7 @@ public class TimeSeriesFilterBuilder {
         if (to != null) {
             filters.add(Filters.lt(TIMESTAMP_ATTRIBUTE, to));
         }
-        return Filters.and(filters);
+        return (filters.size() == 0 ) ? Filters.empty() : Filters.and(filters);
     }
 
     public static Filter buildFilter(Map<String, Object> attributes) {
