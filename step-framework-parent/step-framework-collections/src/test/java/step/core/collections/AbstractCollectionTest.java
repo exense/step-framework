@@ -30,6 +30,9 @@ public abstract class AbstractCollectionTest {
 	private static final String VALUE1 = "Test1";
 	private static final String VALUE2 = "Test2";
 	private static final String VALUE3 = "Test3";
+	private static final String VALUE_SERIALIZEDLIST1 = ";one=un;two=deux;three=trois;four=trois;";
+	private static final String VALUE_SERIALIZEDLIST2 = ";two=deux;three=drei;four=deux;";
+	private static final String VALUE_SERIALIZEDLIST3 = ";;";
 	private static final String PROPERTY1 = "property1";
 
 	protected final CollectionFactory collectionFactory;
@@ -268,6 +271,49 @@ public abstract class AbstractCollectionTest {
 		result = collection.find(Filters.and(List.of(Filters.gt("longProperty", 11),Filters.lte("longProperty",21))), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
 		assertEquals(bean2.getId(), result.get(0).getId());
 		assertEquals(1, result.size());
+	}
+
+	@Test
+	public void testFindComplexRegexFilters() {
+		Collection<Bean> collection = collectionFactory.getCollection("beans", Bean.class);
+		collection.remove(Filters.empty());
+
+		Bean bean1 = new Bean(VALUE_SERIALIZEDLIST1);
+
+		Bean bean2 = new Bean(VALUE_SERIALIZEDLIST2);
+
+		Bean bean3 = new Bean(VALUE_SERIALIZEDLIST3);
+
+		collection.save(List.of(bean1, bean2, bean3));
+
+		// Simple substring, actually
+		List<Bean> result = collection.find(Filters.regex("property1", ";two=deux;", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+
+		result = collection.find(Filters.regex("property1", ";two=(.+?);", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+		result = collection.find(Filters.regex("property1", ";two=[^;]+;", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+		result = collection.find(Filters.regex("property1", ";three=[^;]+;", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+		result = collection.find(Filters.regex("property1", ";(.*?)=(.*?);", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+
+		// more complicated way using positive lookahead (yes, the syntax is mind-bending).
+		result = collection.find(Filters.regex("property1", ";three=(?=(trois;))", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals(bean1.getId(), result.get(0).getId());
+		// and... negative lookahead: entries containing "three=...", but not with value "trois/deux".
+		result = collection.find(Filters.regex("property1", ";three=(?!(trois;))", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals(bean2.getId(), result.get(0).getId());
+		result = collection.find(Filters.regex("property1", ";three=(?!(deux;))", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+		// negative lookahead, no "three=..." at all
+		result = collection.find(Filters.regex("property1", "^((?!;three=).)*$", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals(bean3.getId(), result.get(0).getId());
+
 	}
 
 	@Test
