@@ -35,9 +35,10 @@
     <script src="./swagger-ui-bundle.js" charset="UTF-8"> </script>
     <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
     <script>
+    let jsonRestSvcUrl = window.location.href.replace('/doc/rest','/rest/openapi.json');
     window.onload = function() {
       const ui = SwaggerUIBundle({
-        url: "../../rest/openapi.json",
+        url: jsonRestSvcUrl,
         dom_id: '#swagger-ui',
         deepLinking: true,
         defaultModelsExpandDepth: -1,
