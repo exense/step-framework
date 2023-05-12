@@ -36,7 +36,7 @@
     <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
     <script>
     window.onload = function() {
-      let jsonRestSvcUrl = window.location.href.replace('/doc/rest','/rest/private-openapi.json');
+      let jsonRestSvcUrl = window.location.href.replace('/doc/rest/private-api.html','/rest/private-openapi.json');
       const ui = SwaggerUIBundle({
         url: jsonRestSvcUrl,
         dom_id: '#swagger-ui',
