@@ -1,11 +1,12 @@
 package step.core.timeseries;
 
+import ch.exense.commons.test.categories.PerformanceTest;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
-import step.core.collections.CollectionFactory;
 import step.core.collections.Filters;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.collections.inmemory.InMemoryCollectionFactory;
@@ -238,6 +239,7 @@ public class TimeSeriesTest {
     }
 
     @Test
+    @Category(PerformanceTest.class)
     public void ingestionPipelineMongoDB() throws Exception {
         Properties properties = new Properties();
         properties.put("host", "central-mongodb.stepcloud-test.ch");
