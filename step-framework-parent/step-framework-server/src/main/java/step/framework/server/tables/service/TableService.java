@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class TableService {
 
@@ -56,17 +57,12 @@ public class TableService {
         // Create the filter
         final Filter filter = createFilter(request, session, table);
 
-        // Get the search order
-        SearchOrder searchOrder = getSearchOrder(request);
-
         // Create result list
         List<T> result = table.getResultListFactory().orElse(ArrayList::new).get();
 
         // Perform the search
         Collection<T> collection = table.getCollection();
-        BiFunction<T, Session<?>, T> enricher = table.getResultItemEnricher().orElse((a, b) -> a);
-        collection.find(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
-                .map(t -> enricher.apply(t, session)).forEachOrdered(result::add);
+        _request(collection, table, filter, request, session).forEachOrdered(result::add);
 
         long estimatedTotalCount = collection.estimatedCount();
         long count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));
@@ -77,6 +73,28 @@ public class TableService {
         response.setRecordsTotal(estimatedTotalCount);
         response.setData(result);
         return response;
+    }
+
+    private <T> Stream<T> _request(Collection<T> collection, Table<T> table, Filter filter, TableRequest request, Session<?> session) {
+        // Get the search order
+        SearchOrder searchOrder = getSearchOrder(request);
+
+        // Perform the search
+        BiFunction<T, Session<?>, T> enricher = table.getResultItemEnricher().orElse((a, b) -> a);
+
+        //return enrich stream
+        return collection.find(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
+                .map(t -> enricher.apply(t, session));
+    }
+
+    public <T> Stream<T> export(String tableName, TableRequest request, Session<?> session) throws TableServiceException {
+        Table<T> table = getTable(tableName);
+        // Assert right
+        assertSessionHasRequiredAccessRight(table, session);
+        Collection<T> collection = table.getCollection();
+        // Create the filter
+        final Filter filter = createFilter(request, session, table);
+        return _request(collection, table, filter, request, session);
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperationWithCustomPreview(
