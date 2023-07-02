@@ -28,6 +28,16 @@ public interface AuthorizationManager<U extends AbstractUser, S extends Session<
 	void setRoleResolver(RoleResolver roleResolver);
 
 	boolean checkRightInContext(S session, String right);
+
+	default boolean checkRightInContext(S session, String right, String userIdOnBehalfOf) {
+		// onBehalfOf is not supported by default
+		if (userIdOnBehalfOf == null) {
+			return checkRightInContext(session, right);
+		} else {
+			throw new UnsupportedOperationException("Authorization 'on behalf of' is not supported in " + this.getClass().getSimpleName());
+		}
+	}
+
 	boolean checkRightInRole(String role, String right);
 
 	Role getRoleInContext(S session);
