@@ -22,8 +22,11 @@ import step.core.accessors.AbstractUser;
 
 public class SessionOnBehalfOf<U extends AbstractUser> extends Session<U> {
 
-    public SessionOnBehalfOf(U onBehalfOf) {
-        // TODO: should we also fill attributes from 'AbstractContext' (take from original session)?
+    public SessionOnBehalfOf(Session<U> originalSession, U onBehalfOf) {
+        // copy the original session context (including TenantContext)
+        for (String key : originalSession.getKeys()) {
+            put(key, originalSession.get(key));
+        }
         this.setUser(onBehalfOf);
     }
 
