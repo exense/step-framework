@@ -16,7 +16,7 @@ public class NoAuthorizationManager implements AuthorizationManager {
 	}
 
 	@Override
-	public boolean checkRightInContext(Session session, String right, String userIdOnBehalfOf) {
+	public boolean checkRightInContext(Session session, String right, String usernameOnBehalfOf) {
 		return true;
 	}
 
