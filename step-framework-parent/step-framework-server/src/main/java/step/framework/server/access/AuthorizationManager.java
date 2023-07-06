@@ -31,7 +31,7 @@ public interface AuthorizationManager<U extends AbstractUser, S extends Session<
 
 	default boolean checkRightInContext(S session, String right, String userIdOnBehalfOf) {
 		// onBehalfOf is not supported by default
-		if (userIdOnBehalfOf == null) {
+		if (userIdOnBehalfOf == null || userIdOnBehalfOf.isEmpty()) {
 			return checkRightInContext(session, right);
 		} else {
 			throw new UnsupportedOperationException("Authorization 'on behalf of' is not supported in " + this.getClass().getSimpleName());
