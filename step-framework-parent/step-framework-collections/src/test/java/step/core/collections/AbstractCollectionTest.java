@@ -339,6 +339,18 @@ public abstract class AbstractCollectionTest {
 	}
 
 	@Test
+	public void testFindSpecialChars() {
+		Collection<Bean> collection = collectionFactory.getCollection("beans", Bean.class);
+		collection.remove(Filters.empty());
+
+		Bean bean1 = new Bean("test'test");
+		collection.save(List.of(bean1));
+
+		List<Bean> result = collection.find(Filters.regex("property1", "test'test", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+	}
+
+	@Test
 	public void testRemove() throws Exception {
 		Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
 		beanCollection.remove(Filters.empty());

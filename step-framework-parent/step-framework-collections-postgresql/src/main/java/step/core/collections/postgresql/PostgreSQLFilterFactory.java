@@ -63,13 +63,15 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 			} else {
 				if (expectedValue instanceof ObjectId) {
 					expectedValue = ((ObjectId) expectedValue).toHexString();
+				} else if (expectedValue instanceof String) {
+					expectedValue = escapeValue((String) expectedValue);
 				}
 				return formattedFieldName + " = '" + expectedValue + "'";
 			}
 		} else if (filter instanceof Regex) {
 			Regex regexFilter = (Regex) filter;
 			String operator = (regexFilter.isCaseSensitive()) ? " ~ " : " ~* ";
-			return formatFieldForValueAsText(regexFilter.getField()) + operator + "'" + regexFilter.getExpression() + "'";
+			return formatFieldForValueAsText(regexFilter.getField()) + operator + "'" + escapeValue(regexFilter.getExpression()) + "'";
 		} else if (filter instanceof Gt) {
 			Gt gtFilter = (Gt) filter;
 			return formatField(gtFilter.getField(),true) + " IS NOT NULL AND "
@@ -89,6 +91,10 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 		} else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 		}
+	}
+
+	private String escapeValue(String expectedValue) {
+		return expectedValue.replaceAll("'","''");
 	}
 
 	public static String formatField(String field, Class<?> clazz) {
