@@ -26,13 +26,7 @@ import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -193,7 +187,6 @@ public class ControllerServer {
 
 	private void setupConnectors() {
 		HttpConfiguration http = new HttpConfiguration();
-		http.addCustomizer(new SecureRequestCustomizer());
 		http.setSecureScheme("https");
 
 		ServerConnector connector = new ServerConnector(server);
@@ -202,11 +195,13 @@ public class ControllerServer {
 		
 		if(configuration.getPropertyAsBoolean("ui.ssl.enabled", false)) {
 			int httpsPort = configuration.getPropertyAsInteger("ui.ssl.port", 443);
-			
 			http.setSecurePort(httpsPort);
 
+			long hstsMaxAge = configuration.getPropertyAsInteger("ui.ssl.hsts.maxAge", -1);
+			boolean hstsIncludeSubdomains = configuration.getPropertyAsBoolean("ui.ssl.hsts.includeSubdomains", false);
+
 			HttpConfiguration https = new HttpConfiguration();
-			https.addCustomizer(new SecureRequestCustomizer());
+			https.addCustomizer(new SecureRequestCustomizer(true, hstsMaxAge, hstsIncludeSubdomains));
 
 			SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 			sslContextFactory.setKeyStorePath(configuration.getProperty("ui.ssl.keystore.path"));
