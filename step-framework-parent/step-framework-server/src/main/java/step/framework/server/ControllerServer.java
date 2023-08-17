@@ -204,6 +204,28 @@ public class ControllerServer {
 			https.addCustomizer(new SecureRequestCustomizer(true, hstsMaxAge, hstsIncludeSubdomains));
 
 			SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+
+			if (!configuration.getProperty("ui.ssl.includeProtocols", "").trim().isEmpty()) {
+				sslContextFactory.setIncludeProtocols(configuration.getProperty("ui.ssl.includeProtocols").trim().split("\\s+"));
+			}
+			if (!configuration.getProperty("ui.ssl.excludeProtocols", "").trim().isEmpty()) {
+				sslContextFactory.setExcludeProtocols(configuration.getProperty("ui.ssl.excludeProtocols").trim().split("\\s+"));
+			}
+			if (!configuration.getProperty("ui.ssl.includeCipherSuites", "").trim().isEmpty()) {
+				sslContextFactory.setIncludeCipherSuites(configuration.getProperty("ui.ssl.includeCipherSuites").trim().split("\\s+"));
+			}
+			if (!configuration.getProperty("ui.ssl.excludeCipherSuites", "").trim().isEmpty()) {
+				sslContextFactory.setExcludeCipherSuites(configuration.getProperty("ui.ssl.excludeCipherSuites").trim().split("\\s+"));
+			}
+
+			if (configuration.getPropertyAsBoolean("ui.ssl.logProtocolsAndCipherSuites", false)) {
+				logger.info("Logging SSL protocol and cipher suite information because ui.ssl.logProtocolsAndCipherSuites is enabled:");
+				logger.info("Include protocols: {}", String.join(" ", sslContextFactory.getIncludeProtocols()));
+				logger.info("Exclude protocols: {}", String.join(" ", sslContextFactory.getExcludeProtocols()));
+				logger.info("Include cipher suites: {}", String.join(" ", sslContextFactory.getIncludeCipherSuites()));
+				logger.info("Exclude cipher suites: {}", String.join(" ", sslContextFactory.getExcludeCipherSuites()));
+			}
+
 			sslContextFactory.setKeyStorePath(configuration.getProperty("ui.ssl.keystore.path"));
 			sslContextFactory.setKeyStorePassword(configuration.getProperty("ui.ssl.keystore.password"));
 			sslContextFactory.setKeyManagerPassword(configuration.getProperty("ui.ssl.keymanager.password"));
