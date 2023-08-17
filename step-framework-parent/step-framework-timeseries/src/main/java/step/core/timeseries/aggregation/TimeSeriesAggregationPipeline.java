@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class TimeSeriesAggregationPipeline {
@@ -43,21 +44,23 @@ public class TimeSeriesAggregationPipeline {
         Function<Long, Long> projectionFunction = query.getProjectionFunction();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
-        collection.find(filter, null, null, null, 0).forEach(bucket -> {
-            bucketCount.increment();
-            BucketAttributes bucketAttributes = bucket.getAttributes();
+        try (Stream<Bucket> stream = collection.findLazy(filter, null, null, null, 0)) {
+            stream.forEach(bucket -> {
+                bucketCount.increment();
+                BucketAttributes bucketAttributes = bucket.getAttributes();
 
-            BucketAttributes seriesKey;
-            if (CollectionUtils.isNotEmpty(query.getGroupDimensions())) {
-                seriesKey = bucketAttributes.subset(query.getGroupDimensions());
-            } else {
-                seriesKey = new BucketAttributes();
-            }
-            Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
+                BucketAttributes seriesKey;
+                if (CollectionUtils.isNotEmpty(query.getGroupDimensions())) {
+                    seriesKey = bucketAttributes.subset(query.getGroupDimensions());
+                } else {
+                    seriesKey = new BucketAttributes();
+                }
+                Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
 
-            long index = projectionFunction.apply(bucket.getBegin());
-            series.computeIfAbsent(index, i -> new BucketBuilder(i, i + query.getBucketSize())).accumulate(bucket);
-        });
+                long index = projectionFunction.apply(bucket.getBegin());
+                series.computeIfAbsent(index, i -> new BucketBuilder(i, i + query.getBucketSize())).accumulate(bucket);
+            });
+        }
         long t2 = System.currentTimeMillis();
         if (logger.isDebugEnabled()) {
             logger.info("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());

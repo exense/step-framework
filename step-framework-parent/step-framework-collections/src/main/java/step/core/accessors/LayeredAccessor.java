@@ -177,4 +177,9 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 	public Stream<T> stream() {
 		return layeredStreamMerge(a -> a.stream());
 	}
+
+	@Override
+	public Stream<T> streamLazy() {
+		return layeredStreamMerge(a -> a.streamLazy());
+	}
 }

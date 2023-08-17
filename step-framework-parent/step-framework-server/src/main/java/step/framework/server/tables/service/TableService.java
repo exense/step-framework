@@ -62,7 +62,9 @@ public class TableService {
 
         // Perform the search
         Collection<T> collection = table.getCollection();
-        _request(collection, table, filter, request, session).forEachOrdered(result::add);
+        try (Stream<T> tStream = _request(collection, table, filter, request, session)) {
+            tStream.forEachOrdered(result::add);
+        }
 
         long estimatedTotalCount = collection.estimatedCount();
         long count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));
@@ -83,7 +85,7 @@ public class TableService {
         BiFunction<T, Session<?>, T> enricher = table.getResultItemEnricher().orElse((a, b) -> a);
 
         //return enrich stream
-        return collection.find(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
+        return collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
                 .map(t -> enricher.apply(t, session));
     }
 

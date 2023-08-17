@@ -41,6 +41,8 @@ public interface Collection<T> {
 	long estimatedCount();
 	
 	/**
+	 * Warning: depending on the underlying implementation the whole result set might be loaded into memory
+	 * Use {@link #findLazy(Filter, SearchOrder, Integer, Integer, int) FindLazy} method instead within a try-with-resources statement for large volume of data
 	 * @param filter
 	 * @param order
 	 * @param skip
@@ -49,6 +51,19 @@ public interface Collection<T> {
 	 * @return
 	 */
 	Stream<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime);
+
+	/**
+	 * @param filter
+	 * @param order
+	 * @param skip
+	 * @param limit
+	 * @param maxTime
+	 * @return the query results as a Stream
+	 *
+	 * API Note: this method must be used within a try-with-resources statement or similar control structure to ensure that the stream's I/O resources are closed promptly after the stream's operations have completed.
+	 */
+
+	Stream<T> findLazy(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime);
 
 	Stream<T> findReduced(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime, List<String> reduceFields);
 	

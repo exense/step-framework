@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -216,6 +217,42 @@ public abstract class AbstractCollectionTest {
 				.collect(Collectors.toList());
 		assertEquals(List.of(bean2, bean3), result);
 	}
+
+	@Test
+	public void testFindCloseable() throws Exception {
+		Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
+		beanCollection.remove(Filters.empty());
+
+		Bean bean1 = new Bean(VALUE1);
+		Bean bean2 = new Bean(VALUE2);
+		Bean bean3 = new Bean(VALUE3);
+		beanCollection.save(List.of(bean1, bean3, bean2));
+
+		// Sort ascending
+		List<Bean> result;
+		try (Stream<Bean> beanStream = beanCollection.findLazy(Filters.empty(), new SearchOrder(PROPERTY1, 1), null, null, 0)) {
+			result = beanStream.collect(Collectors.toList());
+		}
+		assertEquals(List.of(bean1, bean2, bean3), result);
+
+		// Sort ascending by ID
+		try (Stream<Bean> beanStream = beanCollection.findLazy(Filters.empty(), new SearchOrder(AbstractIdentifiableObject.ID, 1), null, null, 0)) {
+			result = beanStream.collect(Collectors.toList());
+		}
+		assertEquals(List.of(bean1, bean2, bean3), result);
+
+		// Sort descending
+		try (Stream<Bean> beanStream = beanCollection.findLazy(Filters.empty(), new SearchOrder(PROPERTY1, -1), null, null, 0)) {
+			result = beanStream.collect(Collectors.toList());
+		}
+		assertEquals(List.of(bean3, bean2, bean1), result);
+
+		// Skip limit
+		try (Stream<Bean> beanStream = beanCollection.findLazy(Filters.empty(), new SearchOrder(PROPERTY1, 1), 1, 2, 0)) {
+			result = beanStream.collect(Collectors.toList());
+		}
+		assertEquals(List.of(bean2, bean3), result);
+	}
 	
 	@Test
 	public void testFindFilters() {
@@ -336,6 +373,18 @@ public abstract class AbstractCollectionTest {
 		// Special field id
 		actualBean = beanCollection.find(Filters.equals("id", bean1.getId()), null, null, null, 0).findFirst().get();
 		assertEquals(bean1, actualBean);
+	}
+
+	@Test
+	public void testFindSpecialChars() {
+		Collection<Bean> collection = collectionFactory.getCollection("beans", Bean.class);
+		collection.remove(Filters.empty());
+
+		Bean bean1 = new Bean("test'test");
+		collection.save(List.of(bean1));
+
+		List<Bean> result = collection.find(Filters.regex("property1", "test'test", true), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
 	}
 
 	@Test

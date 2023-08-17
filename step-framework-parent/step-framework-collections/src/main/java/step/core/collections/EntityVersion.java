@@ -12,7 +12,7 @@ public class EntityVersion<T extends AbstractIdentifiableObject> extends Abstrac
 	protected long updateTime;
 	protected long updateGroupTime;
 
-	@JsonTypeInfo(use= JsonTypeInfo.Id.CLASS,property="type")
+	@JsonTypeInfo(use= JsonTypeInfo.Id.CLASS,property="_entityClass")
 	protected T entity;
 
 	public EntityVersion() {
