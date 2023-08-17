@@ -37,9 +37,11 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Collection<T> {
 
@@ -129,24 +131,13 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public Stream<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
-		StringBuffer query = new StringBuffer();
-		query.append("SELECT * FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
-		if (order != null) {
-			String sortOrder = (order.getOrder() > 0 ) ? " ASC" : " DESC";
-			query.append(" ORDER BY ").append(PostgreSQLFilterFactory.formatField(order.getAttributeName(),Object.class)).append(sortOrder);
-		}
-		if (skip != null) {
-			query.append(" OFFSET ").append(skip);
-		}
-		if (limit != null) {
-			query.append(" LIMIT ").append(limit);
-		}
+		String query = buildQuery(filter, order, skip, limit);
 		try (Connection connection = ds.getConnection();
 			 Statement statement = connection.createStatement()){
 			if (maxTime > 0) {
 				statement.setQueryTimeout(maxTime);
 			}
-			 try (ResultSet resultSet = statement.executeQuery(query.toString())) {
+			 try (ResultSet resultSet = statement.executeQuery(query)) {
 				 List<String> resultList = new ArrayList<>();
 				 while (resultSet.next()) {
 					 resultList.add(resultSet.getString(2));
@@ -164,6 +155,78 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 			throw new RuntimeException("Query execution failed: " + query,e);
 		}
 	}
+
+	private String buildQuery(Filter filter, SearchOrder order, Integer skip, Integer limit) {
+		StringBuffer query = new StringBuffer();
+		query.append("SELECT * FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
+		if (order != null) {
+			String sortOrder = (order.getOrder() > 0 ) ? " ASC" : " DESC";
+			query.append(" ORDER BY ").append(PostgreSQLFilterFactory.formatField(order.getAttributeName(),Object.class)).append(sortOrder);
+		}
+		if (skip != null) {
+			query.append(" OFFSET ").append(skip);
+		}
+		if (limit != null) {
+			query.append(" LIMIT ").append(limit);
+		}
+		return query.toString();
+	}
+
+	@Override
+	public Stream<T> findCloseableStream(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
+		String query = buildQuery(filter, order, skip, limit);
+		AtomicReference<Connection> connection = new AtomicReference<>();
+		AtomicReference<Statement> statement = new AtomicReference<>();
+		AtomicReference<ResultSet> resultSet = new AtomicReference<>();
+		try {
+			connection.set(ds.getConnection());
+			statement.set(connection.get().createStatement());
+			if (maxTime > 0) {
+				statement.get().setQueryTimeout(maxTime);
+			}
+			resultSet.set(statement.get().executeQuery(query));
+
+			Stream<T> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(new ResultSetIterator(resultSet.get()),
+							Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED), false)
+					.map(s-> {
+						try {
+							return objectMapper.readValue(s, entityClass);
+						} catch (JsonProcessingException e) {
+							throw new RuntimeException(e);
+						}
+					});
+			stream.onClose(() -> safeClose(connection.get(), statement.get(), resultSet.get()));
+			return stream;
+		} catch (SQLException e) {
+			safeClose(connection.get(), statement.get(), resultSet.get());
+			throw new RuntimeException("Query execution failed: " + query,e);
+		}
+	}
+
+	private void safeClose(Connection connection, Statement statement, ResultSet resultSet) {
+		if (resultSet != null) {
+			try {
+				resultSet.close();
+			} catch (SQLException e) {
+				logger.error("Unable to close resultSet" ,e);
+			}
+		}
+		if (statement!= null) {
+			try {
+				statement.close();
+			} catch (SQLException e) {
+				logger.error("Unable to close statement" ,e);
+			}
+		}
+		if (connection != null) {
+			try {
+				connection.close();
+			} catch (SQLException e) {
+				logger.error("Unable to close connection" ,e);
+			}
+		}
+	}
+
 
 	@Override
 	public Stream<T> findReduced(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime, List<String> reduceFields) {

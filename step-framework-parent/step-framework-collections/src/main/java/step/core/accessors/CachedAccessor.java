@@ -164,4 +164,9 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	public Stream<T> stream() {
 		return cache.stream();
 	}
+
+	@Override
+	public Stream<T> streamCloseable() {
+		return cache.streamCloseable();
+	}
 }

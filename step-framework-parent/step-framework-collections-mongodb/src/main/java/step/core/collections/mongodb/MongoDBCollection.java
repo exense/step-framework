@@ -110,6 +110,11 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	}
 
 	@Override
+	public Stream<T> findCloseableStream(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
+		return find(filter, order, skip, limit, maxTime);
+	}
+
+	@Override
 	public Stream<T> findReduced(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime, List<String> reduceFields ) {
 		return find(filter, order, skip, limit, maxTime, reduceFields);
 	}

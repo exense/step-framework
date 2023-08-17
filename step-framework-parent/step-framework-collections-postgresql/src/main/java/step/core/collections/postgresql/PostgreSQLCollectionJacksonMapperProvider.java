@@ -18,6 +18,7 @@
  ******************************************************************************/
 package step.core.collections.postgresql;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -39,6 +40,7 @@ class PostgreSQLCollectionJacksonMapperProvider {
 
 	public static ObjectMapper getObjectMapper() {
 		ObjectMapper objectMapper = DefaultJacksonMapperProvider.getObjectMapper();
+		objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
 		modules.forEach(m -> objectMapper.registerModule(m));
 		return objectMapper;
 	}

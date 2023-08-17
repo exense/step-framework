@@ -131,6 +131,11 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	}
 
 	@Override
+	public Stream<T> streamCloseable() {
+		return collectionDriver.findCloseableStream(Filters.empty(), null, null, null, 0);
+	}
+
+	@Override
 	public void remove(ObjectId id) {
 		collectionDriver.remove(byId(id));
 		if (isVersioningEnabled()) {
