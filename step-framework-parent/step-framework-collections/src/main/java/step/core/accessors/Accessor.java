@@ -83,9 +83,17 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	Iterator<T> getAll();
 	
 	/**
+	 * Warning: depending on the underlying implementation the whole result set might be loaded into memory
+	 * Use {@link #streamLazy() FetchStream} method instead within a try-with-resources statement for large volume of data
 	 * @return a {@link Stream} with all objects
 	 */
 	Stream<T> stream();
+
+	/**
+	 * Warning: this method must be used within a try-with-resources statement or similar control structure to ensure that the stream's I/O resources are closed promptly after the stream's operations have completed.
+	 * @return a {@link Stream} with all objects
+	 */
+	Stream<T> streamLazy();
 
 	/**
 	 * Find an object by attributes. If multiple objects match these attributes, the first one will be returned
