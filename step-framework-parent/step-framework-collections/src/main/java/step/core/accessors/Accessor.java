@@ -84,7 +84,7 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	
 	/**
 	 * Warning: depending on the underlying implementation the whole result set might be loaded into memory
-	 * Use streamCloseable instead within a try-with-resources statement for large volume of data
+	 * Use {@link #fetchStream() FetchStream} method instead within a try-with-resources statement for large volume of data
 	 * @return a {@link Stream} with all objects
 	 */
 	Stream<T> stream();
@@ -93,7 +93,7 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	 * Warning: this method must be used within a try-with-resources statement or similar control structure to ensure that the stream's I/O resources are closed promptly after the stream's operations have completed.
 	 * @return a {@link Stream} with all objects
 	 */
-	Stream<T> streamCloseable();
+	Stream<T> fetchStream();
 
 	/**
 	 * Find an object by attributes. If multiple objects match these attributes, the first one will be returned

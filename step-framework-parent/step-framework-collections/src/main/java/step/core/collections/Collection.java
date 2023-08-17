@@ -42,7 +42,7 @@ public interface Collection<T> {
 	
 	/**
 	 * Warning: depending on the underlying implementation the whole result set might be loaded into memory
-	 * Use findCloseableStream instead within a try-with-resources statement for large volume of data
+	 * Use {@link #findLazy(Filter, SearchOrder, Integer, Integer, int) FindLazy} method instead within a try-with-resources statement for large volume of data
 	 * @param filter
 	 * @param order
 	 * @param skip
@@ -63,7 +63,7 @@ public interface Collection<T> {
 	 * API Note: this method must be used within a try-with-resources statement or similar control structure to ensure that the stream's I/O resources are closed promptly after the stream's operations have completed.
 	 */
 
-	Stream<T> findCloseableStream(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime);
+	Stream<T> findLazy(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime);
 
 	Stream<T> findReduced(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime, List<String> reduceFields);
 	

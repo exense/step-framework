@@ -85,7 +85,7 @@ public class TableService {
         BiFunction<T, Session<?>, T> enricher = table.getResultItemEnricher().orElse((a, b) -> a);
 
         //return enrich stream
-        return collection.findCloseableStream(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
+        return collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
                 .map(t -> enricher.apply(t, session));
     }
 

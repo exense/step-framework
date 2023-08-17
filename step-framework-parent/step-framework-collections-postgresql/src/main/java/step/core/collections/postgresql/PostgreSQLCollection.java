@@ -173,7 +173,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	@Override
-	public Stream<T> findCloseableStream(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
+	public Stream<T> findLazy(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
 		String query = buildQuery(filter, order, skip, limit);
 		AtomicReference<Connection> connection = new AtomicReference<>();
 		AtomicReference<Statement> statement = new AtomicReference<>();

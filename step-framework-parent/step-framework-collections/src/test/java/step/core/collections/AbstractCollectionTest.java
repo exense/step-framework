@@ -230,25 +230,25 @@ public abstract class AbstractCollectionTest {
 
 		// Sort ascending
 		List<Bean> result;
-		try (Stream<Bean> closeableStream = beanCollection.findCloseableStream(Filters.empty(), new SearchOrder(PROPERTY1, 1), null, null, 0)) {
+		try (Stream<Bean> closeableStream = beanCollection.findLazy(Filters.empty(), new SearchOrder(PROPERTY1, 1), null, null, 0)) {
 			result = closeableStream.collect(Collectors.toList());
 		}
 		assertEquals(List.of(bean1, bean2, bean3), result);
 
 		// Sort ascending by ID
-		try (Stream<Bean> beanStream = beanCollection.findCloseableStream(Filters.empty(), new SearchOrder(AbstractIdentifiableObject.ID, 1), null, null, 0)) {
+		try (Stream<Bean> beanStream = beanCollection.findLazy(Filters.empty(), new SearchOrder(AbstractIdentifiableObject.ID, 1), null, null, 0)) {
 			result = beanStream.collect(Collectors.toList());
 		}
 		assertEquals(List.of(bean1, bean2, bean3), result);
 
 		// Sort descending
-		try (Stream<Bean> beanStream = beanCollection.findCloseableStream(Filters.empty(), new SearchOrder(PROPERTY1, -1), null, null, 0)) {
+		try (Stream<Bean> beanStream = beanCollection.findLazy(Filters.empty(), new SearchOrder(PROPERTY1, -1), null, null, 0)) {
 			result = beanStream.collect(Collectors.toList());
 		}
 		assertEquals(List.of(bean3, bean2, bean1), result);
 
 		// Skip limit
-		try (Stream<Bean> closeableStream = beanCollection.findCloseableStream(Filters.empty(), new SearchOrder(PROPERTY1, 1), 1, 2, 0)) {
+		try (Stream<Bean> closeableStream = beanCollection.findLazy(Filters.empty(), new SearchOrder(PROPERTY1, 1), 1, 2, 0)) {
 			result = closeableStream.collect(Collectors.toList());
 		}
 		assertEquals(List.of(bean2, bean3), result);

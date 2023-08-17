@@ -44,7 +44,7 @@ public class TimeSeriesAggregationPipeline {
         Function<Long, Long> projectionFunction = query.getProjectionFunction();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
-        try (Stream<Bucket> closeableStream = collection.findCloseableStream(filter, null, null, null, 0)) {
+        try (Stream<Bucket> closeableStream = collection.findLazy(filter, null, null, null, 0)) {
             closeableStream.forEach(bucket -> {
                 bucketCount.increment();
                 BucketAttributes bucketAttributes = bucket.getAttributes();

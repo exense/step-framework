@@ -166,7 +166,7 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	}
 
 	@Override
-	public Stream<T> streamCloseable() {
-		return cache.streamCloseable();
+	public Stream<T> fetchStream() {
+		return cache.fetchStream();
 	}
 }

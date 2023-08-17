@@ -131,8 +131,8 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	}
 
 	@Override
-	public Stream<T> streamCloseable() {
-		return collectionDriver.findCloseableStream(Filters.empty(), null, null, null, 0);
+	public Stream<T> fetchStream() {
+		return collectionDriver.findLazy(Filters.empty(), null, null, null, 0);
 	}
 
 	@Override
