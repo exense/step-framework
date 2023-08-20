@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
@@ -204,6 +205,20 @@ public class ControllerServer {
 			https.addCustomizer(new SecureRequestCustomizer(true, hstsMaxAge, hstsIncludeSubdomains));
 
 			SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+
+			configureSsl("includeProtocols", sslContextFactory::setIncludeProtocols);
+			configureSsl("excludeProtocols", sslContextFactory::setExcludeProtocols);
+			configureSsl("includeCipherSuites", sslContextFactory::setIncludeCipherSuites);
+			configureSsl("excludeCipherSuites", sslContextFactory::setExcludeCipherSuites);
+
+			if (configuration.getPropertyAsBoolean("ui.ssl.logProtocolsAndCipherSuites", false)) {
+				logger.info("Logging SSL protocol and cipher suite information because ui.ssl.logProtocolsAndCipherSuites is enabled:");
+				logger.info("Include protocols: {}", String.join(" ", sslContextFactory.getIncludeProtocols()));
+				logger.info("Exclude protocols: {}", String.join(" ", sslContextFactory.getExcludeProtocols()));
+				logger.info("Include cipher suites: {}", String.join(" ", sslContextFactory.getIncludeCipherSuites()));
+				logger.info("Exclude cipher suites: {}", String.join(" ", sslContextFactory.getExcludeCipherSuites()));
+			}
+
 			sslContextFactory.setKeyStorePath(configuration.getProperty("ui.ssl.keystore.path"));
 			sslContextFactory.setKeyStorePassword(configuration.getProperty("ui.ssl.keystore.password"));
 			sslContextFactory.setKeyManagerPassword(configuration.getProperty("ui.ssl.keymanager.password"));
@@ -214,6 +229,18 @@ public class ControllerServer {
 		}
 
 		server.addConnector(connector);
+	}
+
+	private void configureSsl(String configSuffix, Consumer<String[]> method) {
+		String cfg = configuration.getProperty("ui.ssl." + configSuffix, null);
+		if (cfg != null) {
+			String[] split = cfg.trim().split("\\s+");
+			// For some reason, an empty string results in a 1-element array with an empty element, not a 0-element array.
+			if (split.length == 1 && split[0].equals("")) {
+				split = new String[0];
+			}
+			method.accept(split);
+		}
 	}
 
 	private void initWebapp() throws Exception {
