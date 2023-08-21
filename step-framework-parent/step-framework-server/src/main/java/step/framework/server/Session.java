@@ -20,16 +20,17 @@ package step.framework.server;
 
 import step.core.AbstractContext;
 import step.core.accessors.AbstractUser;
+import step.framework.server.access.TokenType;
 
 public class Session<U extends AbstractUser> extends AbstractContext {
-	
+
 	private U user;
 
 	private boolean authenticated;
 
 	protected String token;
 
-	protected boolean localToken;
+	protected TokenType tokenType;
 
 	public Session() {
 		super();
@@ -59,12 +60,11 @@ public class Session<U extends AbstractUser> extends AbstractContext {
 		this.token = token;
 	}
 
-	public boolean isLocalToken() {
-		return localToken;
+	public TokenType getTokenType() {
+		return tokenType;
 	}
 
-	public void setLocalToken(boolean localToken) {
-		this.localToken = localToken;
+	public void setTokenType(TokenType tokenType) {
+		this.tokenType = tokenType;
 	}
-
 }

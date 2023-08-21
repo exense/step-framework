@@ -15,6 +15,8 @@
  ******************************************************************************/
 package step.core.authentication;
 
+import step.framework.server.access.TokenType;
+
 import java.time.ZonedDateTime;
 
 public class AuthenticationTokenDetails {
@@ -29,11 +31,9 @@ public class AuthenticationTokenDetails {
     private final int refreshCount;
     private final int refreshLimit;
 
-    private final boolean localToken;
-
     private AuthenticationTokenDetails(String id, String username, String role, String issuer, String audience,
                                        ZonedDateTime notBeforeDate, ZonedDateTime issuedDate, ZonedDateTime expirationDate,
-                                       int refreshCount, int refreshLimit, boolean localToken) {
+                                       int refreshCount, int refreshLimit) {
         this.id = id;
         this.username = username;
         this.role = role;
@@ -44,7 +44,6 @@ public class AuthenticationTokenDetails {
         this.expirationDate = expirationDate;
         this.refreshCount = refreshCount;
         this.refreshLimit = refreshLimit;
-        this.localToken = localToken;
     }
 
     public String getId() {
@@ -87,10 +86,6 @@ public class AuthenticationTokenDetails {
         return refreshLimit;
     }
 
-    public boolean isLocalToken() {
-        return localToken;
-    }
-
     /**
      * Check if the authentication token is eligible for refreshment.
      *
@@ -115,8 +110,6 @@ public class AuthenticationTokenDetails {
         private ZonedDateTime expirationDate;
         private int refreshCount;
         private int refreshLimit;
-        private boolean localToken;
-
         public Builder withId(String id) {
             this.id = id;
             return this;
@@ -168,13 +161,8 @@ public class AuthenticationTokenDetails {
             return this;
         }
 
-        public Builder withLocalToken(boolean localToken) {
-            this.localToken = localToken;
-            return this;
-        }
-
         public AuthenticationTokenDetails build() {
-            return new AuthenticationTokenDetails(id, username, role, issuer, audience, notBeforeDate, issuedDate, expirationDate, refreshCount, refreshLimit, localToken);
+            return new AuthenticationTokenDetails(id, username, role, issuer, audience, notBeforeDate, issuedDate, expirationDate, refreshCount, refreshLimit);
         }
 
     }
@@ -192,7 +180,6 @@ public class AuthenticationTokenDetails {
                 ", expirationDate=" + expirationDate +
                 ", refreshCount=" + refreshCount +
                 ", refreshLimit=" + refreshLimit +
-                ", localToken=" + localToken +
                 '}';
     }
 }
