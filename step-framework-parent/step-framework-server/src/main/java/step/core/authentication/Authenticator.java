@@ -30,5 +30,4 @@ public interface Authenticator<C extends AbstractCredentials> {
 
 	boolean useUiLoginMask();
 
-	void setRoleFromProvider(AuthenticationResults authenticationResults);
 }

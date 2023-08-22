@@ -15,8 +15,6 @@
  ******************************************************************************/
 package step.core.authentication;
 
-import step.framework.server.access.TokenType;
-
 import java.time.ZonedDateTime;
 
 public class AuthenticationTokenDetails {
