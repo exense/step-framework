@@ -1,7 +1,7 @@
 package step.core.auth;
 
 public class ApiTokenCredentials extends AbstractCredentials {
-	String token;
+	private String token;
 
 	public ApiTokenCredentials(String token) {
 		this.token = token;
