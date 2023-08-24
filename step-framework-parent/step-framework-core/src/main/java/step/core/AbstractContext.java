@@ -45,7 +45,16 @@ public abstract class AbstractContext implements Closeable {
 	public <T>T get(Class<T> class_) {
 		return (T) get(key(class_));
 	}
-	
+
+	public Object require(Object key) {
+		Object object = attributes.get(key);
+		if(object == null) {
+			throw new DependencyException("Missing required dependency to "+key.toString());
+		} else {
+			return object;
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	public <T>T require(Class<T> class_) {
 		Object object = get(key(class_));
