@@ -17,8 +17,6 @@ package step.core.authentication;
 
 import step.framework.server.access.TokenType;
 
-import java.util.Map;
-
 public class AuthenticationResults {
 
     boolean authenticated;
@@ -33,7 +31,7 @@ public class AuthenticationResults {
 
     TokenType tokenType;
 
-    Map<String, Object> sessionStore;
+    TokenEndpointsResponse tokenEndpointsResponse;
 
     public boolean isAuthenticated() {
         return authenticated;
@@ -83,11 +81,11 @@ public class AuthenticationResults {
         this.tokenType = tokenType;
     }
 
-    public Map<String, Object> getSessionStore() {
-        return sessionStore;
+    public TokenEndpointsResponse getTokenEndpointResponse() {
+        return tokenEndpointsResponse;
     }
 
-    public void setSessionStore(Map<String, Object> sessionStore) {
-        this.sessionStore = sessionStore;
+    public void setTokenEndpointsResponse(TokenEndpointsResponse sessionStore) {
+        this.tokenEndpointsResponse = sessionStore;
     }
 }
