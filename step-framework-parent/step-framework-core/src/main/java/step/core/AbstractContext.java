@@ -20,6 +20,7 @@ package step.core;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -35,6 +36,10 @@ public abstract class AbstractContext implements Closeable {
 	public AbstractContext() {
 		super();
 		this.attributes = new ConcurrentHashMap<String, Object>();
+	}
+
+	public Collection<String> getKeys() {
+		return attributes.keySet();
 	}
 
 	public Object get(Object key) {
