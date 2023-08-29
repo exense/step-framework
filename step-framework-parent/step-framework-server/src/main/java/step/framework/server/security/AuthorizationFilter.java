@@ -34,6 +34,7 @@ import step.core.accessors.AbstractUser;
 import step.framework.server.AbstractServices;
 import step.framework.server.Session;
 import step.framework.server.access.AuthorizationManager;
+import step.framework.server.access.TokenType;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -113,7 +114,7 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 		Session<U> session = getSession();
 		if(session == null) {
 			session = new Session<>();
-			session.setLocalToken(true);//default
+			session.setTokenType(TokenType.LOCAL_UI_TOKEN);//default
 			session.setAuthenticated(false);
 			setSession(session);
 		}

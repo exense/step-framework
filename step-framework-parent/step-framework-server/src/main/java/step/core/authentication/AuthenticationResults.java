@@ -15,7 +15,7 @@
  ******************************************************************************/
 package step.core.authentication;
 
-import java.util.Map;
+import step.framework.server.access.TokenType;
 
 public class AuthenticationResults {
 
@@ -29,9 +29,9 @@ public class AuthenticationResults {
 
     String token;
 
-    boolean isLocalToken;
+    TokenType tokenType;
 
-    Map<String, Object> sessionStore;
+    TokenEndpointsResponse tokenEndpointsResponse;
 
     public boolean isAuthenticated() {
         return authenticated;
@@ -73,19 +73,19 @@ public class AuthenticationResults {
         this.token = token;
     }
 
-    public boolean isLocalToken() {
-        return isLocalToken;
+    public TokenType getTokenType() {
+        return tokenType;
     }
 
-    public void setLocalToken(boolean localToken) {
-        isLocalToken = localToken;
+    public void setTokenType(TokenType tokenType) {
+        this.tokenType = tokenType;
     }
 
-    public Map<String, Object> getSessionStore() {
-        return sessionStore;
+    public TokenEndpointsResponse getTokenEndpointResponse() {
+        return tokenEndpointsResponse;
     }
 
-    public void setSessionStore(Map<String, Object> sessionStore) {
-        this.sessionStore = sessionStore;
+    public void setTokenEndpointsResponse(TokenEndpointsResponse sessionStore) {
+        this.tokenEndpointsResponse = sessionStore;
     }
 }
