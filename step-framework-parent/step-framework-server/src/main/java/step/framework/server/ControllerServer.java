@@ -122,13 +122,18 @@ public class ControllerServer {
 		server = new Server();
 		handlers = new ContextHandlerCollection();
 
-		initController();
-		initWebapp();
-		
-		setupConnectors();
+		try {
+			initController();
+			initWebapp();
 
-		server.setHandler(handlers);
-		server.start();
+			setupConnectors();
+
+			server.setHandler(handlers);
+			server.start();
+		} catch (Exception e) {
+			logger.error("Unexpected exception on server start", e);
+			stop();
+		}
 		
 		Runtime.getRuntime().addShutdownHook(new Thread(()->{
 			logger.info("Shutdown hook called. Stopping...");
