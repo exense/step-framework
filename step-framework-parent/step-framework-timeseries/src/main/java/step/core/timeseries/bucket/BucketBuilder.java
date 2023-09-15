@@ -1,6 +1,8 @@
 package step.core.timeseries.bucket;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -57,6 +59,12 @@ public class BucketBuilder {
         if (bucketDistribution != null) {
             bucketDistribution.forEach((key, value) ->
                     distribution.computeIfAbsent(key, k -> new LongAdder()).add(value));
+        }
+        BucketAttributes bucketAttr = bucket.getAttributes();
+        if (bucketAttr != null) {
+            bucketAttr.forEach((k, v) -> {
+                ((HashSet<Object>) attributes.computeIfAbsent(k, i -> new HashSet<>())).add(v);
+            });
         }
         return this;
     }
