@@ -1,7 +1,6 @@
 package step.core.timeseries.aggregation;
 
 import step.core.collections.Filter;
-import step.core.timeseries.TimeSeries;
 import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.util.*;
@@ -22,6 +21,8 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     private final long resultResolution;
 
     private final TimeSeriesAggregationPipeline aggregationPipeline;
+    private List<String> collectAttributeKeys;
+    private int collectAttributesValuesLimit;
 
     protected TimeSeriesAggregationQuery(TimeSeriesAggregationPipeline aggregationPipeline,
                                          Filter filter,
@@ -29,13 +30,15 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
                                          Long from,
                                          Long to,
                                          long resultResolution,
-                                         boolean shrink
-    ) {
+                                         boolean shrink,
+                                         List<String> collectAttributeKeys, int collectAttributesValuesLimit) {
         super(from, to, filter);
         this.aggregationPipeline = aggregationPipeline;
         this.shrink = shrink;
         this.groupDimensions = groupDimensions;
         this.resultResolution = resultResolution;
+        this.collectAttributeKeys = collectAttributeKeys;
+        this.collectAttributesValuesLimit = collectAttributesValuesLimit;
     }
 
     public Set<String> getGroupDimensions() {
@@ -86,6 +89,14 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     public Filter getFilter() {
         return filter;
+    }
+
+    public List<String> getCollectAttributeKeys() {
+        return collectAttributeKeys;
+    }
+
+    public int getCollectAttributesValuesLimit() {
+        return collectAttributesValuesLimit;
     }
 
     public TimeSeriesAggregationResponse run() {

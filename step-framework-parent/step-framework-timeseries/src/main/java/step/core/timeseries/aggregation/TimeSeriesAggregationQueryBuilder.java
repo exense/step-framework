@@ -4,6 +4,7 @@ import step.core.collections.Filter;
 import step.core.collections.Filters;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class TimeSeriesAggregationQueryBuilder {
@@ -12,12 +13,13 @@ public class TimeSeriesAggregationQueryBuilder {
     private final long sourceResolution;
     private Set<String> groupDimensions = new HashSet<>();
     private Filter filter = Filters.empty();
-    ;
     private Long from;
     private Long to;
     private boolean shrink;
     private Long proposedResolution;
     private Integer bucketsCount;
+    private List<String> collectAttributes;
+    private int collectValuesLimit;
 
 
     public TimeSeriesAggregationQueryBuilder(TimeSeriesAggregationPipeline aggregationPipeline) {
@@ -38,6 +40,12 @@ public class TimeSeriesAggregationQueryBuilder {
     public TimeSeriesAggregationQueryBuilder range(long from, long to) {
         this.from = from;
         this.to = to;
+        return this;
+    }
+
+    public TimeSeriesAggregationQueryBuilder withCollectAttributes(List<String> collectAttributes, int collectValuesLimit) {
+        this.collectAttributes = collectAttributes;
+        this.collectValuesLimit = collectValuesLimit;
         return this;
     }
 
@@ -97,7 +105,7 @@ public class TimeSeriesAggregationQueryBuilder {
                 }
             }
         }
-        return new TimeSeriesAggregationQuery(pipeline, filter, groupDimensions, resultFrom, resultTo, resultResolution, shrink);
+        return new TimeSeriesAggregationQuery(pipeline, filter, groupDimensions, resultFrom, resultTo, resultResolution, shrink, collectAttributes, collectValuesLimit);
     }
 
     private static long roundUpToMultiple(long value, long multiple) {
