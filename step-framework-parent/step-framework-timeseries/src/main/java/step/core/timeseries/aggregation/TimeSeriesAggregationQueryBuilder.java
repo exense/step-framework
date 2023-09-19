@@ -18,8 +18,8 @@ public class TimeSeriesAggregationQueryBuilder {
     private boolean shrink;
     private Long proposedResolution;
     private Integer bucketsCount;
-    private List<String> collectAttributes;
-    private int collectValuesLimit;
+    private List<String> collectAttributeKeys;
+    private int collectAttributesValuesLimit;
 
 
     public TimeSeriesAggregationQueryBuilder(TimeSeriesAggregationPipeline aggregationPipeline) {
@@ -43,9 +43,9 @@ public class TimeSeriesAggregationQueryBuilder {
         return this;
     }
 
-    public TimeSeriesAggregationQueryBuilder withCollectAttributes(List<String> collectAttributes, int collectValuesLimit) {
-        this.collectAttributes = collectAttributes;
-        this.collectValuesLimit = collectValuesLimit;
+    public TimeSeriesAggregationQueryBuilder withCollectAttributes(List<String> collectAttributeKeys, int collectAttributesValuesLimit) {
+        this.collectAttributeKeys = collectAttributeKeys;
+        this.collectAttributesValuesLimit = collectAttributesValuesLimit;
         return this;
     }
 
@@ -105,7 +105,7 @@ public class TimeSeriesAggregationQueryBuilder {
                 }
             }
         }
-        return new TimeSeriesAggregationQuery(pipeline, filter, groupDimensions, resultFrom, resultTo, resultResolution, shrink, collectAttributes, collectValuesLimit);
+        return new TimeSeriesAggregationQuery(pipeline, filter, groupDimensions, resultFrom, resultTo, resultResolution, shrink, collectAttributeKeys, collectAttributesValuesLimit);
     }
 
     private static long roundUpToMultiple(long value, long multiple) {
