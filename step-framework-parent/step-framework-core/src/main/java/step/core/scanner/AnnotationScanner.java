@@ -49,9 +49,15 @@ public class AnnotationScanner implements AutoCloseable {
 	private final ScanResult scanResult;
 	private final ClassLoader classLoader;
 
-	private AnnotationScanner(ScanResult scanResult, ClassLoader classLoader) {
+	/**
+	 * The flag determining if the class loader is created together with annotation scanner and can be closed together with scanner
+	 */
+	private final boolean internalClassLoader;
+
+	private AnnotationScanner(ScanResult scanResult, ClassLoader classLoader, boolean internalClassLoader) {
 		this.scanResult = scanResult;
 		this.classLoader = classLoader;
+		this.internalClassLoader = internalClassLoader;
 	}
 
 	/**
@@ -91,7 +97,7 @@ public class AnnotationScanner implements AutoCloseable {
 		classGraph.addClassLoader(classloader);
 		classGraph.enableClassInfo().enableAnnotationInfo().enableMethodInfo();
 
-		return scan(classGraph, classloader);
+		return scan(classGraph, classloader, false);
 	}
 
 	/**
@@ -101,20 +107,24 @@ public class AnnotationScanner implements AutoCloseable {
 	 */
 	public static AnnotationScanner forSpecificJar(File jar) {
 		try {
-			return forSpecificJar(jar,new URLClassLoader(new URL[] { jar.toURI().toURL() }));
+			return forSpecificJar(jar,new URLClassLoader(new URL[] { jar.toURI().toURL() }), true);
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	public static AnnotationScanner forSpecificJar(File jar, ClassLoader classLoaderForResultClassesAndMethods) {
+		return forSpecificJar(jar, classLoaderForResultClassesAndMethods, false);
+	}
+
+	private static AnnotationScanner forSpecificJar(File jar, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
 		URLClassLoader urlClassLoader;
 		try {
-			urlClassLoader = new URLClassLoader(new URL[] { jar.toURI().toURL() });
+			urlClassLoader = new URLClassLoader(new URL[]{jar.toURI().toURL()});
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
-		return forSpecificJarFromURLClassLoader(urlClassLoader,classLoaderForResultClassesAndMethods);
+		return forSpecificJarFromURLClassLoader(urlClassLoader, classLoaderForResultClassesAndMethods, internalClassLoader);
 	}
 
 	/**
@@ -132,13 +142,16 @@ public class AnnotationScanner implements AutoCloseable {
 	/**
 	 * Scans the jar files of a specific {@link URLClassLoader}
 	 *
-	 * @param classloader the specific {@link ClassLoader} to scan the {@link URL}s
+	 * @param classloader                           the specific {@link ClassLoader} to scan the {@link URL}s
 	 * @param classLoaderForResultClassesAndMethods the {@link ClassLoader} containing the context
-	 *
 	 * @return an instance of {@link AnnotationScanner} scanning all classes of the
-	 *         provided {@link URLClassLoader} (parent excluded)
+	 * provided {@link URLClassLoader} (parent excluded)
 	 */
 	public static AnnotationScanner forSpecificJarFromURLClassLoader(URLClassLoader classloader, ClassLoader classLoaderForResultClassesAndMethods) {
+		return forSpecificJarFromURLClassLoader(classloader, classLoaderForResultClassesAndMethods, false);
+	}
+
+	private static AnnotationScanner forSpecificJarFromURLClassLoader(URLClassLoader classloader, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
 		List<String> jars = Arrays.asList(classloader.getURLs()).stream().map(url -> {
 			try {
 				// Use url decoder to ensure that escaped space %20 are unescaped properly
@@ -151,16 +164,15 @@ public class AnnotationScanner implements AutoCloseable {
 		ClassGraph classGraph = new ClassGraph().overrideClasspath(jars).enableClassInfo().enableAnnotationInfo()
 				.enableMethodInfo();
 
-		return scan(classGraph, classLoaderForResultClassesAndMethods);
+		return scan(classGraph, classLoaderForResultClassesAndMethods, internalClassLoader);
 	}
 
-	private static AnnotationScanner scan(ClassGraph classGraph, ClassLoader classLoaderForResultClassesAndMethods) {
+	private static AnnotationScanner scan(ClassGraph classGraph, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
 		long t1 = System.currentTimeMillis();
 		logger.info("Scanning classpath...");
 		ScanResult scanResult = classGraph.scan();
 		logger.info("Scanned classpath in " + (System.currentTimeMillis() - t1) + "ms");
-		AnnotationScanner annotationScanner = new AnnotationScanner(scanResult, classLoaderForResultClassesAndMethods);
-		return annotationScanner;
+		return new AnnotationScanner(scanResult, classLoaderForResultClassesAndMethods, internalClassLoader);
 	}
 
 	/**
@@ -218,8 +230,10 @@ public class AnnotationScanner implements AutoCloseable {
 	@Override
 	public void close() {
 		scanResult.close();
-		if (classLoader instanceof Closeable) {
-			// some class loaders (like URLClassLoader) have to be closed to release opened resources
+
+		// some class loaders (like URLClassLoader) have to be closed to release opened resources
+		// we can do that, if this classloader is created together with annotation scanner (AnnotationScanner#forSpecificJar)
+		if (internalClassLoader && classLoader instanceof Closeable) {
 			try {
 				((Closeable) classLoader).close();
 			} catch (IOException e) {
