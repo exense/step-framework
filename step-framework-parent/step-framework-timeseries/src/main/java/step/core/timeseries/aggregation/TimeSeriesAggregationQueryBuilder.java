@@ -18,7 +18,7 @@ public class TimeSeriesAggregationQueryBuilder {
     private boolean shrink;
     private Long proposedResolution;
     private Integer bucketsCount;
-    private List<String> collectAttributeKeys;
+    private Set<String> collectAttributeKeys;
     private int collectAttributesValuesLimit;
 
 
@@ -43,7 +43,14 @@ public class TimeSeriesAggregationQueryBuilder {
         return this;
     }
 
-    public TimeSeriesAggregationQueryBuilder withCollectAttributes(List<String> collectAttributeKeys, int collectAttributesValuesLimit) {
+    /**
+     * Optional: when providing a set of attribute keys to be collected, the aggregation pipeline will accumulate the unique values for each of these keys (per bucket).
+     *
+     * @param collectAttributeKeys the set of attributes keys which will be collected
+     * @param collectAttributesValuesLimit the maximum unique values collected per attribute
+     * @return the builder
+     */
+    public TimeSeriesAggregationQueryBuilder withCollectAttributes(Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
         this.collectAttributeKeys = collectAttributeKeys;
         this.collectAttributesValuesLimit = collectAttributesValuesLimit;
         return this;

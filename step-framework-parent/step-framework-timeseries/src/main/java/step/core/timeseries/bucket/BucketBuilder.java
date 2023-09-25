@@ -21,7 +21,7 @@ public class BucketBuilder {
     private final Map<Long, LongAdder> distribution = new ConcurrentHashMap<>();
     // TODO Make this configurable
     private final long pclPrecision = 10;
-    private List<String> accumulateAttributeKeys;
+    private Set<String> accumulateAttributeKeys;
     private int accumulateAttributeValuesLimit;
 
 
@@ -40,7 +40,7 @@ public class BucketBuilder {
         return this;
     }
 
-    public BucketBuilder withAccumulateAttributes(List<String> accumulateAttributeKeys, int accumulateAttributeValuesLimit) {
+    public BucketBuilder withAccumulateAttributes(Set<String> accumulateAttributeKeys, int accumulateAttributeValuesLimit) {
         this.accumulateAttributeKeys = accumulateAttributeKeys;
         this.accumulateAttributeValuesLimit = accumulateAttributeValuesLimit;
         this.attributes = new BucketAttributes();
@@ -77,12 +77,13 @@ public class BucketBuilder {
 
     private void accumulateAttributes(Bucket bucket) {
         BucketAttributes bucketAttr = bucket.getAttributes();
-        if (accumulateAttributeKeys != null && !accumulateAttributeKeys.isEmpty() && bucketAttr != null && !bucketAttr.isEmpty()) {
+        if (accumulateAttributeKeys != null && bucketAttr != null && !bucketAttr.isEmpty()) {
             accumulateAttributeKeys.forEach(a -> {
-                if (bucketAttr.containsKey(a)) {
+                Object value = bucketAttr.get(a);
+                if (value != null) {
                     Set values = (Set) attributes.computeIfAbsent(a, i -> new HashSet());
                     if (values.size() < accumulateAttributeValuesLimit) {
-                        values.add(bucketAttr.get(a));
+                        values.add(value);
                     }
                 }
             });

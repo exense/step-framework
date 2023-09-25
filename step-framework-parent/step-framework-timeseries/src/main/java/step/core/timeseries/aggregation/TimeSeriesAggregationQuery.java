@@ -21,7 +21,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     private final long resultResolution;
 
     private final TimeSeriesAggregationPipeline aggregationPipeline;
-    private List<String> collectAttributeKeys;
+    private Set<String> collectAttributeKeys;
     private int collectAttributesValuesLimit;
 
     protected TimeSeriesAggregationQuery(TimeSeriesAggregationPipeline aggregationPipeline,
@@ -31,7 +31,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
                                          Long to,
                                          long resultResolution,
                                          boolean shrink,
-                                         List<String> collectAttributeKeys, int collectAttributesValuesLimit) {
+                                         Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
         super(from, to, filter);
         this.aggregationPipeline = aggregationPipeline;
         this.shrink = shrink;
@@ -91,7 +91,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         return filter;
     }
 
-    public List<String> getCollectAttributeKeys() {
+    public Set<String> getCollectAttributeKeys() {
         return collectAttributeKeys;
     }
 

@@ -57,7 +57,7 @@ public class BucketBuilderTest {
         Bucket bucket2 = BucketBuilder.create(0L).withAttributes(attributes).ingest(5L).build();
         attributes = new BucketAttributes(Map.of("key", "value3"));
         Bucket bucket3 = BucketBuilder.create(0L).withAttributes(attributes).ingest(5L).build();
-        Bucket bucket = BucketBuilder.create(0L).withAccumulateAttributes(List.of("key"), 2)
+        Bucket bucket = BucketBuilder.create(0L).withAccumulateAttributes(Set.of("key"), 2)
                 .accumulate(bucket1)
                 .accumulate(bucket2)
                 .accumulate(bucket3).build();
