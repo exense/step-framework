@@ -18,7 +18,9 @@
  ******************************************************************************/
 package step.core.scanner;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -216,5 +218,13 @@ public class AnnotationScanner implements AutoCloseable {
 	@Override
 	public void close() {
 		scanResult.close();
+		if (classLoader instanceof Closeable) {
+			// some class loaders (like URLClassLoader) have to be closed to release opened resources
+			try {
+				((Closeable) classLoader).close();
+			} catch (IOException e) {
+				logger.error("The classloader hasn't been closed properly", e);
+			}
+		}
 	}
 }
