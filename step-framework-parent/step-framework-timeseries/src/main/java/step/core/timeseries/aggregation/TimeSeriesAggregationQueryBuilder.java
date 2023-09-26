@@ -12,12 +12,13 @@ public class TimeSeriesAggregationQueryBuilder {
     private final long sourceResolution;
     private Set<String> groupDimensions = new HashSet<>();
     private Filter filter = Filters.empty();
-    ;
     private Long from;
     private Long to;
     private boolean shrink;
     private Long proposedResolution;
     private Integer bucketsCount;
+    private Set<String> collectAttributeKeys;
+    private int collectAttributesValuesLimit;
 
 
     public TimeSeriesAggregationQueryBuilder(TimeSeriesAggregationPipeline aggregationPipeline) {
@@ -38,6 +39,19 @@ public class TimeSeriesAggregationQueryBuilder {
     public TimeSeriesAggregationQueryBuilder range(long from, long to) {
         this.from = from;
         this.to = to;
+        return this;
+    }
+
+    /**
+     * Optional: when providing a set of attribute keys to be collected, the aggregation pipeline will accumulate the unique values for each of these keys (per bucket).
+     *
+     * @param collectAttributeKeys the set of attributes keys which will be collected
+     * @param collectAttributesValuesLimit the maximum unique values collected per attribute
+     * @return the builder
+     */
+    public TimeSeriesAggregationQueryBuilder withAttributeCollection(Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
+        this.collectAttributeKeys = collectAttributeKeys;
+        this.collectAttributesValuesLimit = collectAttributesValuesLimit;
         return this;
     }
 
@@ -97,7 +111,7 @@ public class TimeSeriesAggregationQueryBuilder {
                 }
             }
         }
-        return new TimeSeriesAggregationQuery(pipeline, filter, groupDimensions, resultFrom, resultTo, resultResolution, shrink);
+        return new TimeSeriesAggregationQuery(pipeline, filter, groupDimensions, resultFrom, resultTo, resultResolution, shrink, collectAttributeKeys, collectAttributesValuesLimit);
     }
 
     private static long roundUpToMultiple(long value, long multiple) {

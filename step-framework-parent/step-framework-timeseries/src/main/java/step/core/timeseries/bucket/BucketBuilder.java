@@ -1,6 +1,9 @@
 package step.core.timeseries.bucket;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -18,6 +21,9 @@ public class BucketBuilder {
     private final Map<Long, LongAdder> distribution = new ConcurrentHashMap<>();
     // TODO Make this configurable
     private final long pclPrecision = 10;
+    private Set<String> accumulateAttributeKeys;
+    private int accumulateAttributeValuesLimit;
+
 
     public BucketBuilder(long begin) {
         this.begin = begin;
@@ -31,6 +37,13 @@ public class BucketBuilder {
 
     public BucketBuilder withAttributes(BucketAttributes attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public BucketBuilder withAccumulateAttributes(Set<String> accumulateAttributeKeys, int accumulateAttributeValuesLimit) {
+        this.accumulateAttributeKeys = accumulateAttributeKeys;
+        this.accumulateAttributeValuesLimit = accumulateAttributeValuesLimit;
+        this.attributes = new BucketAttributes();
         return this;
     }
 
@@ -58,7 +71,23 @@ public class BucketBuilder {
             bucketDistribution.forEach((key, value) ->
                     distribution.computeIfAbsent(key, k -> new LongAdder()).add(value));
         }
+        accumulateAttributes(bucket);
         return this;
+    }
+
+    private void accumulateAttributes(Bucket bucket) {
+        BucketAttributes bucketAttr = bucket.getAttributes();
+        if (accumulateAttributeKeys != null && bucketAttr != null && !bucketAttr.isEmpty()) {
+            accumulateAttributeKeys.forEach(a -> {
+                Object value = bucketAttr.get(a);
+                if (value != null) {
+                    Set values = (Set) attributes.computeIfAbsent(a, i -> new HashSet());
+                    if (values.size() < accumulateAttributeValuesLimit) {
+                        values.add(value);
+                    }
+                }
+            });
+        }
     }
 
     public long getBegin() {
