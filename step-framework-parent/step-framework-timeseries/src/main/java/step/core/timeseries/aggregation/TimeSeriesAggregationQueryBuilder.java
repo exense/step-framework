@@ -4,7 +4,6 @@ import step.core.collections.Filter;
 import step.core.collections.Filters;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class TimeSeriesAggregationQueryBuilder {
@@ -50,7 +49,7 @@ public class TimeSeriesAggregationQueryBuilder {
      * @param collectAttributesValuesLimit the maximum unique values collected per attribute
      * @return the builder
      */
-    public TimeSeriesAggregationQueryBuilder withCollectAttributes(Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
+    public TimeSeriesAggregationQueryBuilder withAttributeCollection(Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
         this.collectAttributeKeys = collectAttributeKeys;
         this.collectAttributesValuesLimit = collectAttributesValuesLimit;
         return this;
