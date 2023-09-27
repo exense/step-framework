@@ -224,8 +224,7 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public void drop() {
-		// TODO Auto-generated method stub
-		
+		remove(Filters.empty());
 	}
 
 	@Override
