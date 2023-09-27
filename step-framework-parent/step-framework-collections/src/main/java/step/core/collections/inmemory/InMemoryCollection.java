@@ -197,8 +197,9 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public void drop() {
-		// TODO Auto-generated method stub
-		
+		// This is not 100% accurate, as in principle the collection should disappear as well.
+		// But at least, it will be empty.
+		remove(Filters.empty());
 	}
 
 	@Override

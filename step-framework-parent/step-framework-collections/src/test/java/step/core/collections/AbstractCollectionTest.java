@@ -427,4 +427,16 @@ public abstract class AbstractCollectionTest {
 		assertEquals("value", actualBean.getMap().get("key.with.dots"));
 	}
 
+	@Test
+	public void testDrop() {
+		Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
+		beanCollection.remove(Filters.empty());
+		beanCollection.save(new Bean(VALUE1));
+		assertEquals(1, beanCollection.count(Filters.empty(), null));
+		beanCollection.drop();
+		beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
+		assertEquals(0, beanCollection.count(Filters.empty(), null));
+	}
+
+
 }
