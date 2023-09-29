@@ -12,6 +12,7 @@ public class MetricType extends AbstractIdentifiableObject {
     private String unit;
     private List<MetricAttribute> attributes;
     private String groupingAttribute;
+    private MetricAggregation defaultAggregation;
     private Map<String, String> seriesColors; // can set predefined colors for known series.
 
     public String getName() {
@@ -65,6 +66,15 @@ public class MetricType extends AbstractIdentifiableObject {
 
     public MetricType setSeriesColors(Map<String, String> seriesColors) {
         this.seriesColors = seriesColors;
+        return this;
+    }
+
+    public MetricAggregation getDefaultAggregation() {
+        return defaultAggregation;
+    }
+
+    public MetricType setDefaultAggregation(MetricAggregation defaultAggregation) {
+        this.defaultAggregation = defaultAggregation;
         return this;
     }
 }
