@@ -48,7 +48,7 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 		} else if (filter instanceof Or) {
 			return subQueryWithChildren(childerPojoFilters, "OR");
 		} else if (filter instanceof Not) {
-			return "NOT (" + childerPojoFilters.get(0) + ")";
+			return notPsqlClause((Not) filter, childerPojoFilters);
 		} else if (filter instanceof True) {
 			return "TRUE";
 		} else if (filter instanceof False) {
@@ -90,6 +90,16 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 					+ formatField(lteFilter.getField(),false) + " <= '" + lteFilter.getValue() + "'";
 		} else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
+		}
+	}
+
+	private String notPsqlClause(Not notFilter, List<String> childerPojoFilters) {
+		//For psql filering out with NOT field = value will also filter out field is null
+		if (notFilter.getChildren().get(0) instanceof Equals && ((Equals) notFilter.getChildren().get(0)).getExpectedValue() != null) {
+			Equals eqFilter = (Equals) notFilter.getChildren().get(0);
+			return "(NOT (" + childerPojoFilters.get(0) + ") OR " + buildFilter(Filters.equals(eqFilter.getField(), (String) null)) + ")";
+		} else {
+			return "NOT (" + childerPojoFilters.get(0) + ")";
 		}
 	}
 
