@@ -271,6 +271,7 @@ public abstract class AbstractCollectionTest {
 		bean2.setLongProperty(21l);
 		bean2.setBooleanProperty(false);
 		bean2.addAttribute("MyAtt1", "My value 2");
+		bean2.addAttribute("MyAtt2", "My other value");
 		collection.save(bean2);
 		
 		// Find by regex
@@ -308,6 +309,10 @@ public abstract class AbstractCollectionTest {
 		result = collection.find(Filters.and(List.of(Filters.gt("longProperty", 11),Filters.lte("longProperty",21))), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
 		assertEquals(bean2.getId(), result.get(0).getId());
 		assertEquals(1, result.size());
+
+		//Not equal
+		result = collection.find(Filters.not(Filters.equals("attributes.MyAtt2", "My value 1")), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
 	}
 
 	@Test
