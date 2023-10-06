@@ -3,17 +3,23 @@ package step.core.timeseries.metric;
 import step.core.accessors.AbstractIdentifiableObject;
 
 import java.util.List;
-import java.util.Map;
 
 public class MetricType extends AbstractIdentifiableObject {
-    
+
+    private String key;
     private String name;
-    private String label;
-    private String unit;
+    private String description;
     private List<MetricAttribute> attributes;
-    private String groupingAttribute;
-    private MetricAggregation defaultAggregation;
-    private Map<String, String> seriesColors; // can set predefined colors for known series.
+    private MetricRenderingSettings renderingSettings;
+
+    public String getKey() {
+        return key;
+    }
+
+    public MetricType setKey(String key) {
+        this.key = key;
+        return this;
+    }
 
     public String getName() {
         return name;
@@ -24,21 +30,12 @@ public class MetricType extends AbstractIdentifiableObject {
         return this;
     }
 
-    public String getUnit() {
-        return unit;
+    public String getDescription() {
+        return description;
     }
 
-    public MetricType setUnit(String unit) {
-        this.unit = unit;
-        return this;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public MetricType setLabel(String label) {
-        this.label = label;
+    public MetricType setDescription(String description) {
+        this.description = description;
         return this;
     }
 
@@ -51,30 +48,12 @@ public class MetricType extends AbstractIdentifiableObject {
         return this;
     }
 
-    public String getGroupingAttribute() {
-        return groupingAttribute;
+    public MetricRenderingSettings getRenderingSettings() {
+        return renderingSettings;
     }
 
-    public MetricType setGroupingAttribute(String groupingAttribute) {
-        this.groupingAttribute = groupingAttribute;
-        return this;
-    }
-
-    public Map<String, String> getSeriesColors() {
-        return seriesColors;
-    }
-
-    public MetricType setSeriesColors(Map<String, String> seriesColors) {
-        this.seriesColors = seriesColors;
-        return this;
-    }
-
-    public MetricAggregation getDefaultAggregation() {
-        return defaultAggregation;
-    }
-
-    public MetricType setDefaultAggregation(MetricAggregation defaultAggregation) {
-        this.defaultAggregation = defaultAggregation;
+    public MetricType setRenderingSettings(MetricRenderingSettings renderingSettings) {
+        this.renderingSettings = renderingSettings;
         return this;
     }
 }

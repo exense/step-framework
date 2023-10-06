@@ -4,5 +4,9 @@ public enum MetricAggregation {
     SUM,
     AVG,
     MAX,
-    MIN
+    MIN,
+    COUNT,
+    RATE,
+    MEDIAN,
+    PERCENTILE
 }
