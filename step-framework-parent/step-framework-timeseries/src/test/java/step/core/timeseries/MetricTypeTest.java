@@ -15,11 +15,11 @@ public class MetricTypeTest {
         String name = "metricName";
         String label = "metricLabel";
         MetricUnit unit = MetricUnit.MS;
-        String grouping = "groupBy";
         MetricAggregation aggregation = MetricAggregation.COUNT;
         Map<String, String> seriesColors = Map.of();
         List<MetricAttribute> attributes = Arrays.asList(new MetricAttribute().setLabel("label").setValue("value"));
 
+        List<String> grouping = Arrays.asList("groupBy");
         MetricType metric = new MetricType()
                 .setKey(name)
                 .setName(label)
@@ -27,7 +27,7 @@ public class MetricTypeTest {
                 .setAttributes(attributes)
                 .setRenderingSettings(new MetricRenderingSettings()
                     .setDefaultAggregation(aggregation)
-                    .setDefaultGroupingAttributes(Arrays.asList(grouping))
+                    .setDefaultGroupingAttributes(grouping)
                     .setUnit(unit)
                     .setSeriesColors(seriesColors)
                 );
