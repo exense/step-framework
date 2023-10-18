@@ -17,14 +17,18 @@ public abstract class AbstractVersionedAccessorTest extends AbstractAccessorTest
 	}
 
 	@Test
-	public void testBeanAccessorHistory() {
+	public void testBeanAccessorHistory() throws InterruptedException {
 		Bean entity = new Bean();
 		ObjectId id = entity.getId(); //required for inMemory collections tests or only the last value remain (could it be a bug?)
 		entity.setProperty1("value 1");
 		beanAccessor.save(entity);
 
+		Thread.sleep(1); // version threshold is 1 ms
+
 		entity.setProperty1("value 2");
 		beanAccessor.save(entity);
+
+		Thread.sleep(1); // version threshold is 1 ms
 
 		entity.setProperty1("value 3");
 		beanAccessor.save(entity);
