@@ -10,6 +10,9 @@ public class MetricType extends AbstractIdentifiableObject {
     private String name;
     private String description;
     private List<MetricAttribute> attributes;
+    private MetricUnit unit = MetricUnit.EMPTY;
+    private MetricAggregation defaultAggregation;
+    private List<String> defaultGroupingAttributes;
     private MetricRenderingSettings renderingSettings;
 
     public String getKey() {
@@ -56,4 +59,32 @@ public class MetricType extends AbstractIdentifiableObject {
         this.renderingSettings = renderingSettings;
         return this;
     }
+
+    public MetricUnit getUnit() {
+        return unit;
+    }
+
+    public MetricType setUnit(MetricUnit unit) {
+        this.unit = unit;
+        return this;
+    }
+
+    public MetricAggregation getDefaultAggregation() {
+        return defaultAggregation;
+    }
+
+    public MetricType setDefaultAggregation(MetricAggregation defaultAggregation) {
+        this.defaultAggregation = defaultAggregation;
+        return this;
+    }
+
+    public List<String> getDefaultGroupingAttributes() {
+        return defaultGroupingAttributes;
+    }
+
+    public MetricType setDefaultGroupingAttributes(List<String> defaultGroupingAttributes) {
+        this.defaultGroupingAttributes = defaultGroupingAttributes;
+        return this;
+    }
+    
 }

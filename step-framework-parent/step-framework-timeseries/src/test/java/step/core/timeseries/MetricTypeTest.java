@@ -25,20 +25,20 @@ public class MetricTypeTest {
                 .setName(label)
                 .setDescription("Custom description")
                 .setAttributes(attributes)
+                .setDefaultAggregation(aggregation)
+                .setDefaultGroupingAttributes(grouping)
+                .setUnit(unit)
                 .setRenderingSettings(new MetricRenderingSettings()
-                    .setDefaultAggregation(aggregation)
-                    .setDefaultGroupingAttributes(grouping)
-                    .setUnit(unit)
                     .setSeriesColors(seriesColors)
                 );
         Assert.assertEquals(name, metric.getKey());
         Assert.assertEquals(label, metric.getName());
-        Assert.assertEquals(unit, metric.getRenderingSettings().getUnit());
-        Assert.assertEquals(aggregation, metric.getRenderingSettings().getDefaultAggregation());
+        Assert.assertEquals(unit, metric.getUnit());
+        Assert.assertEquals(aggregation, metric.getDefaultAggregation());
         Assert.assertEquals(attributes, metric.getAttributes());
         Assert.assertEquals(attributes.get(0).getLabel(), metric.getAttributes().get(0).getLabel());
         Assert.assertEquals(attributes.get(0).getValue(), metric.getAttributes().get(0).getValue());
-        Assert.assertEquals(grouping, metric.getRenderingSettings().getDefaultGroupingAttributes());
+        Assert.assertEquals(grouping, metric.getDefaultGroupingAttributes());
         Assert.assertEquals(seriesColors, metric.getRenderingSettings().getSeriesColors());
 
     }
