@@ -14,7 +14,7 @@ public class MetricTypeTest {
     public void testBaseModel() {
         String name = "metricName";
         String label = "metricLabel";
-        MetricUnit unit = MetricUnit.MS;
+        String unit = "ms";
         MetricAggregation aggregation = MetricAggregation.COUNT;
         Map<String, String> seriesColors = Map.of();
         List<MetricAttribute> attributes = Arrays.asList(new MetricAttribute().setLabel("label").setValue("value"));
