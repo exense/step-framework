@@ -17,12 +17,12 @@ public class MetricTypeTest {
         String unit = "ms";
         MetricAggregation aggregation = MetricAggregation.COUNT;
         Map<String, String> seriesColors = Map.of();
-        List<MetricAttribute> attributes = Arrays.asList(new MetricAttribute().setLabel("label").setValue("value"));
+        List<MetricAttribute> attributes = Arrays.asList(new MetricAttribute().setDisplayName("displayName").setName("name"));
 
         List<String> grouping = Arrays.asList("groupBy");
         MetricType metric = new MetricType()
-                .setKey(name)
-                .setName(label)
+                .setName(name)
+                .setDisplayName(label)
                 .setDescription("Custom description")
                 .setAttributes(attributes)
                 .setDefaultAggregation(aggregation)
@@ -31,13 +31,13 @@ public class MetricTypeTest {
                 .setRenderingSettings(new MetricRenderingSettings()
                     .setSeriesColors(seriesColors)
                 );
-        Assert.assertEquals(name, metric.getKey());
-        Assert.assertEquals(label, metric.getName());
+        Assert.assertEquals(name, metric.getName());
+        Assert.assertEquals(label, metric.getDisplayName());
         Assert.assertEquals(unit, metric.getUnit());
         Assert.assertEquals(aggregation, metric.getDefaultAggregation());
         Assert.assertEquals(attributes, metric.getAttributes());
-        Assert.assertEquals(attributes.get(0).getLabel(), metric.getAttributes().get(0).getLabel());
-        Assert.assertEquals(attributes.get(0).getValue(), metric.getAttributes().get(0).getValue());
+        Assert.assertEquals(attributes.get(0).getDisplayName(), metric.getAttributes().get(0).getDisplayName());
+        Assert.assertEquals(attributes.get(0).getName(), metric.getAttributes().get(0).getName());
         Assert.assertEquals(grouping, metric.getDefaultGroupingAttributes());
         Assert.assertEquals(seriesColors, metric.getRenderingSettings().getSeriesColors());
 

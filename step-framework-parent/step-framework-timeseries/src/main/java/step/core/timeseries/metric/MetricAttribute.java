@@ -2,24 +2,24 @@ package step.core.timeseries.metric;
 
 public class MetricAttribute {
     
-    private String value;
-    private String label;
+    private String name;
+    private String displayName;
 
-    public String getValue() {
-        return value;
+    public String getName() {
+        return name;
     }
 
-    public MetricAttribute setValue(String value) {
-        this.value = value;
+    public MetricAttribute setName(String value) {
+        this.name = value;
         return this;
     }
 
-    public String getLabel() {
-        return label;
+    public String getDisplayName() {
+        return displayName;
     }
 
-    public MetricAttribute setLabel(String label) {
-        this.label = label;
+    public MetricAttribute setDisplayName(String displayName) {
+        this.displayName = displayName;
         return this;
     }
 }

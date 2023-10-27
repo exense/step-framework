@@ -6,8 +6,8 @@ import java.util.List;
 
 public class MetricType extends AbstractIdentifiableObject {
 
-    private String key;
     private String name;
+    private String displayName;
     private String description;
     private List<MetricAttribute> attributes;
     private String unit;
@@ -15,21 +15,21 @@ public class MetricType extends AbstractIdentifiableObject {
     private List<String> defaultGroupingAttributes;
     private MetricRenderingSettings renderingSettings;
 
-    public String getKey() {
-        return key;
-    }
-
-    public MetricType setKey(String key) {
-        this.key = key;
-        return this;
-    }
-
     public String getName() {
         return name;
     }
 
     public MetricType setName(String name) {
         this.name = name;
+        return this;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public MetricType setDisplayName(String displayName) {
+        this.displayName = displayName;
         return this;
     }
 
