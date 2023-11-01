@@ -1,10 +1,6 @@
 package step.core.accessors;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -65,6 +61,23 @@ public abstract class AbstractAccessorTest {
 		accessor.save(entity);
 		assertNotNull(entity.getId());
 	}
+    
+    @Test
+    public void testFindByIds() {
+        AbstractIdentifiableObject entity1 = new AbstractIdentifiableObject();
+        AbstractIdentifiableObject entity2 = new AbstractIdentifiableObject();
+        AbstractIdentifiableObject entity3 = new AbstractIdentifiableObject();
+        AbstractIdentifiableObject entity4 = new AbstractIdentifiableObject();
+		accessor.save(entity1);
+        accessor.save(entity2);
+        accessor.save(entity3);
+        // entity 4 is not saved
+        List<AbstractIdentifiableObject> foundObjects = accessor.findByIds(Arrays.asList(entity1.getId().toString(), entity2.getId().toString(), entity4.getId().toString())).collect(Collectors.toList());
+        assertEquals(2, foundObjects.size());
+        assertTrue(foundObjects.stream().anyMatch(o -> o.getId().toString().equals(entity1.getId().toString())));
+        assertTrue(foundObjects.stream().anyMatch(o -> o.getId().toString().equals(entity2.getId().toString())));
+
+    }
 	
 	@Test
 	public void testBeanAccessor() {

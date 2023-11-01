@@ -55,8 +55,10 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	 * @return the object
 	 */
 	T findByCriteria(Map<String, String> criteria);
-	
-	/**
+
+    Stream<T> findByIds(java.util.Collection<String> ids);
+
+    /**
 	 * Find objects by criteria.
 	 * 
 	 * @param criteria the map of mandatory criteria of the object to be found
