@@ -73,7 +73,7 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	}
     
     @Override
-    public Stream<T> findByIds(java.util.Collection<String> ids) {
+    public Stream<T> findByIds(List<String> ids) {
         List<String> idsList = ids.stream()
                 .map(ObjectId::new)
                 .map(ObjectId::toString)

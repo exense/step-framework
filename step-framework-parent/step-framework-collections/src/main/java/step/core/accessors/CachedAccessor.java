@@ -86,7 +86,7 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	}
 
     @Override
-    public Stream<T> findByIds(java.util.Collection<String> ids) {
+    public Stream<T> findByIds(List<String> ids) {
         return cache.findByIds(ids);
     }
 
