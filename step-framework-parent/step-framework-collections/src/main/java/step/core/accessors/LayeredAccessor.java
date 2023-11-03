@@ -87,7 +87,7 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 		return layeredStreamMerge(a -> a.findByIds(ids));
 	}
 
-    @Override
+	@Override
 	public Stream<T> findManyByCriteria(Map<String, String> criteria) {
 		return layeredStreamMerge(a -> a.findManyByCriteria(criteria));
 	}
