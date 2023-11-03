@@ -82,7 +82,7 @@ public class LayeredAccessor<T extends AbstractIdentifiableObject> implements Ac
 		return layeredLookup(a -> a.findByCriteria(criteria));
 	}
 
-    @Override
+	@Override
 	public Stream<T> findByIds(List<String> ids) {
 		return layeredStreamMerge(a -> a.findByIds(ids));
 	}
