@@ -71,7 +71,7 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	public T findByCriteria(Map<String, String> criteria) {
 		return findByCriteriaStream(criteria).findFirst().orElse(null);
 	}
-    
+
     @Override
     public Stream<T> findByIds(List<String> ids) {
         List<String> idsList = ids.stream()

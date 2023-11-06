@@ -61,7 +61,7 @@ public abstract class AbstractAccessorTest {
 		accessor.save(entity);
 		assertNotNull(entity.getId());
 	}
-    
+
     @Test
     public void testFindByIds() {
         AbstractIdentifiableObject entity1 = new AbstractIdentifiableObject();
