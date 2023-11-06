@@ -55,7 +55,7 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	 * @return the object
 	 */
 	T findByCriteria(Map<String, String> criteria);
-
+	
 	Stream<T> findByIds(List<String> ids);
 
 	/**
