@@ -72,14 +72,14 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 		return findByCriteriaStream(criteria).findFirst().orElse(null);
 	}
 
-    @Override
-    public Stream<T> findByIds(List<String> ids) {
-        List<String> idsList = ids.stream()
-                .map(ObjectId::new)
-                .map(ObjectId::toString)
-                .collect(Collectors.toList());
-        return collectionDriver.find(Filters.in("id", idsList), null, null, null, 0);
-    }
+	@Override
+	public Stream<T> findByIds(List<String> ids) {
+		List<String> idsList = ids.stream()
+			.map(ObjectId::new)
+			.map(ObjectId::toString)
+			.collect(Collectors.toList());
+		return collectionDriver.find(Filters.in("id", idsList), null, null, null, 0);
+	}
 
 	@Override
 	public Stream<T> findManyByCriteria(Map<String, String> criteria) {
