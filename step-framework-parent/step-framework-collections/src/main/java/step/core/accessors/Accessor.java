@@ -56,6 +56,8 @@ public interface Accessor<T extends AbstractIdentifiableObject> {
 	 */
 	T findByCriteria(Map<String, String> criteria);
 	
+	Stream<T> findByIds(List<String> ids);
+
 	/**
 	 * Find objects by criteria.
 	 * 

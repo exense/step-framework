@@ -86,6 +86,11 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
 	}
 
 	@Override
+	public Stream<T> findByIds(List<String> ids) {
+		return cache.findByIds(ids);
+	}
+
+	@Override
 	public Stream<T> findManyByCriteria(Map<String, String> criteria) {
 		return cache.findManyByCriteria(criteria);
 	}
