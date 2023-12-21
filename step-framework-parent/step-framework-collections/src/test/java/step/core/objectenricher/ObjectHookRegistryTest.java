@@ -4,6 +4,7 @@ import org.junit.Test;
 import step.core.AbstractContext;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.junit.Assert.*;
 
@@ -41,8 +42,8 @@ public class ObjectHookRegistryTest {
         public ObjectEnricher getObjectEnricher(AbstractContext context) {
             return new ObjectEnricher() {
                 @Override
-                public Map<String, String> getAdditionalAttributes() {
-                    return null;
+                public TreeMap<String, String> getAdditionalAttributes() {
+                    return new TreeMap<>(Map.of("att1", "val1"));
                 }
 
                 @Override
