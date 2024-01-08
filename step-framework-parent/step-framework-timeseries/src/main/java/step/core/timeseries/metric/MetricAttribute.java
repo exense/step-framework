@@ -1,8 +1,12 @@
 package step.core.timeseries.metric;
 
+import jakarta.validation.constraints.NotNull;
+
 public class MetricAttribute {
     
+    @NotNull
     private String name;
+    @NotNull
     private String displayName;
 
     public String getName() {
