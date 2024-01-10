@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TableService {
@@ -131,8 +132,9 @@ public class TableService {
             if (targetType == TableBulkOperationTargetType.FILTER || targetType == TableBulkOperationTargetType.ALL) {
                 Filter filter = createFilter(parameters, session, table);
                 Collection<T> collection = table.getCollection();
-                collection.find(filter, null, null, null, 0).map(e -> e.getId().toString())
-                        .forEach(id -> countingOperationById.accept(id, parameters.isPreview()));
+                //Storing the ids in memory to avoid mongodb cursor timeout exception (housekeeping of executions)
+                List<String> ids = collection.find(filter, null, null, null, 0).map(e -> e.getId().toString()).collect(Collectors.toList());
+                ids.forEach(id -> countingOperationById.accept(id, parameters.isPreview()));
             } else {
                 throw new TableServiceException("Unsupported targetFilter" + targetType);
             }
