@@ -192,7 +192,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public void rename(String newName) {
-		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("renaming collection is not supported for in memory collections");
 	}
 
 	@Override

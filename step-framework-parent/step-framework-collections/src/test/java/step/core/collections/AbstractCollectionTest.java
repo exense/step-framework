@@ -443,5 +443,29 @@ public abstract class AbstractCollectionTest {
 		assertEquals(0, beanCollection.count(Filters.empty(), null));
 	}
 
+	@Test
+	public void renameCollections() {
+		collectionFactory.getCollection("beans", Bean.class).drop();
+		collectionFactory.getCollection("beansrenamed", Bean.class).drop();
 
+		Collection<Bean> collection = collectionFactory.getCollection("beans", Bean.class);
+		Bean bean = new Bean();
+		bean.addAttribute("MyAtt1", "My value 1");
+		collection.save(bean);
+
+		List<Bean> result = collection.find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+		Bean actualBean = result.get(0);
+		assertEquals(bean.getId(), actualBean.getId());
+
+		collection.rename("beansrenamed");
+
+		Collection<Bean> collectionRenamed = collectionFactory.getCollection("beansrenamed", Bean.class);
+		result = collectionRenamed.find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+		actualBean = result.get(0);
+		assertEquals(bean.getId(), actualBean.getId());
+
+		collection = collectionFactory.getCollection("beans", Bean.class);
+		result = collection.find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(0, result.size());
+	}
 }

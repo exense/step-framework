@@ -20,6 +20,7 @@ package step.core.collections.filesystem;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -219,12 +220,21 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public void rename(String newName) {
-		// TODO Auto-generated method stub
+		try {
+			repository.renameTo(new File(repository.getParent() + "/" + newName));
+		} catch (Exception e) {
+			throw new FilesystemCollectionException("The file '" + repository.getAbsolutePath() + " could not be renamed", e);
+		}
 	}
 
 	@Override
 	public void drop() {
 		remove(Filters.empty());
+		try {
+			Files.deleteIfExists(repository.toPath());
+		} catch (IOException e) {
+			throw new FilesystemCollectionException("The file '" + repository.getAbsolutePath() + " could not be deleted", e);
+		}
 	}
 
 	@Override
