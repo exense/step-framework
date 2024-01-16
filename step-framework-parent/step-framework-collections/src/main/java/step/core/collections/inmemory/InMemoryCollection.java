@@ -44,7 +44,9 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	private final ObjectMapper mapper = DefaultJacksonMapperProvider.getObjectMapper();
 
 	private boolean byPassCloning;
-	
+	private InMemoryCollectionFactory parentFactory;
+	private String nane;
+
 	public InMemoryCollection() {
 		this(true);
 	}
@@ -56,8 +58,10 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 		this.byPassCloning = byPassCloning;
 	}
 	
-	public InMemoryCollection(Class<T> entityClass, Map<ObjectId, T> entities) {
+	public InMemoryCollection(InMemoryCollectionFactory parentFactory, String name, Class<T> entityClass, Map<ObjectId, T> entities) {
 		super();
+		this.parentFactory = parentFactory;
+		this.nane = name;
 		this.entityClass = entityClass;
 		this.entities = entities;
 	}
@@ -192,7 +196,11 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public void rename(String newName) {
-		throw new UnsupportedOperationException("renaming collection is not supported for in memory collections");
+		if (parentFactory != null) {
+			parentFactory.renameCollection(nane, newName);
+		} else {
+			throw new UnsupportedOperationException("renaming collection is not supported for in memory collections");
+		}
 	}
 
 	@Override
