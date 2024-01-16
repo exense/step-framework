@@ -1,19 +1,27 @@
 package step.core.timeseries.metric;
 
+import jakarta.validation.constraints.NotNull;
 import step.core.accessors.AbstractIdentifiableObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MetricType extends AbstractIdentifiableObject {
-
+    
+    @NotNull
     private String name;
+    @NotNull
     private String displayName;
     private String description;
-    private List<MetricAttribute> attributes;
+    @NotNull
+    private List<MetricAttribute> attributes = new ArrayList<>();
     private String unit;
+    @NotNull
     private MetricAggregation defaultAggregation;
-    private List<String> defaultGroupingAttributes;
-    private MetricRenderingSettings renderingSettings;
+    @NotNull
+    private List<String> defaultGroupingAttributes = new ArrayList<>();
+    @NotNull
+    private MetricRenderingSettings renderingSettings = new MetricRenderingSettings();
 
     public String getName() {
         return name;
