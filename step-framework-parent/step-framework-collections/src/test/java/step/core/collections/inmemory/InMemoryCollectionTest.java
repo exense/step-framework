@@ -10,8 +10,4 @@ public class InMemoryCollectionTest extends AbstractCollectionTest {
         super(new InMemoryCollectionFactory(new Properties()));
     }
 
-    @Override
-    public void renameCollections() {
-        //not implemented for in memory
-    }
 }
