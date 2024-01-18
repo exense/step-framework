@@ -18,8 +18,9 @@
  ******************************************************************************/
 package step.core.objectenricher;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.TreeMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -34,8 +35,8 @@ public class ObjectEnricherComposer {
             }
 
             @Override
-            public TreeMap<String, String> getAdditionalAttributes() {
-                TreeMap<String, String> attributes = new TreeMap<>();
+            public Map<String, String> getAdditionalAttributes() {
+                HashMap<String, String> attributes = new HashMap<>();
                 nonNullList(list).forEach(enricher -> attributes.putAll(enricher.getAdditionalAttributes()));
                 return attributes;
             }

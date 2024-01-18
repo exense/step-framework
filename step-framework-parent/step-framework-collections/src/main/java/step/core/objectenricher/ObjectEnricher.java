@@ -18,7 +18,7 @@
  ******************************************************************************/
 package step.core.objectenricher;
 
-import java.util.TreeMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -29,5 +29,5 @@ import java.util.function.Consumer;
  */
 public interface ObjectEnricher extends Consumer<EnricheableObject> {
 	
-	TreeMap<String, String> getAdditionalAttributes();
+	Map<String, String> getAdditionalAttributes();
 }
