@@ -199,8 +199,8 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 		//Renaming only make sense when created from a factory
 		if (parentFactory != null) {
 			parentFactory.renameCollection(name, newName);
-			this.name = newName;
 		}
+		this.name = newName;
 	}
 
 	@Override
