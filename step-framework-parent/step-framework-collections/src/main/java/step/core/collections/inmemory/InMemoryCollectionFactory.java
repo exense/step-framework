@@ -46,13 +46,18 @@ public class InMemoryCollectionFactory implements CollectionFactory {
 	@Override
 	public <T> Collection<T> getCollection(String name, Class<T> entityClass) {
 		Map<ObjectId, Object> entities = collections.computeIfAbsent(name, k->new ConcurrentHashMap<ObjectId, Object>());
-		return new InMemoryCollection<T>(entityClass, (Map<ObjectId, T>) entities);
+		return new InMemoryCollection<T>(this, name, entityClass, (Map<ObjectId, T>) entities);
 	}
 
 	@Override
 	public Collection<EntityVersion> getVersionedCollection(String name) {
-		Map<ObjectId, Object> entities = collections.computeIfAbsent(name + CollectionFactory.VERSION_COLLECTION_SUFFIX, k->new ConcurrentHashMap());
-		return new InMemoryCollection(EntityVersion.class, entities);
+		String versionCollectionName = name + CollectionFactory.VERSION_COLLECTION_SUFFIX;
+		Map<ObjectId, Object> entities = collections.computeIfAbsent(versionCollectionName, k->new ConcurrentHashMap());
+		return new InMemoryCollection(this, versionCollectionName, EntityVersion.class, entities);
 	}
 
+	public void renameCollection(String name, String newName) {
+		Map<ObjectId, Object> data = collections.remove(name);
+		collections.put(newName, data);
+	}
 }
