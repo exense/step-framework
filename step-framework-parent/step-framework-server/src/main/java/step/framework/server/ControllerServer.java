@@ -66,6 +66,7 @@ import jakarta.servlet.http.HttpSessionListener;
 public class ControllerServer {
 
 	private final String contextRoot;
+	private final boolean defaultServlet;
 	private Configuration configuration;
 	
 	private Server server;
@@ -113,6 +114,7 @@ public class ControllerServer {
 		super();
 		this.configuration = configuration;
 		this.port = configuration.getPropertyAsInteger("port", 8080);
+		this.defaultServlet = configuration.getPropertyAsBoolean("ui.defaultServlet",true);
 		this.contextRoot = configuration.getProperty("ui.context.root","/");
 		this.webAppRoots = new HashSet<>();
 		this.webAppRoots.add(configuration.getProperty("ui.resource.root","dist/step-app"));
@@ -343,9 +345,12 @@ public class ControllerServer {
 
 		// Lastly, the default servlet for root content (always needed, to satisfy servlet spec)
 		// It is important that this is last.
-		ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
-		holderPwd.setInitParameter("dirAllowed","true");
-		servletContextHandler.addServlet(holderPwd,"/");
+		//toggle off to define your own default servlet
+		if (defaultServlet) {
+			ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
+			holderPwd.setInitParameter("dirAllowed", "false");
+			servletContextHandler.addServlet(holderPwd, "/");
+		}
 
 		addHandler(servletContextHandler);
 	}
