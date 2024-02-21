@@ -4,9 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.bson.types.ObjectId;
 import org.junit.Test;
-import step.core.collections.EntityVersion;
 
 import static org.junit.Assert.*;
 
@@ -15,7 +13,8 @@ public abstract class AbstractAccessorTest {
 	protected Accessor<AbstractIdentifiableObject> accessor;
 	protected Accessor<AbstractOrganizableObject> organizableObjectAccessor;
 	protected Accessor<Bean> beanAccessor;
-	
+	protected Accessor<PseudoBean> pseudoBeanAccessor;
+
 	public AbstractAccessorTest() {
 		super();
 	}
@@ -78,26 +77,62 @@ public abstract class AbstractAccessorTest {
         assertTrue(foundObjects.stream().anyMatch(o -> o.getId().toString().equals(entity2.getId().toString())));
 
     }
-	
+
 	@Test
 	public void testBeanAccessor() {
 		Bean entity = new Bean();
 		entity.setProperty1("value 1");
 		beanAccessor.save(entity);
-		
+
 		Bean actualEntity = beanAccessor.get(entity.getId());
 		assertEquals(entity, actualEntity);
-		
+
 		actualEntity = beanAccessor.get(entity.getId().toString());
 		assertEquals(entity, actualEntity);
-		
+
 		actualEntity = beanAccessor.findByCriteria(Map.of("property1", "value 1"));
 		assertEquals(entity, actualEntity);
-		
+
 		actualEntity = beanAccessor.findManyByCriteria(Map.of("property1", "value 1")).findFirst().get();
 		assertEquals(entity, actualEntity);
 
 		actualEntity = beanAccessor.findByCriteria(new HashMap<> ());
+		assertEquals(entity, actualEntity);
+	}
+
+	@Test
+	public void testPseudoBeanAccessor() {
+		PseudoBean entity = new PseudoBean();
+		entity.stringField = "stringField1";
+		entity.inheritedStringField = "inheritedStringField2";
+		entity.anEnum = AnEnum.ONE;
+		pseudoBeanAccessor.save(entity);
+
+		PseudoBean actualEntity = pseudoBeanAccessor.get(entity.getId());
+		assertEquals(entity, actualEntity);
+
+		actualEntity = pseudoBeanAccessor.get(entity.getId().toString());
+		assertEquals(entity, actualEntity);
+
+		actualEntity = pseudoBeanAccessor.findByCriteria(Map.of("stringField", "stringField1"));
+		assertEquals(entity, actualEntity);
+
+		actualEntity = pseudoBeanAccessor.findManyByCriteria(Map.of("stringField", "stringField1")).findFirst().get();
+		assertEquals(entity, actualEntity);
+
+		actualEntity = pseudoBeanAccessor.findByCriteria(Map.of("inheritedStringField", "inheritedStringField2"));
+		assertEquals(entity, actualEntity);
+
+		actualEntity = pseudoBeanAccessor.findManyByCriteria(Map.of("inheritedStringField", "inheritedStringField2")).findFirst().get();
+		assertEquals(entity, actualEntity);
+
+		actualEntity = pseudoBeanAccessor.findByCriteria(Map.of("anEnum", AnEnum.ONE.name()));
+		assertEquals(entity, actualEntity);
+
+		actualEntity = pseudoBeanAccessor.findManyByCriteria(Map.of("anEnum", AnEnum.ONE.name())).findFirst().get();
+		assertEquals(entity, actualEntity);
+
+		actualEntity = pseudoBeanAccessor.findByCriteria(new HashMap<> ());
 		assertEquals(entity, actualEntity);
 	}
 
@@ -203,5 +238,19 @@ public abstract class AbstractAccessorTest {
 			this.property1 = property1;
 		}
 	}
- 
+
+	public enum AnEnum {
+		ZERO,
+		ONE,
+		TWO
+	}
+	public static class PseudoBean extends PseudoBeanParentClass {
+		public String stringField;
+		public AnEnum anEnum;
+	}
+
+	public static class PseudoBeanParentClass extends AbstractIdentifiableObject {
+		public String inheritedStringField;
+	}
+
 }

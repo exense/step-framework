@@ -24,11 +24,16 @@ public class MongoDBAccessorTest extends AbstractAccessorTest {
 				mongoDBCollectionFactory.getCollection("abstractOrganizableObject", AbstractOrganizableObject.class));
 		beanAccessor = new AbstractAccessor<Bean>(
 				mongoDBCollectionFactory.getCollection("bean", Bean.class));
+		pseudoBeanAccessor = new AbstractAccessor<>(
+				mongoDBCollectionFactory.getCollection("pseudoBean", PseudoBean.class));
 		accessor.getCollectionDriver().remove(Filters.empty());
 		organizableObjectAccessor.getCollectionDriver().remove(Filters.empty());
 		beanAccessor.getCollectionDriver().remove(Filters.empty());
+		pseudoBeanAccessor.getCollectionDriver().remove(Filters.empty());
 		Collection<EntityVersion> versionedBeanCollection = mongoDBCollectionFactory.getVersionedCollection("bean");
 		versionedBeanCollection.remove(Filters.empty());
+		Collection<EntityVersion> versionedPseudoBeanCollection = mongoDBCollectionFactory.getVersionedCollection("pseudoBean");
+		versionedPseudoBeanCollection.remove(Filters.empty());
 	}
 
 

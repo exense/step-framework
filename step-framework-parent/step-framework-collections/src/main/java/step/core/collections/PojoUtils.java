@@ -20,7 +20,20 @@ public class PojoUtils {
             return beanUtilsBean.getPropertyUtils().getNestedProperty(bean, propertyName);
         } catch (NestedNullException e) {
             return null;
+        } catch (NoSuchMethodException noSuchMethod) {
+            try {
+                // fallback, try to get the field with the given name
+                return getField(bean, propertyName);
+            } catch (NoSuchFieldException ignored) {
+                // keep existing behavior - no such method, and no field either,
+                // so we just throw the same exception we always did
+                throw noSuchMethod;
+            }
         }
+    }
+
+    private static Object getField(Object bean, String propertyName) throws NoSuchFieldException, IllegalAccessException {
+        return bean == null ? null : bean.getClass().getField(propertyName).get(bean);
     }
 
     public static Comparator<Object> comparator(String propertyName) {

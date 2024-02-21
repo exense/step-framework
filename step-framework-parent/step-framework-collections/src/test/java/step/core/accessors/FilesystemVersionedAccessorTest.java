@@ -43,5 +43,8 @@ public class FilesystemVersionedAccessorTest extends AbstractVersionedAccessorTe
 		beanAccessor = new AbstractAccessor<Bean>(
 				new FilesystemCollection<>(repository, Bean.class));
 		beanAccessor.enableVersioning(new FilesystemCollection<>(repository, EntityVersion.class), 1l);
+		pseudoBeanAccessor = new AbstractAccessor<>(
+				new FilesystemCollection<>(repository, PseudoBean.class));
+		pseudoBeanAccessor.enableVersioning(new FilesystemCollection<>(repository, EntityVersion.class), 1l);
 	}
 }
