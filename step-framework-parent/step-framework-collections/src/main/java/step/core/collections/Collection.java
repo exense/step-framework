@@ -20,6 +20,7 @@ package step.core.collections;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public interface Collection<T> {
@@ -82,15 +83,21 @@ public interface Collection<T> {
 
 	void createOrUpdateIndex(String field);
 
+	void createOrUpdateIndex(IndexField indexField);
+
 	void createOrUpdateIndex(String field, int order);
 
 	void createOrUpdateCompoundIndex(String... fields);
 
 	void createOrUpdateCompoundIndex(Map<String,Integer> fields);
-	
+
+	void createOrUpdateCompoundIndex(Set<IndexField> fields);
+
 	void rename(String newName);
 	
 	void drop();
 
 	Class<T> getEntityClass();
+
+	void dropIndex(String indexName);
 }

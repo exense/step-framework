@@ -22,14 +22,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import step.core.collections.Collection;
-import step.core.collections.Filter;
-import step.core.collections.SearchOrder;
+import step.core.collections.*;
 import step.core.collections.AbstractCollection;
+import step.core.collections.Collection;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.ParameterizedType;
@@ -40,6 +38,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -168,6 +167,9 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		}
 		if (limit != null) {
 			query.append(" LIMIT ").append(limit);
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Executing query: " + query);
 		}
 		return query.toString();
 	}
@@ -309,6 +311,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	@Override
+	public void createOrUpdateIndex(IndexField indexField) {
+		createOrUpdateCompoundIndex(Set.of(indexField));
+	}
+
+	@Override
 	public void createOrUpdateIndex(String field, int order) {
 		createOrUpdateCompoundIndex(Map.of(field, order));
 	}
@@ -322,15 +329,21 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+		Set<IndexField> indexFields = fields.entrySet().stream()
+				.map((e) -> new IndexField(e.getKey(), e.getValue(), null)).collect(Collectors.toSet());
+		createOrUpdateCompoundIndex(indexFields);
+	}
+
+	@Override
+	public void createOrUpdateCompoundIndex(Set<IndexField> fields) {
 		StringBuffer indexId = new StringBuffer().append("idx_").append(collectionName);
 		StringBuffer index = new StringBuffer().append("(");
-		fields.forEach((k,v) -> {
-			String order = (v>0) ? "ASC" : "DESC";
-			indexId.append("_").append(k.replaceAll("\\.","_")).append(order);
-			//dirty hack to manage RTM (deprecated as of 3.20)
-			Class fieldClass = (Document.class.isAssignableFrom(entityClass) && !(k.equals("begin") || k.equals("value"))) ?
-					String.class : getFieldClass(k);
-			index.append("(").append(PostgreSQLFilterFactory.formatField(k, fieldClass)).append(") ").append(order).append(",");
+		fields.forEach(i -> {
+			String fieldName = i.getFieldName();
+			String order = (i.getOrder() > 0) ? "ASC" : "DESC";
+			indexId.append("_").append(fieldName.replaceAll("\\.","_")).append(order);
+			Class<?> fieldClass = Objects.requireNonNullElseGet(i.getFieldClass(), () -> getFieldClass(fieldName));
+			index.append("(").append(PostgreSQLFilterFactory.formatField(fieldName, fieldClass)).append(") ").append(order).append(",");
 		});
 		//finally replace the last comma by the closing parenthesis
 		index.deleteCharAt(index.length()-1).append(")");
@@ -340,7 +353,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	private void createIndex(String indexId, String index) {
 		String query = "CREATE INDEX IF NOT EXISTS " + indexId + " ON " + collectionName + " " + index;
 		if (index.contains("$**")) {
-			logger.error("The wildcard not supported for index in postgres, skipping index creation for: " + query);
+			logger.error("The wildcard is not supported for index in postgres, skipping index creation for: " + query);
 		} else {
 			try (Connection connection = ds.getConnection();
 				 Statement statement = connection.createStatement()) {
@@ -352,10 +365,10 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		}
 	}
 
-	protected Class getFieldClass(String field)  {
+	protected Class<?> getFieldClass(String field)  {
 		Matcher m = p.matcher(field);
 		String previous = null;
-		Class currentClass = entityClass;
+		Class<?> currentClass = entityClass;
 		while (m.find()) {
 			if (previous != null) {
 				currentClass = getFieldClass(currentClass,previous);
@@ -368,18 +381,18 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		return getFieldClass(currentClass,previous);
 	}
 
-	protected Class getFieldClass(Class clazz, String _field) {
+	protected Class<?> getFieldClass(Class<?> clazz, String _field) {
 		String field = _field.equals("_id") ? "id" : _field;
 		for (PropertyDescriptor propertyDescriptor: PropertyUtils.getPropertyDescriptors(clazz)) {
 			if (propertyDescriptor.getName().equals(field)) {
 				Type genericReturnType = propertyDescriptor.getReadMethod().getGenericReturnType();
 				if (genericReturnType instanceof ParameterizedType) {
-					return (Class) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
+					return (Class<?>) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
 				} else if (genericReturnType instanceof TypeVariable) {
-					return (Class) Arrays.stream(((TypeVariable) genericReturnType).getBounds()).findFirst()
+					return (Class<?>) Arrays.stream(((TypeVariable<?>) genericReturnType).getBounds()).findFirst()
 							.orElseThrow(() -> new RuntimeException("Reflection failed for clazz '" + clazz + "' and field '" + field + "'" ));
 				} else {
-					Class fieldClass = (Class) genericReturnType;
+					Class<?> fieldClass = (Class<?>) genericReturnType;
 					return (fieldClass.isEnum()) ? String.class: fieldClass;
 				}
 			}
@@ -387,7 +400,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		if (field.equals("_class")) {
 			return String.class;
 		} else {
-			return clazz;
+			throw new UnsupportedOperationException("Unable to retrieve type of field '" + field + "' for class '" + clazz.getSimpleName());
 		}
 	}
 
@@ -405,6 +418,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	@Override
 	public Class<T> getEntityClass() {
 		return entityClass;
+	}
+
+	@Override
+	public void dropIndex(String indexName) {
+		executeUpdateQuery("DROP INDEX IF EXISTS " + indexName);
 	}
 
 	private void executeUpdateQuery(String query) {

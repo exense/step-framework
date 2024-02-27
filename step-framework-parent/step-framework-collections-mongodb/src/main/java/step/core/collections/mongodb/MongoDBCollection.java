@@ -20,6 +20,7 @@ package step.core.collections.mongodb;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -41,10 +42,9 @@ import com.mongodb.client.model.CountOptions;
 import com.mongodb.client.model.Projections;
 
 import step.core.accessors.AbstractIdentifiableObject;
-import step.core.collections.Collection;
-import step.core.collections.Filter;
-import step.core.collections.SearchOrder;
+import step.core.collections.*;
 import step.core.collections.AbstractCollection;
+import step.core.collections.Collection;
 
 public class MongoDBCollection<T> extends AbstractCollection<T> implements Collection<T> {
 	
@@ -227,6 +227,12 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	}
 
 	@Override
+	public void createOrUpdateIndex(IndexField indexField) {
+		//column data type is not important for mongo indexes
+		createOrUpdateIndex(indexField.getFieldName(), indexField.getOrder());
+	}
+
+	@Override
 	public void createOrUpdateIndex(String field, int order) {
 		createOrUpdateIndex(collection, field, order);
 	}
@@ -241,6 +247,13 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	@Override
 	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
 		createOrUpdateCompoundIndex(collection, fields);
+	}
+
+	@Override
+	public void createOrUpdateCompoundIndex(Set<IndexField> fields) {
+		//column data type is not important for mongo indexes
+		Map<String, Integer> mapOfIndexes = fields.stream().collect(Collectors.toMap(IndexField::getFieldName, IndexField::getOrder));
+		createOrUpdateCompoundIndex(mapOfIndexes);
 	}
 
 
@@ -293,6 +306,11 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	@Override
 	public Class<T> getEntityClass() {
 		return entityClass;
+	}
+
+	@Override
+	public void dropIndex(String indexName) {
+		collection.dropIndex(indexName);
 	}
 
 //	/**

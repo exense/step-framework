@@ -178,6 +178,11 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	}
 
 	@Override
+	public void createOrUpdateIndex(IndexField indexField) {
+
+	}
+
+	@Override
 	public void createOrUpdateIndex(String field, int order) {
 
 	}
@@ -191,6 +196,11 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+
+	}
+
+	@Override
+	public void createOrUpdateCompoundIndex(Set<IndexField> fields) {
 
 	}
 
@@ -213,5 +223,10 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	@Override
 	public Class<T> getEntityClass() {
 		return entityClass;
+	}
+
+	@Override
+	public void dropIndex(String indexName) {
+
 	}
 }
