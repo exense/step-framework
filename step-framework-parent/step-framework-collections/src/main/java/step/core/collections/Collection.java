@@ -20,7 +20,6 @@ package step.core.collections;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 public interface Collection<T> {
@@ -85,11 +84,9 @@ public interface Collection<T> {
 
 	void createOrUpdateIndex(IndexField indexField);
 
-	void createOrUpdateIndex(String field, int order);
+	void createOrUpdateIndex(String field, Order order);
 
 	void createOrUpdateCompoundIndex(String... fields);
-
-	void createOrUpdateCompoundIndex(Map<String,Integer> fields);
 
 	void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields);
 

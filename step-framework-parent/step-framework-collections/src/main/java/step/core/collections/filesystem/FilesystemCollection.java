@@ -209,17 +209,12 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	@Override
-	public void createOrUpdateIndex(String field, int order) {
+	public void createOrUpdateIndex(String field, Order order) {
 		// not supported
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		// not supported
-	}
-
-	@Override
-	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
 		// not supported
 	}
 

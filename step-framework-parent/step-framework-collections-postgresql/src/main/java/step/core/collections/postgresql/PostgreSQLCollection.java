@@ -307,7 +307,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public void createOrUpdateIndex(String field) {
-		createOrUpdateIndex(field,1);
+		createOrUpdateIndex(field, Order.ASC);
 	}
 
 	@Override
@@ -316,22 +316,14 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	@Override
-	public void createOrUpdateIndex(String field, int order) {
-		createOrUpdateCompoundIndex(Map.of(field, order));
+	public void createOrUpdateIndex(String field, Order order) {
+		createOrUpdateCompoundIndex(new LinkedHashSet<>(List.of(new IndexField(field, order, null))));
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		Map<String, Integer> fieldsMap = new LinkedHashMap<>();
-		Arrays.asList(fields).forEach(s -> fieldsMap.put(s,1));
-		createOrUpdateCompoundIndex(fieldsMap);
-	}
-
-	@Override
-	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
-		LinkedHashSet<IndexField> indexFields = fields.entrySet().stream()
-				.map((e) -> new IndexField(e.getKey(), e.getValue(), null)).collect(Collectors.toCollection( LinkedHashSet::new ));
-		createOrUpdateCompoundIndex(indexFields);
+		LinkedHashSet<IndexField> setIndexField = Arrays.stream(fields).map(f -> new IndexField(f, Order.ASC, null)).collect(Collectors.toCollection(LinkedHashSet::new));
+		createOrUpdateCompoundIndex(setIndexField);
 	}
 
 	@Override
@@ -339,10 +331,10 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		StringBuffer indexId = new StringBuffer().append("idx_").append(collectionName);
 		StringBuffer index = new StringBuffer().append("(");
 		fields.forEach(i -> {
-			String fieldName = i.getFieldName();
-			String order = (i.getOrder() > 0) ? "ASC" : "DESC";
+			String fieldName = i.fieldName;
+			String order = i.order.name();
 			indexId.append("_").append(fieldName.replaceAll("\\.","_")).append(order);
-			Class<?> fieldClass = Objects.requireNonNullElseGet(i.getFieldClass(), () -> getFieldClass(fieldName));
+			Class<?> fieldClass = Objects.requireNonNullElseGet(i.fieldClass, () -> getFieldClass(fieldName));
 			if (fieldClass.getClass().equals(Object.class)) {
 				throw new UnsupportedOperationException("Creation of index on fields with resolved type 'Object' is not supported, use the index creation method specifying the type explicitly");
 			}
