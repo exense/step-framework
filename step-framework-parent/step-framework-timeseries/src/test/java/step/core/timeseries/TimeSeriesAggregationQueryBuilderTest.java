@@ -175,7 +175,7 @@ public class TimeSeriesAggregationQueryBuilderTest {
 
     private static TimeSeriesAggregationPipeline createPipeline(int sourceResolution) {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), sourceResolution);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, sourceResolution);
         return timeSeries.getAggregationPipeline();
     }
 

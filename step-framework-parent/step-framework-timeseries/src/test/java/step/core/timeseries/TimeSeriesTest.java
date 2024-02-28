@@ -34,7 +34,7 @@ public class TimeSeriesTest {
     @Test
     public void test() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
 
         // Create 1M buckets
         long nBuckets = 1_000_000L;
@@ -86,7 +86,7 @@ public class TimeSeriesTest {
     public void ingestionPipeline() {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 100);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 100);
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             // Ingest 1M points in series 1
@@ -135,7 +135,7 @@ public class TimeSeriesTest {
         long duration = 1000;
 
         int timeSeriesResolution = 100;
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), timeSeriesResolution);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, timeSeriesResolution);
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
 
         long start;
@@ -261,7 +261,7 @@ public class TimeSeriesTest {
     private void testResolution(int resolutionMs, int expectedBucketCount) {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), resolutionMs);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, resolutionMs);
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline(resolutionMs)) {
             for (int i = 0; i < 10; i++) {
                 ingestionPipeline.ingestPoint(Map.of(), i, 0L);
@@ -283,7 +283,7 @@ public class TimeSeriesTest {
     private void testQueryWithNumberOfPoints(int numberOfBuckets) {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             for (int i = 0; i < 10; i++) {
                 ingestionPipeline.ingestPoint(Map.of(), i, 0L);
@@ -301,7 +301,7 @@ public class TimeSeriesTest {
     public void testAxis() {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             for (int i = 0; i < 10; i++) {
                 ingestionPipeline.ingestPoint(Map.of(), i, 0L);
@@ -347,7 +347,7 @@ public class TimeSeriesTest {
     @Test
     public void testWithGroupDimensions() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 10);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 10);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
@@ -382,7 +382,7 @@ public class TimeSeriesTest {
     @Test
     public void testConfiguration() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
@@ -430,7 +430,7 @@ public class TimeSeriesTest {
     @Test
     public void testHousekeeping() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
@@ -453,7 +453,7 @@ public class TimeSeriesTest {
     @Test
     public void oqlTestWithoutFilter() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
@@ -475,7 +475,7 @@ public class TimeSeriesTest {
     @Test
     public void oqlTestWithFilter() {
         InMemoryCollectionFactory collectionFactory = new InMemoryCollectionFactory(new Properties());
-        TimeSeries timeSeries = new TimeSeries(collectionFactory, "buckets", Set.of("f1", "f2"), 1);
+        TimeSeries timeSeries = new TimeSeries(collectionFactory, "buckets", 1);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
@@ -498,7 +498,7 @@ public class TimeSeriesTest {
     public void collectionFactoryConstructorTest() {
         Properties properties = new Properties();
         InMemoryCollectionFactory inMemoryCollectionFactory = new InMemoryCollectionFactory(properties);
-        TimeSeries timeSeries = new TimeSeries(inMemoryCollectionFactory, "buckets", Collections.emptySet(), 1000);
+        TimeSeries timeSeries = new TimeSeries(inMemoryCollectionFactory, "buckets", 1000);
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
     }
 

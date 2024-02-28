@@ -343,6 +343,9 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 			String order = (i.getOrder() > 0) ? "ASC" : "DESC";
 			indexId.append("_").append(fieldName.replaceAll("\\.","_")).append(order);
 			Class<?> fieldClass = Objects.requireNonNullElseGet(i.getFieldClass(), () -> getFieldClass(fieldName));
+			if (fieldClass.getClass().equals(Object.class)) {
+				throw new UnsupportedOperationException("Creation of index on fields with resolved type 'Object' is not supported, use the index creation method specifying the type explicitly");
+			}
 			index.append("(").append(PostgreSQLFilterFactory.formatField(fieldName, fieldClass)).append(") ").append(order).append(",");
 		});
 		//finally replace the last comma by the closing parenthesis
@@ -365,6 +368,14 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		}
 	}
 
+	/**
+	 * Recursively find the field passed in argument in the entityClass of this Collection and return its class
+	 * This method is used to determine whether this field should be treated as text or object (required when building indexes,
+	 * for distinct queries and for order by clause)
+	 * Note that it only supports a subset of class fields, only map parametrized type are supported
+	 * @param field the name of the field to be found
+	 * @return the Class of the field
+	 */
 	protected Class<?> getFieldClass(String field)  {
 		Matcher m = p.matcher(field);
 		String previous = null;
@@ -383,11 +394,21 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	protected Class<?> getFieldClass(Class<?> clazz, String _field) {
 		String field = _field.equals("_id") ? "id" : _field;
+		if (field.equals("_class")) {
+			return String.class;
+		}
 		for (PropertyDescriptor propertyDescriptor: PropertyUtils.getPropertyDescriptors(clazz)) {
 			if (propertyDescriptor.getName().equals(field)) {
 				Type genericReturnType = propertyDescriptor.getReadMethod().getGenericReturnType();
 				if (genericReturnType instanceof ParameterizedType) {
-					return (Class<?>) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
+					//Special case for Map we want to return the value class
+					if (Map.class.isAssignableFrom(propertyDescriptor.getReadMethod().getReturnType()) &&
+							((ParameterizedType) genericReturnType).getActualTypeArguments().length == 2) {
+						//Directly return the class of the map values
+						return (Class<?>) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
+					} else {
+						throw new UnsupportedOperationException("Unable to retrieve type of ParameterizedType field '" + field + "' for class '" + clazz.getSimpleName());
+					}
 				} else if (genericReturnType instanceof TypeVariable) {
 					return (Class<?>) Arrays.stream(((TypeVariable<?>) genericReturnType).getBounds()).findFirst()
 							.orElseThrow(() -> new RuntimeException("Reflection failed for clazz '" + clazz + "' and field '" + field + "'" ));
@@ -397,12 +418,9 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 				}
 			}
 		}
-		if (field.equals("_class")) {
-			return String.class;
-		} else {
-			throw new UnsupportedOperationException("Unable to retrieve type of field '" + field + "' for class '" + clazz.getSimpleName());
-		}
-	}
+		//current property was not found, this happens for Maps
+		return clazz;
+    }
 
 	@Override
 	public void rename(String newName) {
