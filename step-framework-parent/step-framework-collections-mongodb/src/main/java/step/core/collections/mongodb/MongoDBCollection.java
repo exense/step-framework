@@ -250,7 +250,7 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	}
 
 	@Override
-	public void createOrUpdateCompoundIndex(Set<IndexField> fields) {
+	public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
 		//column data type is not important for mongo indexes
 		Map<String, Integer> mapOfIndexes = fields.stream().collect(Collectors.toMap(IndexField::getFieldName, IndexField::getOrder));
 		createOrUpdateCompoundIndex(mapOfIndexes);

@@ -224,7 +224,7 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	@Override
-	public void createOrUpdateCompoundIndex(Set<IndexField> fields) {
+	public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
 		// not supported
 	}
 

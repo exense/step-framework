@@ -200,7 +200,7 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	}
 
 	@Override
-	public void createOrUpdateCompoundIndex(Set<IndexField> fields) {
+	public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
 
 	}
 

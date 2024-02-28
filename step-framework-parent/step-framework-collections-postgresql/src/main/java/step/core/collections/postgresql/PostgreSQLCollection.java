@@ -312,7 +312,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public void createOrUpdateIndex(IndexField indexField) {
-		createOrUpdateCompoundIndex(Set.of(indexField));
+		createOrUpdateCompoundIndex(new LinkedHashSet<>(List.of(indexField)));
 	}
 
 	@Override
@@ -329,13 +329,13 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
-		Set<IndexField> indexFields = fields.entrySet().stream()
-				.map((e) -> new IndexField(e.getKey(), e.getValue(), null)).collect(Collectors.toSet());
+		LinkedHashSet<IndexField> indexFields = fields.entrySet().stream()
+				.map((e) -> new IndexField(e.getKey(), e.getValue(), null)).collect(Collectors.toCollection( LinkedHashSet::new ));
 		createOrUpdateCompoundIndex(indexFields);
 	}
 
 	@Override
-	public void createOrUpdateCompoundIndex(Set<IndexField> fields) {
+	public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
 		StringBuffer indexId = new StringBuffer().append("idx_").append(collectionName);
 		StringBuffer index = new StringBuffer().append("(");
 		fields.forEach(i -> {

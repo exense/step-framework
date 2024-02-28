@@ -18,9 +18,9 @@
  ******************************************************************************/
 package step.core.collections;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 public interface Collection<T> {
@@ -91,7 +91,7 @@ public interface Collection<T> {
 
 	void createOrUpdateCompoundIndex(Map<String,Integer> fields);
 
-	void createOrUpdateCompoundIndex(Set<IndexField> fields);
+	void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields);
 
 	void rename(String newName);
 	

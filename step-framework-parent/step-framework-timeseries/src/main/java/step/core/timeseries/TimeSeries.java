@@ -25,6 +25,10 @@ public class TimeSeries {
         this(collectionFactory.getCollection(collectionName, Bucket.class), ingestionResolutionPeriod);
     }
 
+    /**
+     * Create default TimeSeries indexes and single field indexes for the custom ones passed in argument
+     * @param indexFields the set of single field indexes to be created
+     */
     public void createIndexes(Set<IndexField> indexFields) {
         collection.createOrUpdateIndex("begin");
         Set<IndexField> renamedFieldIndexes = indexFields.stream().map(i -> new IndexField("attributes." + i.getFieldName(),
