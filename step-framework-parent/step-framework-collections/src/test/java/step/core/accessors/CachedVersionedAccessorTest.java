@@ -12,13 +12,16 @@ public class CachedVersionedAccessorTest extends AbstractVersionedAccessorTest {
 	private InMemoryAccessor<AbstractIdentifiableObject> underlyingAccessor = new InMemoryAccessor<>(false);
 	private InMemoryAccessor<AbstractOrganizableObject> underlyingOrganisableObjectAccessor = new InMemoryAccessor<>(false);
 	private InMemoryAccessor<Bean> underlyingBeanAccessor = new InMemoryAccessor<>(false);
-	
+	private InMemoryAccessor<PseudoBean> underlyingPseudoBeanAccessor = new InMemoryAccessor<>(false);
+
 	@Before
 	public void before() {
 		accessor = new CachedAccessor<AbstractIdentifiableObject>(underlyingAccessor);
 		organizableObjectAccessor = new CachedAccessor<AbstractOrganizableObject>(underlyingOrganisableObjectAccessor);
 		beanAccessor = new CachedAccessor<Bean>(underlyingBeanAccessor, false);
 		underlyingBeanAccessor.enableVersioning(new InMemoryCollection<>(false), 1l);
+		pseudoBeanAccessor = new CachedAccessor<>(underlyingPseudoBeanAccessor, false);
+		underlyingPseudoBeanAccessor.enableVersioning(new InMemoryCollection<>(false), 1l);
 	}
 	
 	@Test

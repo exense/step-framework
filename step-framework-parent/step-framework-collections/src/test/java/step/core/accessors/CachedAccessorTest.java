@@ -10,12 +10,14 @@ public class CachedAccessorTest extends AbstractAccessorTest {
 	private InMemoryAccessor<AbstractIdentifiableObject> underlyingAccessor = new InMemoryAccessor<>(false);
 	private InMemoryAccessor<AbstractOrganizableObject> underlyingOrganisableObjectAccessor = new InMemoryAccessor<>(false);
 	private InMemoryAccessor<Bean> underlyingBeanAccessor = new InMemoryAccessor<>(false);
-	
+	private InMemoryAccessor<PseudoBean> underlyingPseudoBeanAccessor = new InMemoryAccessor<>(false);
+
 	@Before
 	public void before() {
 		accessor = new CachedAccessor<AbstractIdentifiableObject>(underlyingAccessor);
 		organizableObjectAccessor = new CachedAccessor<AbstractOrganizableObject>(underlyingOrganisableObjectAccessor);
 		beanAccessor = new CachedAccessor<Bean>(underlyingBeanAccessor, false);
+		pseudoBeanAccessor = new CachedAccessor<>(underlyingPseudoBeanAccessor, false);
 	}
 	
 	@Test
