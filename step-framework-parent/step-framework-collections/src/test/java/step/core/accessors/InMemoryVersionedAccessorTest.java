@@ -31,6 +31,8 @@ public class InMemoryVersionedAccessorTest extends AbstractVersionedAccessorTest
 		beanAccessor = new InMemoryAccessor<>(false);
 		//enable versioning
 		beanAccessor.enableVersioning(new InMemoryCollection<>(false), 1l);
+		pseudoBeanAccessor = new InMemoryAccessor<>(false);
+		pseudoBeanAccessor.enableVersioning(new InMemoryCollection<>(false), 1l);
 	}
 
 }

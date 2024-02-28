@@ -338,7 +338,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	private void createIndex(String indexId, String index) {
-		String query = "CREATE INDEX IF NOT EXISTS " + indexId + " ON " + collectionName + " " + index;
+		String query = "CREATE INDEX IF NOT EXISTS " + indexId + " ON " + collectionNameStr + " " + index;
 		if (index.contains("$**")) {
 			logger.error("The wildcard not supported for index in postgres, skipping index creation for: " + query);
 		} else {
