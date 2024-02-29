@@ -22,14 +22,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import step.core.collections.Collection;
-import step.core.collections.Filter;
-import step.core.collections.SearchOrder;
+import step.core.collections.*;
 import step.core.collections.AbstractCollection;
+import step.core.collections.Collection;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.ParameterizedType;
@@ -40,6 +38,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -168,6 +167,9 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		}
 		if (limit != null) {
 			query.append(" LIMIT ").append(limit);
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Executing query: " + query);
 		}
 		return query.toString();
 	}
@@ -305,32 +307,38 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public void createOrUpdateIndex(String field) {
-		createOrUpdateIndex(field,1);
+		createOrUpdateIndex(field, Order.ASC);
 	}
 
 	@Override
-	public void createOrUpdateIndex(String field, int order) {
-		createOrUpdateCompoundIndex(Map.of(field, order));
+	public void createOrUpdateIndex(IndexField indexField) {
+		createOrUpdateCompoundIndex(new LinkedHashSet<>(List.of(indexField)));
+	}
+
+	@Override
+	public void createOrUpdateIndex(String field, Order order) {
+		createOrUpdateCompoundIndex(new LinkedHashSet<>(List.of(new IndexField(field, order, null))));
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		Map<String, Integer> fieldsMap = new LinkedHashMap<>();
-		Arrays.asList(fields).forEach(s -> fieldsMap.put(s,1));
-		createOrUpdateCompoundIndex(fieldsMap);
+		LinkedHashSet<IndexField> setIndexField = Arrays.stream(fields).map(f -> new IndexField(f, Order.ASC, null)).collect(Collectors.toCollection(LinkedHashSet::new));
+		createOrUpdateCompoundIndex(setIndexField);
 	}
 
 	@Override
-	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+	public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
 		StringBuffer indexId = new StringBuffer().append("idx_").append(collectionName);
 		StringBuffer index = new StringBuffer().append("(");
-		fields.forEach((k,v) -> {
-			String order = (v>0) ? "ASC" : "DESC";
-			indexId.append("_").append(k.replaceAll("\\.","_")).append(order);
-			//dirty hack to manage RTM (deprecated as of 3.20)
-			Class fieldClass = (Document.class.isAssignableFrom(entityClass) && !(k.equals("begin") || k.equals("value"))) ?
-					String.class : getFieldClass(k);
-			index.append("(").append(PostgreSQLFilterFactory.formatField(k, fieldClass)).append(") ").append(order).append(",");
+		fields.forEach(i -> {
+			String fieldName = i.fieldName;
+			String order = i.order.name();
+			indexId.append("_").append(fieldName.replaceAll("\\.","_")).append(order);
+			Class<?> fieldClass = Objects.requireNonNullElseGet(i.fieldClass, () -> getFieldClass(fieldName));
+			if (fieldClass.getClass().equals(Object.class)) {
+				throw new UnsupportedOperationException("Creation of index on fields with resolved type 'Object' is not supported, use the index creation method specifying the type explicitly");
+			}
+			index.append("(").append(PostgreSQLFilterFactory.formatField(fieldName, fieldClass)).append(") ").append(order).append(",");
 		});
 		//finally replace the last comma by the closing parenthesis
 		index.deleteCharAt(index.length()-1).append(")");
@@ -340,7 +348,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	private void createIndex(String indexId, String index) {
 		String query = "CREATE INDEX IF NOT EXISTS " + indexId + " ON " + collectionNameStr + " " + index;
 		if (index.contains("$**")) {
-			logger.error("The wildcard not supported for index in postgres, skipping index creation for: " + query);
+			logger.error("The wildcard is not supported for index in postgres, skipping index creation for: " + query);
 		} else {
 			try (Connection connection = ds.getConnection();
 				 Statement statement = connection.createStatement()) {
@@ -352,10 +360,18 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		}
 	}
 
-	protected Class getFieldClass(String field)  {
+	/**
+	 * Recursively find the field passed in argument in the entityClass of this Collection and return its class
+	 * This method is used to determine whether this field should be treated as text or object (required when building indexes,
+	 * for distinct queries and for order by clause)
+	 * Note that it only supports a subset of class fields, only map parametrized type are supported
+	 * @param field the name of the field to be found
+	 * @return the Class of the field
+	 */
+	protected Class<?> getFieldClass(String field)  {
 		Matcher m = p.matcher(field);
 		String previous = null;
-		Class currentClass = entityClass;
+		Class<?> currentClass = entityClass;
 		while (m.find()) {
 			if (previous != null) {
 				currentClass = getFieldClass(currentClass,previous);
@@ -368,28 +384,35 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		return getFieldClass(currentClass,previous);
 	}
 
-	protected Class getFieldClass(Class clazz, String _field) {
+	protected Class<?> getFieldClass(Class<?> clazz, String _field) {
 		String field = _field.equals("_id") ? "id" : _field;
+		if (field.equals("_class")) {
+			return String.class;
+		}
 		for (PropertyDescriptor propertyDescriptor: PropertyUtils.getPropertyDescriptors(clazz)) {
 			if (propertyDescriptor.getName().equals(field)) {
 				Type genericReturnType = propertyDescriptor.getReadMethod().getGenericReturnType();
 				if (genericReturnType instanceof ParameterizedType) {
-					return (Class) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
+					//Special case for Map we want to return the value class
+					if (Map.class.isAssignableFrom(propertyDescriptor.getReadMethod().getReturnType()) &&
+							((ParameterizedType) genericReturnType).getActualTypeArguments().length == 2) {
+						//Directly return the class of the map values
+						return (Class<?>) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
+					} else {
+						throw new UnsupportedOperationException("Unable to retrieve type of ParameterizedType field '" + field + "' for class '" + clazz.getSimpleName());
+					}
 				} else if (genericReturnType instanceof TypeVariable) {
-					return (Class) Arrays.stream(((TypeVariable) genericReturnType).getBounds()).findFirst()
+					return (Class<?>) Arrays.stream(((TypeVariable<?>) genericReturnType).getBounds()).findFirst()
 							.orElseThrow(() -> new RuntimeException("Reflection failed for clazz '" + clazz + "' and field '" + field + "'" ));
 				} else {
-					Class fieldClass = (Class) genericReturnType;
+					Class<?> fieldClass = (Class<?>) genericReturnType;
 					return (fieldClass.isEnum()) ? String.class: fieldClass;
 				}
 			}
 		}
-		if (field.equals("_class")) {
-			return String.class;
-		} else {
-			return clazz;
-		}
-	}
+		//current property was not found, this happens for Maps
+		return clazz;
+    }
 
 	@Override
 	public void rename(String newName) {
@@ -405,6 +428,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	@Override
 	public Class<T> getEntityClass() {
 		return entityClass;
+	}
+
+	@Override
+	public void dropIndex(String indexName) {
+		executeUpdateQuery("DROP INDEX IF EXISTS " + indexName);
 	}
 
 	private void executeUpdateQuery(String query) {

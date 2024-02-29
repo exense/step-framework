@@ -26,7 +26,7 @@ public class TimeSeriesOQLTests {
     @Test
     public void oqlTestWithoutFilter() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
@@ -48,7 +48,7 @@ public class TimeSeriesOQLTests {
     @Test
     public void oqlTestWithFilter() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
