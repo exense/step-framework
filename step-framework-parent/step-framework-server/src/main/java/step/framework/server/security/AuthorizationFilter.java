@@ -79,15 +79,18 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 			String right = annotation.right();
 			if(right.length()>0) {
 				// Replacing placeholders in right based on SecuredContext annotations
+				// Setting ignore flag based on secured context
+				boolean ignoreRight = false;
 				Annotation[] handlerClassAnnotations = handlerClass.getAnnotations();
 				for (Annotation a : handlerClassAnnotations) {
 					if (a instanceof SecuredContext) {
 						SecuredContext securedContext = (SecuredContext) a;
+						ignoreRight = securedContext.ignore();
 						right = right.replaceAll(Pattern.quote("{" + securedContext.key() + "}"), securedContext.value());
 					}
 				}
 				// Check resolved right
-				boolean hasRight = authorizationManager.checkRightInContext(session, right);
+				boolean hasRight = ignoreRight || authorizationManager.checkRightInContext(session, right);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Checked right '" + right + "' for user '" + username(session) + "'. Result: " + hasRight);
 				}
