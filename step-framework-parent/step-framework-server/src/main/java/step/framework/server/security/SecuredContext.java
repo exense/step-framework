@@ -34,4 +34,5 @@ public @interface SecuredContext {
 
 	String value();
 
+	boolean ignore() default false;
 }
