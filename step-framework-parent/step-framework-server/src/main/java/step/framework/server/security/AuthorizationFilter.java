@@ -41,6 +41,12 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+/**
+ * Authentication filters for secured services
+ * User must be authenticated, if the endpoint requires specific rights,
+ * the access rights validation is delegated to the AuthorizationManager
+ */
+@Secured
 @Provider
 @Priority(Priorities.AUTHORIZATION)
 public class AuthorizationFilter<U extends AbstractUser> extends AbstractServices<U> implements ContainerRequestFilter {
@@ -59,9 +65,7 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 	
 	@Override
 	public void filter(ContainerRequestContext requestContext) throws IOException {
-		// Retrieve or initialize session
-		Session<U> session = retrieveOrInitializeSession();
-
+		Session<U> session = getSession();
 		// Check rights
 		Invocable invocable = extendendUriInfo.getMatchedResourceMethod().getInvocable();
 		Class<?> handlerClass = invocable.getHandler().getHandlerClass();
@@ -106,18 +110,9 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 	}
 
 	private String username(Session<?> session) {
-		AbstractUser user = session.getUser();
-		return (user != null ? user.getSessionUsername() : null);
+		return (session != null && session.getUser() != null) ?
+				session.getUser().getSessionUsername():
+				null;
 	}
 
-	protected Session<U> retrieveOrInitializeSession() {
-		Session<U> session = getSession();
-		if(session == null) {
-			session = new Session<>();
-			session.setTokenType(TokenType.LOCAL_UI_TOKEN);//default
-			session.setAuthenticated(false);
-			setSession(session);
-		}
-		return session;
-	}
 }
