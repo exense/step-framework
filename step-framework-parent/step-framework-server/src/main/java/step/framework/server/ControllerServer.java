@@ -55,6 +55,7 @@ import step.core.plugins.PluginManager;
 import step.core.scanner.CachedAnnotationScanner;
 import step.framework.server.audit.AuditLogger;
 import step.framework.server.audit.AuditResponseFilter;
+import step.framework.server.security.SessionFilter;
 import step.framework.server.swagger.Swagger;
 
 import jakarta.servlet.DispatcherType;
@@ -264,6 +265,7 @@ public class ControllerServer {
 		resourceConfig.addProperties(Map.of("consumes", Arrays.asList("application/json")));
 
 		resourceConfig.register(JacksonFeature.class);
+		resourceConfig.register(SessionFilter.class);
 		resourceConfig.register(CORSRequestResponseFilter.class);
 		resourceConfig.register(AuditResponseFilter.class);
 		resourceConfig.register(MultiPartFeature.class);
