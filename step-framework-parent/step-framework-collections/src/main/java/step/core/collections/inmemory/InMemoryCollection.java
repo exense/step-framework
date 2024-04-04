@@ -174,23 +174,26 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 
 	@Override
 	public void createOrUpdateIndex(String field) {
-		createOrUpdateIndex(field, 1);
+		createOrUpdateIndex(field, Order.ASC);
 	}
 
 	@Override
-	public void createOrUpdateIndex(String field, int order) {
+	public void createOrUpdateIndex(IndexField indexField) {
+
+	}
+
+	@Override
+	public void createOrUpdateIndex(String field, Order order) {
 
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		Map<String,Integer> mapFields = new LinkedHashMap<>();
-		Arrays.stream(fields).map(f -> mapFields.put(f,1));
-		createOrUpdateCompoundIndex(mapFields);
+
 	}
 
 	@Override
-	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+	public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
 
 	}
 
@@ -213,5 +216,10 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	@Override
 	public Class<T> getEntityClass() {
 		return entityClass;
+	}
+
+	@Override
+	public void dropIndex(String indexName) {
+
 	}
 }

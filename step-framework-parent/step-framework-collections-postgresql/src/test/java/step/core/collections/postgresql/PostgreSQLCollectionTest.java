@@ -101,6 +101,8 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 
 		Assert.assertEquals(Boolean.TYPE, beanCollection.getFieldClass("booleanProperty"));
 
+		Assert.assertThrows(UnsupportedOperationException.class, () -> beanCollection.getFieldClass("list"));
+
 		Assert.assertEquals(String.class,beanCollection.getFieldClass("map.property1"));
 
 		Assert.assertEquals(Long.class, beanCollection.getFieldClass("nested.longProperty"));

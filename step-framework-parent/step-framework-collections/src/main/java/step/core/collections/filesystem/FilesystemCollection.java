@@ -204,7 +204,12 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	@Override
-	public void createOrUpdateIndex(String field, int order) {
+	public void createOrUpdateIndex(IndexField indexField) {
+		// not supported
+	}
+
+	@Override
+	public void createOrUpdateIndex(String field, Order order) {
 		// not supported
 	}
 
@@ -214,7 +219,7 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	@Override
-	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
+	public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
 		// not supported
 	}
 
@@ -240,5 +245,10 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	@Override
 	public Class<T> getEntityClass() {
 		return entityClass;
+	}
+
+	@Override
+	public void dropIndex(String indexName) {
+		// not supported
 	}
 }

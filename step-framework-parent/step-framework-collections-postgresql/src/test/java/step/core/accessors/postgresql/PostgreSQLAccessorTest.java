@@ -23,17 +23,21 @@ public class PostgreSQLAccessorTest extends AbstractAccessorTest {
 	public void before() throws IOException {
 		jdbcDBCollectionFactory = new PostgreSQLCollectionFactory(getProperties());
 
-		accessor = new AbstractAccessor<AbstractIdentifiableObject>(jdbcDBCollectionFactory.getCollection("abstractIdentifiableObject", AbstractIdentifiableObject.class));
-		organizableObjectAccessor = new AbstractAccessor<AbstractOrganizableObject>(
-				jdbcDBCollectionFactory.getCollection("abstractOrganizableObject", AbstractOrganizableObject.class));
-		beanAccessor = new AbstractAccessor<AbstractAccessorTest.Bean>(
-				jdbcDBCollectionFactory.getCollection("bean", AbstractAccessorTest.Bean.class));
-		Collection<EntityVersion> versionedCollection = jdbcDBCollectionFactory.getVersionedCollection("bean");
-		versionedCollection.remove(Filters.empty());
-		beanAccessor.enableVersioning(versionedCollection, 1l);
+		accessor = new AbstractAccessor<>(jdbcDBCollectionFactory.getCollection("abstractIdentifiableObject", AbstractIdentifiableObject.class));
+		organizableObjectAccessor = new AbstractAccessor<>(jdbcDBCollectionFactory.getCollection("abstractOrganizableObject", AbstractOrganizableObject.class));
+		beanAccessor = new AbstractAccessor<>(jdbcDBCollectionFactory.getCollection("bean", AbstractAccessorTest.Bean.class));
+		Collection<EntityVersion> versionedBeanCollection = jdbcDBCollectionFactory.getVersionedCollection("bean");
+		versionedBeanCollection.remove(Filters.empty());
+		beanAccessor.enableVersioning(versionedBeanCollection, 1L);
+		pseudoBeanAccessor = new AbstractAccessor<>(jdbcDBCollectionFactory.getCollection("pseudoBean", PseudoBean.class));
+		Collection<EntityVersion> versionedPseudoBeanCollection = jdbcDBCollectionFactory.getVersionedCollection("pseudoBean");
+		versionedPseudoBeanCollection.remove(Filters.empty());
+		pseudoBeanAccessor.enableVersioning(versionedPseudoBeanCollection, 1L);
+
 		accessor.getCollectionDriver().remove(Filters.empty());
 		organizableObjectAccessor.getCollectionDriver().remove(Filters.empty());
 		beanAccessor.getCollectionDriver().remove(Filters.empty());
+		pseudoBeanAccessor.getCollectionDriver().remove(Filters.empty());
 	}
 
 	@After

@@ -35,6 +35,7 @@ import step.core.collections.Filters;
 import step.core.collections.SearchOrder;
 import step.core.collections.EntityVersion;
 import step.core.collections.filters.Equals;
+import step.core.collections.IndexField;
 
 import static step.core.collections.EntityVersion.VERSION_BULK_TIME_MS;
 import static step.core.collections.EntityVersion.VERSION_CUSTOM_FIELD;
@@ -241,7 +242,11 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 	public List<T> getRange(int skip, int limit) {
 		return collectionDriver.find(Filters.empty(), null, skip, limit, 0).collect(Collectors.toList());
 	}
-	
+
+	protected void createOrUpdateIndex(IndexField indexField) {
+		collectionDriver.createOrUpdateIndex(indexField);
+	}
+
 	protected void createOrUpdateIndex(String field) {
 		collectionDriver.createOrUpdateIndex(field);
 	}

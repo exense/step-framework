@@ -19,7 +19,7 @@ public class TimeSeriesAggergationQueryTest {
     @Test(expected = IllegalArgumentException.class)
     public void lowInvalidResolutionTest() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 10);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 10);
         timeSeries.getAggregationPipeline()
                 .newQueryBuilder()
                 .window(9);
@@ -28,7 +28,7 @@ public class TimeSeriesAggergationQueryTest {
     @Test
     public void lowValidResolutionTest() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 10);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 10);
         timeSeries.getAggregationPipeline()
                 .newQueryBuilder()
                 .window(10);
@@ -38,7 +38,7 @@ public class TimeSeriesAggergationQueryTest {
     @Test
     public void shrinkTest() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
@@ -58,7 +58,7 @@ public class TimeSeriesAggergationQueryTest {
     @Test
     public void emptyFiltersTest() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 1);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
         String oql = null;
         Map<String, String> params = null;
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
@@ -80,7 +80,7 @@ public class TimeSeriesAggergationQueryTest {
             bucket.setBegin(i * 1000);
             bucketCollection.save(bucket);
         }
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, Set.of(), 200);
+        TimeSeries timeSeries = new TimeSeries(bucketCollection, 200);
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         String oql = "";
         int split = 5;

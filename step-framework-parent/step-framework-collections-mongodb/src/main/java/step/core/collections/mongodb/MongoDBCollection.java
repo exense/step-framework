@@ -20,6 +20,7 @@ package step.core.collections.mongodb;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -41,10 +42,9 @@ import com.mongodb.client.model.CountOptions;
 import com.mongodb.client.model.Projections;
 
 import step.core.accessors.AbstractIdentifiableObject;
-import step.core.collections.Collection;
-import step.core.collections.Filter;
-import step.core.collections.SearchOrder;
+import step.core.collections.*;
 import step.core.collections.AbstractCollection;
+import step.core.collections.Collection;
 
 public class MongoDBCollection<T> extends AbstractCollection<T> implements Collection<T> {
 	
@@ -223,44 +223,43 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 
 	@Override
 	public void createOrUpdateIndex(String field) {
-		createOrUpdateIndex(field, 1);
+		createOrUpdateIndex(field, Order.ASC);
 	}
 
 	@Override
-	public void createOrUpdateIndex(String field, int order) {
-		createOrUpdateIndex(collection, field, order);
+	public void createOrUpdateIndex(IndexField indexField) {
+		createOrUpdateIndex(collection, indexField);
+	}
+
+	@Override
+	public void createOrUpdateIndex(String field, Order order) {
+		createOrUpdateIndex(collection, new IndexField(field, order, null));
 	}
 
 	@Override
 	public void createOrUpdateCompoundIndex(String... fields) {
-		Map<String, Integer> fieldsMap = new LinkedHashMap<>();
-		Arrays.asList(fields).forEach(s -> fieldsMap.put(s,1));
-		createOrUpdateCompoundIndex(fieldsMap);
+		LinkedHashSet<IndexField> setIndexField = Arrays.stream(fields).map(f -> new IndexField(f, Order.ASC, null)).collect(Collectors.toCollection(LinkedHashSet::new));
+		createOrUpdateCompoundIndex(setIndexField);
 	}
 
 	@Override
-	public void createOrUpdateCompoundIndex(Map<String, Integer> fields) {
-		createOrUpdateCompoundIndex(collection, fields);
-	}
+	public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
+		//column data type is not important for mongo indexes
+		Set<String> indexFieldNames = fields.stream().map(i -> i.fieldName).collect(Collectors.toSet());
+		Document index = getIndex(collection, indexFieldNames);
 
-
-	public static void createOrUpdateIndex(com.mongodb.client.MongoCollection<?> collection, String attribute, int order) {
-		Document index = getIndex(collection, Set.of(attribute));
 		if(index==null) {
-			collection.createIndex(new Document(attribute,order));
+			Document newIndex = new Document();
+			fields.forEach(i -> newIndex.append(i.fieldName, i.order.numeric));
+			collection.createIndex(newIndex);
 		}
 	}
 
-	public static void createOrUpdateCompoundIndex(com.mongodb.client.MongoCollection<?> collection, Map<String, Integer> fields) {
-		Document index = getIndex(collection, fields.keySet());
-		
-		if(index==null) {
-			Document newIndex = new Document();
-			
-			for(String key : fields.keySet())
-				newIndex.append(key, fields.get(key));
 
-			collection.createIndex(newIndex);
+	public static void createOrUpdateIndex(com.mongodb.client.MongoCollection<?> collection, IndexField indexField) {
+		Document index = getIndex(collection, Set.of(indexField.fieldName));
+		if(index==null) {
+			collection.createIndex(new Document(indexField.fieldName, indexField.order.numeric));
 		}
 	}
 	
@@ -293,6 +292,11 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	@Override
 	public Class<T> getEntityClass() {
 		return entityClass;
+	}
+
+	@Override
+	public void dropIndex(String indexName) {
+		collection.dropIndex(indexName);
 	}
 
 //	/**
