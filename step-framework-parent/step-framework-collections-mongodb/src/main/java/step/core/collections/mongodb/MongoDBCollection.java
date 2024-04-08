@@ -64,12 +64,21 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	public MongoDBCollection(MongoClientSession mongoClientSession, String collectionName, Class<T> entityClass) {
 		this.mongoClientSession = mongoClientSession;
 		this.entityClass = entityClass;
-		collection = JacksonMongoCollection.builder()
+		collection = getCollection(collectionName);
+	}
+
+	private JacksonMongoCollection<T> getCollection(String collectionName) {
+		return JacksonMongoCollection.builder()
 				.withObjectMapper(ObjectMapperConfigurer.configureObjectMapper(MongoDBCollectionJacksonMapperProvider.getObjectMapper()))
 				.withSerializationOptions(SerializationOptions.builder().withSimpleFilterSerialization(true).build())
 				.build(mongoClientSession.getMongoDatabase(), collectionName, entityClass, UuidRepresentation.JAVA_LEGACY);
 	}
 	
+	@Override
+	public String getName() {
+		return collection.getName();
+	}
+
 	@Override
 	public long count(Filter filter, Integer limit) {
 		Bson query = filterToQuery(filter);
@@ -282,6 +291,8 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 	@Override
 	public void rename(String newName) {
 		collection.renameCollection(new MongoNamespace(mongoClientSession.getMongoDatabase().getName(), newName));
+		// Recreate the collection in order to force the new name
+		collection = getCollection(newName);
 	}
 
 	@Override

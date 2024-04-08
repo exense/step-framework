@@ -41,7 +41,7 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 
 	private static final String FILE_EXTENSION = ".entity";
 	private final ObjectMapper mapper;
-	private final File repository;
+	private File repository;
 	private final Class<T> entityClass;
 
 	public FilesystemCollection(File repository, Class<T> entityClass) {
@@ -85,6 +85,11 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	
 	private Stream<FileAndEntity<T>> entityStream() {
 		return Arrays.asList(repository.listFiles(f -> f.getName().endsWith(FILE_EXTENSION))).stream().map(f->new FileAndEntity<>(f, readFile(f)));
+	}
+
+	@Override
+	public String getName() {
+		return repository.getName();
 	}
 
 	@Override
@@ -226,7 +231,9 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 	@Override
 	public void rename(String newName) {
 		try {
-			repository.renameTo(new File(repository.getParent() + "/" + newName));
+			File newRepositoryFile = new File(repository.getParent() + "/" + newName);
+			repository.renameTo(newRepositoryFile);
+			repository = newRepositoryFile;
 		} catch (Exception e) {
 			throw new FilesystemCollectionException("The file '" + repository.getAbsolutePath() + " could not be renamed", e);
 		}
