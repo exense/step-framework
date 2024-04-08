@@ -136,6 +136,7 @@ public abstract class AbstractCollectionTest {
 	@Test
 	public void test() throws Exception {
 		Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
+		assertEquals(COLLECTION, beanCollection.getName());
 		beanCollection.remove(Filters.empty());
 
 		Bean bean1 = new Bean(VALUE1);
@@ -460,6 +461,7 @@ public abstract class AbstractCollectionTest {
 		collectionFactory.getCollection("beansrenamed", Bean.class).drop();
 
 		Collection<Bean> collection = collectionFactory.getCollection("beans", Bean.class);
+		assertEquals("beans", collection.getName());
 		Bean bean = new Bean();
 		bean.addAttribute("MyAtt1", "My value 1");
 		collection.save(bean);
@@ -469,7 +471,15 @@ public abstract class AbstractCollectionTest {
 		assertEquals(bean.getId(), actualBean.getId());
 
 		collection.rename("beansrenamed");
+		// Assert that the collection has been renamed properly
+		assertEquals("beansrenamed", collection.getName());
 
+		// Assert that the bean is still present in the previous instance of the collection
+		result = collection.find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+		actualBean = result.get(0);
+		assertEquals(bean.getId(), actualBean.getId());
+
+		// Assert that the bean is found when recreating a collection with the new name
 		Collection<Bean> collectionRenamed = collectionFactory.getCollection("beansrenamed", Bean.class);
 		result = collectionRenamed.find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
 		actualBean = result.get(0);

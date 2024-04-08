@@ -50,8 +50,8 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	private final HikariDataSource ds;
 
-	private final String collectionName;
-	private final String collectionNameStr;
+	private String collectionName;
+	private String collectionNameStr;
 
 	private final Class<T> entityClass;
 
@@ -62,7 +62,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	public PostgreSQLCollection(HikariDataSource ds, String collectionName, Class<T> entityClass) throws SQLException {
 		this.ds = ds;
 		this.collectionName = collectionName;
-		this.collectionNameStr = "\"" + collectionName + "\"";
+		this.collectionNameStr = getCollectionNameStr(collectionName);
 		this.entityClass = entityClass;
 		objectMapper = PostgreSQLCollectionJacksonMapperProvider.getObjectMapper();
 		insertOrUpdateQuery = "INSERT INTO " + collectionNameStr + " (object)\n" +
@@ -72,6 +72,10 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 				"   UPDATE SET object = ?::jsonb";
 
 		createTableIfRequired();
+	}
+
+	private static String getCollectionNameStr(String collectionName) {
+		return "\"" + collectionName + "\"";
 	}
 
 	private synchronized void createTableIfRequired() throws SQLException {
@@ -91,6 +95,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		DatabaseMetaData meta = connection.getMetaData();
 		ResultSet resultSet = meta.getTables(null, null, collectionName, new String[] {"TABLE"});
 		return resultSet.next();
+	}
+
+	@Override
+	public String getName() {
+		return collectionName;
 	}
 
 	@Override
@@ -417,6 +426,8 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	@Override
 	public void rename(String newName) {
 		executeUpdateQuery("ALTER TABLE " + collectionNameStr + " RENAME TO " + newName);
+		collectionName = newName;
+		collectionNameStr = getCollectionNameStr(collectionName);
 	}
 
 	@Override

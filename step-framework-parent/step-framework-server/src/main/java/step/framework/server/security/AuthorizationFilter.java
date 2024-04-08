@@ -34,7 +34,6 @@ import step.core.accessors.AbstractUser;
 import step.framework.server.AbstractServices;
 import step.framework.server.Session;
 import step.framework.server.access.AuthorizationManager;
-import step.framework.server.access.TokenType;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -83,15 +82,18 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 			String right = annotation.right();
 			if(right.length()>0) {
 				// Replacing placeholders in right based on SecuredContext annotations
+				// Setting allowAllSignedInUsers flag based on secured context
+				boolean allowAllSignedInUsers = false;
 				Annotation[] handlerClassAnnotations = handlerClass.getAnnotations();
 				for (Annotation a : handlerClassAnnotations) {
 					if (a instanceof SecuredContext) {
 						SecuredContext securedContext = (SecuredContext) a;
+						allowAllSignedInUsers = securedContext.allowAllSignedInUsers();
 						right = right.replaceAll(Pattern.quote("{" + securedContext.key() + "}"), securedContext.value());
 					}
 				}
 				// Check resolved right
-				boolean hasRight = authorizationManager.checkRightInContext(session, right);
+				boolean hasRight = allowAllSignedInUsers || authorizationManager.checkRightInContext(session, right);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Checked right '" + right + "' for user '" + username(session) + "'. Result: " + hasRight);
 				}

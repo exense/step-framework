@@ -77,7 +77,12 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 			}
 		}).distinct().collect(Collectors.toList());
 	}
-	
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
 	@Override
 	public long count(Filter filter, Integer limit) {
 		Stream<T> stream = find(filter, null, null, null, 0);

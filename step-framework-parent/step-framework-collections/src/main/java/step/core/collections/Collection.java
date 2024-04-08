@@ -25,6 +25,11 @@ import java.util.stream.Stream;
 public interface Collection<T> {
 
 	/**
+	 * @return The name of the collection
+	 */
+	String getName();
+
+	/**
 	 * Counts the number of entities matching the provided filter
 	 * 
 	 * @param filter
