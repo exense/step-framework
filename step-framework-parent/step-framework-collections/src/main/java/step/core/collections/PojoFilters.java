@@ -70,7 +70,7 @@ public class PojoFilters {
 				return new GtePojoFilter<>((Gte) filter);
 			} else if (filter instanceof Exists) {
 				return new ExistsPojoFilter<>((Exists) filter);
-			}else {
+			} else {
 				throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 			}
 		}
@@ -342,12 +342,12 @@ public class PojoFilters {
 		@Override
 		public boolean test(T t) {
 			Object beanProperty = null;
-            try {
+			try {
 				beanProperty = getBeanProperty(t, existsFilter.getField());
 			} catch (Exception e) {
 				//consider bean does not exist
 			}
-            return beanProperty != null;
+			return beanProperty != null;
 		}
 	}
 	
