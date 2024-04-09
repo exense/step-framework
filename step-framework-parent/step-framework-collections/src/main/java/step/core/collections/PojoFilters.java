@@ -66,7 +66,7 @@ public class PojoFilters {
 				return new LtePojoFilter<>((Lte) filter);
 			} else if (filter instanceof Gt) {
 				return new GtPojoFilter<>((Gt) filter);
-			}else if (filter instanceof Gte) {
+			} else if (filter instanceof Gte) {
 				return new GtePojoFilter<>((Gte) filter);
 			} else if (filter instanceof Exists) {
 				return new ExistsPojoFilter<>((Exists) filter);
