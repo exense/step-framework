@@ -93,6 +93,15 @@ public class TableServiceTest {
         assertEquals(3, response.getRecordsTotal());
         assertEquals(3, response.getRecordsFiltered());
 
+        // Test request with count disabled
+        request = new TableRequest();
+        request.setCalculateCounts(false);
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean1, bean2, bean3), response.getData());
+        assertEquals(-1, response.getRecordsTotal());
+        assertEquals(-1, response.getRecordsFiltered());
+
+
         // Test FieldFilter
         request = new TableRequest();
         request.setFilters(List.of(new FieldFilter("property1", VALUE_1, false)));
@@ -128,6 +137,16 @@ public class TableServiceTest {
         assertEquals(List.of(bean1), response.getData());
         Bean actualBean = (Bean) response.getData().get(0);
         assertEquals(ENRICHED_ATTRIBUTE_VALUE, actualBean.getAttribute(ENRICHED_ATTRIBUTE_KEY));
+
+        // Test request with enrichment disabled
+        bean1.getAttributes().clear();
+        request = new TableRequest();
+        request.setPerformEnrichment(false);
+        request.setFilters(List.of(new FieldFilter("property1", VALUE_1, false)));
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean1), response.getData());
+        actualBean = (Bean) response.getData().get(0);
+        assertFalse(actualBean.hasAttribute(ENRICHED_ATTRIBUTE_KEY));
 
         // Test custom ResultListFactory
         ArrayList<Bean> customResultList = new ArrayList<>();
