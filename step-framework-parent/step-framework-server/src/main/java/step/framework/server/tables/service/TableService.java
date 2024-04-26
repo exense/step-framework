@@ -67,8 +67,16 @@ public class TableService {
             tStream.forEachOrdered(result::add);
         }
 
-        long estimatedTotalCount = collection.estimatedCount();
-        long count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));
+        // Calculate counts
+        long estimatedTotalCount;
+        long count;
+        if(request.isCalculateCounts()) {
+            estimatedTotalCount = collection.estimatedCount();
+            count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));
+        } else {
+            estimatedTotalCount = -1;
+            count = -1;
+        }
 
         // Create the response
         TableResponse<T> response = new TableResponse<>();
@@ -85,9 +93,12 @@ public class TableService {
         // Perform the search
         BiFunction<T, Session<?>, T> enricher = table.getResultItemEnricher().orElse((a, b) -> a);
 
-        //return enrich stream
-        return collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
-                .map(t -> enricher.apply(t, session));
+        Stream<T> result = collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration));
+        if (request.isPerformEnrichment()) {
+            // Enrich stream
+            result = result.map(t -> enricher.apply(t, session));
+        }
+        return result;
     }
 
     public <T> Stream<T> export(String tableName, TableRequest request, Session<?> session) throws TableServiceException {

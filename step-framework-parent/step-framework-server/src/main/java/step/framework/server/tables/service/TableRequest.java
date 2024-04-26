@@ -6,6 +6,8 @@ public class TableRequest extends TableQueryRequest {
     private Integer limit;
 
     private Sort sort;
+    private boolean performEnrichment = true;
+    private boolean calculateCounts = true;
 
     public Integer getSkip() {
         return skip;
@@ -31,4 +33,19 @@ public class TableRequest extends TableQueryRequest {
         this.sort = sort;
     }
 
+    public boolean isPerformEnrichment() {
+        return performEnrichment;
+    }
+
+    public void setPerformEnrichment(boolean performEnrichment) {
+        this.performEnrichment = performEnrichment;
+    }
+
+    public boolean isCalculateCounts() {
+        return calculateCounts;
+    }
+
+    public void setCalculateCounts(boolean calculateCounts) {
+        this.calculateCounts = calculateCounts;
+    }
 }
