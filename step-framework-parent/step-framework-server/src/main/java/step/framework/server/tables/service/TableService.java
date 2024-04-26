@@ -12,12 +12,15 @@ import step.framework.server.Session;
 import step.framework.server.access.AuthorizationManager;
 import step.framework.server.tables.Table;
 import step.framework.server.tables.TableRegistry;
+import step.framework.server.tables.service.bulk.BulkOperationWarningException;
 import step.framework.server.tables.service.bulk.TableBulkOperationReport;
 import step.framework.server.tables.service.bulk.TableBulkOperationRequest;
 import step.framework.server.tables.service.bulk.TableBulkOperationTargetType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -128,9 +131,19 @@ public class TableService {
         validateParameters(parameters, targetType);
 
         LongAdder count = new LongAdder();
+        Map<String, LongAdder> warnings = new ConcurrentHashMap<>();
+        Map<String, LongAdder> errors = new ConcurrentHashMap<>();
         BiConsumer<String, Boolean> countingOperationById = (id, preview) -> {
-            count.increment();
-            operationById.accept(id, parameters.isPreview());
+            try {
+                operationById.accept(id, parameters.isPreview());
+                count.increment();
+            } catch (BulkOperationWarningException e) {
+                LongAdder warningCount = warnings.computeIfAbsent(e.getMessage(), a -> new LongAdder());
+                warningCount.increment();
+            } catch (Exception e) {
+                LongAdder errorCount = errors.computeIfAbsent(e.getMessage(), a -> new LongAdder());
+                errorCount.increment();
+            }
         };
 
         // Perform bulk operation
@@ -151,7 +164,21 @@ public class TableService {
             }
         }
 
-        return new TableBulkOperationReport(count.longValue());
+        List<String> warningMessages = new ArrayList<>();
+        LongAdder skipped = new LongAdder();
+        warnings.forEach( (k,v) -> {
+            warningMessages.add(k + " (" + v.longValue() + " occurrences)");
+            skipped.add(v.longValue());
+        });
+        List<String> errorMessages = new ArrayList<>();
+        LongAdder errorCount = new LongAdder();
+        errors.forEach( (k,v) -> {
+            errorMessages.add(k + " (" + v.longValue() + " occurrences)");
+            errorCount.add(v.longValue());
+        });
+        TableBulkOperationReport tableBulkOperationReport = new TableBulkOperationReport(count.longValue(), skipped.longValue(),
+                errorCount.longValue(), warningMessages, errorMessages);
+        return tableBulkOperationReport;
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperation(
