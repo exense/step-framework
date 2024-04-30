@@ -314,6 +314,17 @@ public abstract class AbstractCollectionTest {
 		//Not equal
 		result = collection.find(Filters.not(Filters.equals("attributes.MyAtt2", "My value 1")), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
 		assertEquals(2, result.size());
+
+		//Exists
+		result = collection.find(Filters.exists("attributes.MyAtt2"), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals("My value 2", result.get(0).getAttribute("MyAtt1"));
+
+
+		//Does not exists
+		result = collection.find(Filters.not(Filters.exists("attributes.MyAtt2")), null, null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals("My value 1", result.get(0).getAttribute("MyAtt1"));
 	}
 
 	@Test
