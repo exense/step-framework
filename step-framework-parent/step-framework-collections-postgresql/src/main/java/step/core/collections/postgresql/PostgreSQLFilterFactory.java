@@ -88,6 +88,9 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 			Lte lteFilter = (Lte) filter;
 			return formatField(lteFilter.getField(),true) + " IS NOT NULL AND "
 					+ formatField(lteFilter.getField(),false) + " <= '" + lteFilter.getValue() + "'";
+		} else if (filter instanceof Exists) {
+			Exists existsFilter = (Exists) filter;
+			return formatField(existsFilter.getField(),false) + " IS NOT NULL ";
 		} else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 		}

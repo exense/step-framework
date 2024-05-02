@@ -80,6 +80,9 @@ public class MongoDBFilterFactory implements FilterFactory<Bson> {
 		} else if (filter instanceof Lte) {
 			Lte lteFilter = (Lte) filter;
 			return com.mongodb.client.model.Filters.lte(lteFilter.getField(), lteFilter.getValue());
+		} else if (filter instanceof Exists) {
+			Exists existsFilter = (Exists) filter;
+			return com.mongodb.client.model.Filters.exists(existsFilter.getField());
 		} else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 		}
