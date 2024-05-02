@@ -9,14 +9,7 @@ public class TableBulkOperationReport {
     private long skipped;
     private long failed;
     private List<String> warnings;
-    private List<String> errors = new ArrayList<>();
-
-    public TableBulkOperationReport() {
-    }
-
-    public TableBulkOperationReport(long count) {
-        this.count = count;
-    }
+    private List<String> errors;
 
     public TableBulkOperationReport(long count, long skipped, long failed, List<String> warnings, List<String> errors) {
         this.count = count;

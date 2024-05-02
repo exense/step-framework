@@ -130,13 +130,13 @@ public class TableService {
         TableBulkOperationTargetType targetType = parameters.getTargetType();
         validateParameters(parameters, targetType);
 
-        LongAdder count = new LongAdder();
+        LongAdder okCount = new LongAdder();
         Map<String, LongAdder> warnings = new ConcurrentHashMap<>();
         Map<String, LongAdder> errors = new ConcurrentHashMap<>();
         BiConsumer<String, Boolean> countingOperationById = (id, preview) -> {
             try {
                 operationById.accept(id, parameters.isPreview());
-                count.increment();
+                okCount.increment();
             } catch (BulkOperationWarningException e) {
                 LongAdder warningCount = warnings.computeIfAbsent(e.getMessage(), a -> new LongAdder());
                 warningCount.increment();
@@ -176,7 +176,7 @@ public class TableService {
             errorMessages.add(k + " (" + v.longValue() + " occurrences)");
             errorCount.add(v.longValue());
         });
-        TableBulkOperationReport tableBulkOperationReport = new TableBulkOperationReport(count.longValue(), skipped.longValue(),
+        TableBulkOperationReport tableBulkOperationReport = new TableBulkOperationReport(okCount.longValue(), skipped.longValue(),
                 errorCount.longValue(), warningMessages, errorMessages);
         return tableBulkOperationReport;
     }
