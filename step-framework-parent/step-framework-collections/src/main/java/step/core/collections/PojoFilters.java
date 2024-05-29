@@ -66,8 +66,10 @@ public class PojoFilters {
 				return new LtePojoFilter<>((Lte) filter);
 			} else if (filter instanceof Gt) {
 				return new GtPojoFilter<>((Gt) filter);
-			}else if (filter instanceof Gte) {
+			} else if (filter instanceof Gte) {
 				return new GtePojoFilter<>((Gte) filter);
+			} else if (filter instanceof Exists) {
+				return new ExistsPojoFilter<>((Exists) filter);
 			} else {
 				throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 			}
@@ -325,6 +327,27 @@ public class PojoFilters {
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 				return false;
 			}
+		}
+	}
+
+	public static class ExistsPojoFilter<T> implements PojoFilter<T> {
+
+		private final Exists existsFilter;
+
+		public ExistsPojoFilter(Exists existsFilter) {
+			super();
+			this.existsFilter = existsFilter;
+		}
+
+		@Override
+		public boolean test(T t) {
+			Object beanProperty = null;
+			try {
+				beanProperty = getBeanProperty(t, existsFilter.getField());
+			} catch (Exception e) {
+				//consider bean does not exist
+			}
+			return beanProperty != null;
 		}
 	}
 	

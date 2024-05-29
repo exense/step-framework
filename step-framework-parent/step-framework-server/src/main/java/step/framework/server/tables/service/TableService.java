@@ -12,12 +12,15 @@ import step.framework.server.Session;
 import step.framework.server.access.AuthorizationManager;
 import step.framework.server.tables.Table;
 import step.framework.server.tables.TableRegistry;
+import step.framework.server.tables.service.bulk.BulkOperationWarningException;
 import step.framework.server.tables.service.bulk.TableBulkOperationReport;
 import step.framework.server.tables.service.bulk.TableBulkOperationRequest;
 import step.framework.server.tables.service.bulk.TableBulkOperationTargetType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -67,8 +70,16 @@ public class TableService {
             tStream.forEachOrdered(result::add);
         }
 
-        long estimatedTotalCount = collection.estimatedCount();
-        long count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));
+        // Calculate counts
+        long estimatedTotalCount;
+        long count;
+        if(request.isCalculateCounts()) {
+            estimatedTotalCount = collection.estimatedCount();
+            count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));
+        } else {
+            estimatedTotalCount = -1;
+            count = -1;
+        }
 
         // Create the response
         TableResponse<T> response = new TableResponse<>();
@@ -85,9 +96,12 @@ public class TableService {
         // Perform the search
         BiFunction<T, Session<?>, T> enricher = table.getResultItemEnricher().orElse((a, b) -> a);
 
-        //return enrich stream
-        return collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration))
-                .map(t -> enricher.apply(t, session));
+        Stream<T> result = collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration));
+        if (request.isPerformEnrichment()) {
+            // Enrich stream
+            result = result.map(t -> enricher.apply(t, session));
+        }
+        return result;
     }
 
     public <T> Stream<T> export(String tableName, TableRequest request, Session<?> session) throws TableServiceException {
@@ -116,10 +130,20 @@ public class TableService {
         TableBulkOperationTargetType targetType = parameters.getTargetType();
         validateParameters(parameters, targetType);
 
-        LongAdder count = new LongAdder();
+        LongAdder okCount = new LongAdder();
+        Map<String, LongAdder> warnings = new ConcurrentHashMap<>();
+        Map<String, LongAdder> errors = new ConcurrentHashMap<>();
         BiConsumer<String, Boolean> countingOperationById = (id, preview) -> {
-            count.increment();
-            operationById.accept(id, parameters.isPreview());
+            try {
+                operationById.accept(id, parameters.isPreview());
+                okCount.increment();
+            } catch (BulkOperationWarningException e) {
+                LongAdder warningCount = warnings.computeIfAbsent(e.getMessage(), a -> new LongAdder());
+                warningCount.increment();
+            } catch (Exception e) {
+                LongAdder errorCount = errors.computeIfAbsent(e.getMessage(), a -> new LongAdder());
+                errorCount.increment();
+            }
         };
 
         // Perform bulk operation
@@ -140,7 +164,21 @@ public class TableService {
             }
         }
 
-        return new TableBulkOperationReport(count.longValue());
+        List<String> warningMessages = new ArrayList<>();
+        LongAdder skipped = new LongAdder();
+        warnings.forEach( (k,v) -> {
+            warningMessages.add(k + " (" + v.longValue() + " occurrences)");
+            skipped.add(v.longValue());
+        });
+        List<String> errorMessages = new ArrayList<>();
+        LongAdder errorCount = new LongAdder();
+        errors.forEach( (k,v) -> {
+            errorMessages.add(k + " (" + v.longValue() + " occurrences)");
+            errorCount.add(v.longValue());
+        });
+        TableBulkOperationReport tableBulkOperationReport = new TableBulkOperationReport(okCount.longValue(), skipped.longValue(),
+                errorCount.longValue(), warningMessages, errorMessages);
+        return tableBulkOperationReport;
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperation(

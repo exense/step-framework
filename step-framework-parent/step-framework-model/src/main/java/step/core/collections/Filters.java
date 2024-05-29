@@ -109,4 +109,8 @@ public class Filters {
 		return new Fulltext(expression);
 	}
 
+	public static Exists exists(String field) {
+		return new Exists(field);
+	}
+
 }
