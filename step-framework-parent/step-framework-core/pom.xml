@@ -18,20 +18,20 @@
 			<artifactId>exense-basic-commons</artifactId>
 			<version>${exense-commons.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>${guava.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>io.github.classgraph</groupId>
 			<artifactId>classgraph</artifactId>
-			<version>4.8.147</version>
 		</dependency>
 	</dependencies>
 

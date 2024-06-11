@@ -28,7 +28,6 @@
 		<dependency>
 			<groupId>org.mongojack</groupId>
 			<artifactId>mongojack</artifactId>
-			<version>4.5.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.fasterxml.jackson.core</groupId>
@@ -43,12 +42,10 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 	</dependencies>
 

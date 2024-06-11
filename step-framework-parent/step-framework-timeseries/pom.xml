@@ -16,7 +16,6 @@
 		 <dependency>
 			<groupId>jakarta.validation</groupId>
 			<artifactId>jakarta.validation-api</artifactId>
-			<version>3.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>ch.exense.step</groupId>
@@ -41,7 +40,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>${jacoco.version}</version>
+				<version>${dep.mvn.jacoco.version}</version>
 				<executions>
 					<execution>
 						<id>jacoco-check</id>

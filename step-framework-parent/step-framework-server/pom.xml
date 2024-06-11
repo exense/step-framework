@@ -27,17 +27,14 @@
 		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
 			<artifactId>jersey-container-servlet-core</artifactId>
-			<version>${jersey.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish.jersey.inject</groupId>
 			<artifactId>jersey-hk2</artifactId>
-			<version>${jersey.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish.jersey.media</groupId>
 			<artifactId>jersey-media-json-jackson</artifactId>
-			<version>${jersey.version}</version>
 			<exclusions><!-- this import databind 3.0.0 conflicting with required 3.0.4 -->
 				<exclusion>
 					<groupId>com.fasterxml.jackson.core</groupId>
@@ -48,46 +45,38 @@
 		<dependency>
 			<groupId>org.glassfish.jersey.media</groupId>
 			<artifactId>jersey-media-multipart</artifactId>
-			<version>${jersey.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-server</artifactId>
-			<version>${jetty.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-servlet</artifactId>
-			<version>${jetty.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-webapp</artifactId>
-			<version>${jetty.version}</version>
 		</dependency>
 
 		<!-- Required if CORS is enabled. -->
 		<dependency>
 			<groupId>jakarta.xml.bind</groupId>
 			<artifactId>jakarta.xml.bind-api</artifactId>
-			<version>3.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sun.activation</groupId>
 			<artifactId>jakarta.activation</artifactId>
-			<version>2.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish.jaxb</groupId>
 			<artifactId>jaxb-runtime</artifactId>
-			<version>${jaxb.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>io.swagger.core.v3</groupId>
 			<artifactId>swagger-jaxrs2-jakarta</artifactId>
-			<version>${swagger-version}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.fasterxml.jackson.core</groupId>
@@ -102,12 +91,10 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.jaxrs</groupId>
 			<artifactId>jackson-jaxrs-json-provider</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jul-to-slf4j</artifactId>
-			<version>${slf4j.version}</version>
 		</dependency>
 	</dependencies>
 
@@ -122,7 +109,7 @@
 			<plugin>
 				<groupId>com.googlecode.maven-download-plugin</groupId>
 				<artifactId>download-maven-plugin</artifactId>
-				<version>1.2.1</version>
+				<version>${dep.mvn.download.version}</version>
 				<executions>
 					<execution>
 						<id>swagger-ui</id>
@@ -131,8 +118,8 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<skipCache>true</skipCache>
-							<url>https://github.com/swagger-api/swagger-ui/archive/refs/tags/v${swagger-ui-version}.zip</url>
+							<skipCache>true</skipCache> <!-- why? -->
+							<url>https://github.com/swagger-api/swagger-ui/archive/refs/tags/v${dep.swagger-ui.version}.zip</url>
 							<unpack>true</unpack>
 							<outputDirectory>${project.build.directory}</outputDirectory>
 						</configuration>
@@ -141,7 +128,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-resources-plugin</artifactId>
-				<version>2.6</version>
+				<version>${dep.mvn.resources.version}</version>
 				<executions>
 					<execution>
 						<id>copy-resources</id>
@@ -153,7 +140,7 @@
 							<outputDirectory>${basedir}/src/main/resources/swagger/webapp/doc/rest</outputDirectory>
 							<resources>
 								<resource>
-									<directory>${project.build.directory}/swagger-ui-${swagger-ui-version}/dist</directory>
+									<directory>${project.build.directory}/swagger-ui-${dep.swagger-ui.version}/dist</directory>
 									<filtering>true</filtering>
 									<excludes>
 										<exclude>index.html</exclude>

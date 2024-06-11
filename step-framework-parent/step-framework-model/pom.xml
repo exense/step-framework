@@ -21,23 +21,19 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>org.mongodb</groupId>
 			<artifactId>bson</artifactId>
-			<version>${mongodb.bson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>jakarta.persistence</groupId>
 			<artifactId>jakarta.persistence-api</artifactId>
-			<version>3.1.0</version>
 		</dependency>
     </dependencies>
 
