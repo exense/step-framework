@@ -95,8 +95,11 @@ public class Bucket extends AbstractIdentifiableObject {
         this.distribution = distribution;
     }
 
-    public long getPercentile(int percentile) {
-        long numberOfPointsAtPercentile = (long) (1.0 * percentile / 100 * count);
+    public long getPercentile(double percentile) {
+        if (percentile < 0.0 || percentile > 100.0) {
+            throw new IllegalArgumentException("Percentile must be between 0.0 and 100.0");
+        }
+        long numberOfPointsAtPercentile = (long) Math.ceil(percentile / 100 * count);
         LongAdder count = new LongAdder();
         long percentileValue = 0;
 
