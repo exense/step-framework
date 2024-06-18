@@ -166,6 +166,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- used by guava and other dependencies in Step itself; this provides a recent version to all of them -->
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>3.44.0</version>
+            </dependency>
+
             <!-- END TRANSITIVES -->
         </dependencies>
     </dependencyManagement>
