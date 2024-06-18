@@ -66,6 +66,14 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>ch.exense.commons</groupId>
+                <artifactId>exense-commons-parent</artifactId>
+                <version>${exense-commons.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>ch.exense.dependencies</groupId>
                 <artifactId>dependencies-databases</artifactId>
                 <version>${dependencies.version}</version>
@@ -114,14 +122,6 @@
             </dependency>
 
             <dependency>
-                <groupId>ch.exense.commons</groupId>
-                <artifactId>exense-commons-parent</artifactId>
-                <version>${exense-commons.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>org.glassfish.jaxb</groupId>
                 <artifactId>jaxb-runtime</artifactId>
                 <version>${dep.jaxb.version}</version>
@@ -157,6 +157,16 @@
                 <version>${dep.antlr.version}</version>
             </dependency>
 
+            <!-- TRANSITIVES: These are not directly used by ourselves, but transitively imported in multiple dependencies,
+             with different versions; declare this here to ensure consistent versions. -->
+            <dependency>
+                <groupId>ch.exense.dependencies</groupId>
+                <artifactId>dependencies-javassist</artifactId>
+                <version>${dependencies.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- END TRANSITIVES -->
         </dependencies>
     </dependencyManagement>
 
