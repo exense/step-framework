@@ -1,10 +1,13 @@
 package step.core.timeseries.metric;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.util.Map;
 
 
 
 public class MetricAggregation {
+    @NotNull
     private MetricAggregationType type;
     private Map<String, Object> params;
 
