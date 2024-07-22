@@ -1,11 +1,7 @@
 package step.core.collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,6 +19,8 @@ import step.core.accessors.DefaultJacksonMapperProvider;
 import step.core.collections.serialization.DottedKeyMap;
 import step.core.entities.Bean;
 import step.core.entities.SimpleBean;
+
+import static org.junit.Assert.*;
 
 public abstract class AbstractCollectionTest {
 
@@ -325,6 +323,11 @@ public abstract class AbstractCollectionTest {
 		result = collection.find(Filters.not(Filters.exists("attributes.MyAtt2")), null, null, null, 0).collect(Collectors.toList());
 		assertEquals(1, result.size());
 		assertEquals("My value 1", result.get(0).getAttribute("MyAtt1"));
+
+		//Test errors for empty AND and OR filters
+		assertThrows(Throwable.class, () -> collection.find(Filters.and(new ArrayList<>()), null, null, null, 0).collect(Collectors.toList()));
+
+		assertThrows(Throwable.class, () -> collection.find(Filters.or(new ArrayList<>()), null, null, null, 0).collect(Collectors.toList()));
 	}
 
 	@Test
