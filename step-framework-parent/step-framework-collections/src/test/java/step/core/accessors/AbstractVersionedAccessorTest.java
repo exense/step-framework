@@ -23,12 +23,12 @@ public abstract class AbstractVersionedAccessorTest extends AbstractAccessorTest
 		entity.setProperty1("value 1");
 		beanAccessor.save(entity);
 
-		Thread.sleep(1); // version threshold is 1 ms
+		Thread.sleep(2); // version threshold is 1 ms
 
 		entity.setProperty1("value 2");
 		beanAccessor.save(entity);
 
-		Thread.sleep(1); // version threshold is 1 ms
+		Thread.sleep(2); // version threshold is 1 ms
 
 		entity.setProperty1("value 3");
 		beanAccessor.save(entity);
@@ -49,12 +49,14 @@ public abstract class AbstractVersionedAccessorTest extends AbstractAccessorTest
 	}
 
 	@Test
-	public void testBeanAccessorBulkHistory() {
+	public void testBeanAccessorBulkHistory() throws InterruptedException {
 		Bean entity = new Bean();
 		entity.setProperty1("value 1");
 		Bean entity1 = new Bean();
 		entity1.setProperty1("value 11");
 		beanAccessor.save(List.of(entity, entity1));
+
+		Thread.sleep(2); // version threshold is 1 ms
 
 		entity.setProperty1("value 2");
 		entity1.setProperty1("value 12");
