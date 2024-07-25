@@ -16,6 +16,7 @@ import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
+import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 

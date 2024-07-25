@@ -8,9 +8,9 @@ import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
 import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
