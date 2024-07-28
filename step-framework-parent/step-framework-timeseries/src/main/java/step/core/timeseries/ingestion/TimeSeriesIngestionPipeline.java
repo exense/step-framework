@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.timeseries.TimeSeries;
+import step.core.timeseries.TimeSeriesCollection;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
@@ -26,26 +27,31 @@ public class TimeSeriesIngestionPipeline implements Closeable {
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Collection<Bucket> collection;
+    private final long sourceResolution;
     private final ConcurrentHashMap<Long, Map<Map<String, Object>, BucketBuilder>> seriesQueue = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private final LongAdder flushCount = new LongAdder();
     private Consumer<Bucket> flushCallback;
 
-    private final long sourceResolution;
 
-    public TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolutionInMs) {
+    public TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolution) {
         this.collection = collection;
+        this.sourceResolution = resolution;
         this.scheduler = null;
-        this.sourceResolution = resolutionInMs;
         this.flushCallback = null;
     }
 
     
-    public TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolutionInMs, long flushingPeriodInMs) {
+    public TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolution, long flushingPeriodInMs) {
         this.collection = collection;
+        this.sourceResolution = resolution;
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> flush(false), flushingPeriodInMs, flushingPeriodInMs, TimeUnit.MILLISECONDS);
-        this.sourceResolution = resolutionInMs;
+    }
+    
+    public TimeSeriesIngestionPipeline setFlushCallback(Consumer<Bucket> flushCallback) {
+        this.flushCallback = flushCallback;
+        return this;
     }
 
     public long getResolution() {
@@ -88,11 +94,6 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         } finally {
             lock.readLock().unlock();
         }
-    }
-
-    public TimeSeriesIngestionPipeline setFlushCallback(Consumer<Bucket> flushCallback) {
-        this.flushCallback = flushCallback;
-        return this;
     }
 
     // TODO flush method can be improved with a batcher (run when a specific timeout ends, or a specific amount of data is collected)

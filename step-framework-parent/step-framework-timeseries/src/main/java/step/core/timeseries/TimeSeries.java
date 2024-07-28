@@ -1,35 +1,42 @@
 package step.core.timeseries;
 
-import step.core.collections.Filter;
 import step.core.collections.IndexField;
-import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
 import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
-import step.core.timeseries.ingestion.TimeSeriesIngestionChain;
-import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
-import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class TimeSeries {
 
-    private TimeSeriesIngestionChain ingestionChain;
+    private List<TimeSeriesCollection> handledCollections;
+    private Map<Long, TimeSeriesCollection> collectionsByResolution = new TreeMap<>();
+    
 
-    public TimeSeries(TimeSeriesIngestionChain ingestionChain) {
-        this.ingestionChain = ingestionChain;
+    TimeSeries(List<TimeSeriesCollection> handledCollections) {
+        this.handledCollections = handledCollections;
+        handledCollections.forEach(c -> collectionsByResolution.put(c.getResolution(), c));
     }
     
+    public TimeSeriesCollection getMainCollection() {
+        return handledCollections.get(0);
+    }
+    
+    public List<Long> getAvailableResolutions() {
+		return new ArrayList<>(collectionsByResolution.keySet());
+	}
+    
     public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
-		ingestionChain.ingestPoint(attributes, timestamp, value);
+		handledCollections.get(0).ingestPoint(attributes, timestamp, value);
 	}
     
     public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         long adjustedResolution = roundRequiredResolution(query.getResolution());
+        TimeSeriesCollection timeSeriesCollection = collectionsByResolution.get(adjustedResolution);
+        return timeSeriesCollection.collect(query);
     }
     
     private long roundRequiredResolution(long targetResolution) {
-        List<Long> availableResolutions = ingestionChain.getAvailableResolutions();
+        List<Long> availableResolutions = getAvailableResolutions();
         for (int i = 1; i < availableResolutions.size(); i++) {
             if (availableResolutions.get(i) > targetResolution) {
                 return availableResolutions.get(i - 1);
@@ -42,12 +49,9 @@ public class TimeSeries {
      * Create default TimeSeries indexes and single field indexes for the custom ones passed in argument
      * @param indexFields the set of single field indexes to be created
      */
-//    public void createIndexes(Set<IndexField> indexFields) {
-//        collection.createOrUpdateIndex("begin");
-//        Set<IndexField> renamedFieldIndexes = indexFields.stream().map(i -> new IndexField("attributes." + i.fieldName,
-//                i.order, i.fieldClass)).collect(Collectors.toSet());
-//        renamedFieldIndexes.forEach(collection::createOrUpdateIndex);
-//    }
+    public void createIndexes(Set<IndexField> indexFields) {
+        this.handledCollections.forEach(c -> c.createIndexes(indexFields));
+    }
 
 //    public void performHousekeeping(TimeSeriesQuery housekeepingQuery) {
 //        Filter filter = TimeSeriesFilterBuilder.buildFilter(housekeepingQuery);

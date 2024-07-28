@@ -13,12 +13,12 @@ public class TimeSeriesAggregationResponse {
 
     private final long resolution;
 
-    protected TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution) {
+    public TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution) {
         this.series = series;
         this.resolution = resolution;
     }
 
-    protected TimeSeriesAggregationResponse withAxis(List<Long> axis) {
+    public TimeSeriesAggregationResponse withAxis(List<Long> axis) {
         this.axis = axis;
         return this;
     }
