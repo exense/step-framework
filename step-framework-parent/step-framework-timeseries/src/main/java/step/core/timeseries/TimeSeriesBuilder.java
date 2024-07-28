@@ -39,8 +39,10 @@ public class TimeSeriesBuilder {
 
 	/**
 	 * Ordered by resolution, each ingestion pipeline will send his collected bucket to the next ingestion pipeline
+	 *
+	 * @return
 	 */
-	public void linkIngestionPipelines() {
+	public TimeSeriesBuilder linkIngestionPipelines() {
 		List<TimeSeriesCollection> pipelinesList = new ArrayList<>(collectionsByResolution.values());
 		
 		// link ingestion pipelines so they behave like a chain
@@ -49,6 +51,7 @@ public class TimeSeriesBuilder {
 			TimeSeriesIngestionPipeline nextPipeline = pipelinesList.get(i + 1).getIngestionPipeline();
 			pipeline.setFlushCallback((nextPipeline::ingestBucket));
 		}
+		return this;
 	}
 	
 	public TimeSeries build() {
