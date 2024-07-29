@@ -1,28 +1,48 @@
 package step.core.timeseries;
 
-import step.core.collections.Collection;
-import step.core.collections.CollectionFactory;
-import step.core.collections.Filter;
 import step.core.collections.IndexField;
-import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
-import step.core.timeseries.bucket.Bucket;
-import step.core.timeseries.query.TimeSeriesQuery;
+import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
+import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class TimeSeries {
 
-    private final Collection<Bucket> collection;
-    private final Integer timeSeriesResolution;
+    private List<TimeSeriesCollection> handledCollections;
+    private Map<Long, TimeSeriesCollection> collectionsByResolution = new TreeMap<>();
+    
 
-    public TimeSeries(Collection<Bucket> collection,  Integer timeSeriesResolution) {
-        this.collection = collection;
-        this.timeSeriesResolution = timeSeriesResolution;
+    TimeSeries(List<TimeSeriesCollection> handledCollections) {
+        this.handledCollections = handledCollections;
+        handledCollections.forEach(c -> collectionsByResolution.put(c.getResolution(), c));
     }
-
-    public TimeSeries(CollectionFactory collectionFactory, String collectionName, Integer ingestionResolutionPeriod) {
-        this(collectionFactory.getCollection(collectionName, Bucket.class), ingestionResolutionPeriod);
+    
+    public TimeSeriesCollection getMainCollection() {
+        return handledCollections.get(0);
+    }
+    
+    public List<Long> getAvailableResolutions() {
+		return new ArrayList<>(collectionsByResolution.keySet());
+	}
+    
+    public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
+		handledCollections.get(0).ingestPoint(attributes, timestamp, value);
+	}
+    
+    public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
+        long adjustedResolution = roundRequiredResolution(query.getResolution());
+        TimeSeriesCollection timeSeriesCollection = collectionsByResolution.get(adjustedResolution);
+        return timeSeriesCollection.collect(query);
+    }
+    
+    private long roundRequiredResolution(long targetResolution) {
+        List<Long> availableResolutions = getAvailableResolutions();
+        for (int i = 1; i < availableResolutions.size(); i++) {
+            if (availableResolutions.get(i) > targetResolution) {
+                return availableResolutions.get(i - 1);
+            }
+        }
+        return availableResolutions.get(availableResolutions.size() - 1); // last resolution
     }
 
     /**
@@ -30,29 +50,26 @@ public class TimeSeries {
      * @param indexFields the set of single field indexes to be created
      */
     public void createIndexes(Set<IndexField> indexFields) {
-        collection.createOrUpdateIndex("begin");
-        Set<IndexField> renamedFieldIndexes = indexFields.stream().map(i -> new IndexField("attributes." + i.fieldName,
-                i.order, i.fieldClass)).collect(Collectors.toSet());
-        renamedFieldIndexes.forEach(collection::createOrUpdateIndex);
+        this.handledCollections.forEach(c -> c.createIndexes(indexFields));
     }
 
-    public void performHousekeeping(TimeSeriesQuery housekeepingQuery) {
-        Filter filter = TimeSeriesFilterBuilder.buildFilter(housekeepingQuery);
-        collection.remove(filter);
-    }
+//    public void performHousekeeping(TimeSeriesQuery housekeepingQuery) {
+//        Filter filter = TimeSeriesFilterBuilder.buildFilter(housekeepingQuery);
+//        collection.remove(filter);
+//    }
 
-    public TimeSeriesIngestionPipeline newIngestionPipeline() {
-        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution);
-    }
-
-    public TimeSeriesIngestionPipeline newIngestionPipeline(long flushingPeriodInMs) {
-        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution, flushingPeriodInMs);
-    }
-
-    public TimeSeriesAggregationPipeline getAggregationPipeline() {
-        return new TimeSeriesAggregationPipeline(collection, timeSeriesResolution);
-    }
-
+//    public TimeSeriesIngestionPipeline newIngestionPipeline() {
+//        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution);
+//    }
+//
+//    public TimeSeriesIngestionPipeline newIngestionPipeline(long flushingPeriodInMs) {
+//        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution, flushingPeriodInMs);
+//    }
+//
+//    public TimeSeriesAggregationPipeline getAggregationPipeline() {
+//        return new TimeSeriesAggregationPipeline(collection, timeSeriesResolution);
+//    }
+//
     public static long timestampToBucketTimestamp(long timestamp, long resolution) {
         return timestamp - timestamp % resolution;
     }
