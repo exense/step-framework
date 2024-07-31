@@ -181,7 +181,9 @@ public class TimeSeriesTest {
         assertEquals(count.longValue(), countPoints(series1));
         assertEquals(1, series1.size());
         Bucket firstBucket = series1.values().stream().findFirst().get();
-        assertEquals(now - now % timeSeriesResolution + timeSeriesResolution, (long) firstBucket.getEnd());
+        long modulo = now % timeSeriesResolution;
+        long expectedEndBucket = (modulo > 0) ? (now - modulo + timeSeriesResolution) : now;
+        assertEquals(expectedEndBucket, (long) firstBucket.getEnd());
         assertEquals(start - start % timeSeriesResolution, firstBucket.getBegin());
 
         // Split in 2 points
@@ -206,7 +208,7 @@ public class TimeSeriesTest {
                 .run()
                 .getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
-        assertTrue(series1.size() > duration / timeSeriesResolution);
+        assertTrue(series1.size() >= duration / timeSeriesResolution);
 
         // Use double source resolution
         int window = timeSeriesResolution * 2;
