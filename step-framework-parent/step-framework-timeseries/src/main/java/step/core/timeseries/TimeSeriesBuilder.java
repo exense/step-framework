@@ -42,7 +42,7 @@ public class TimeSeriesBuilder {
 	 *
 	 * @return
 	 */
-	public TimeSeriesBuilder linkIngestionPipelines() {
+	private TimeSeriesBuilder linkIngestionPipelines() {
 		List<TimeSeriesCollection> pipelinesList = new ArrayList<>(collectionsByResolution.values());
 		
 		// link ingestion pipelines so they behave like a chain
@@ -58,6 +58,7 @@ public class TimeSeriesBuilder {
 		if (collectionsByResolution.isEmpty()) {
 			throw new IllegalArgumentException("At least one ingestion pipeline must be registered");
 		}
+		linkIngestionPipelines();
 		return new TimeSeries(new ArrayList<>(collectionsByResolution.values()));
 	}
 	
