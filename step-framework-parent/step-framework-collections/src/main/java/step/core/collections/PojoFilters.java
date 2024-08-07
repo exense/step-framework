@@ -47,8 +47,14 @@ public class PojoFilters {
 			}
 
 			if (filter instanceof And) {
+				if (childerPojoFilters == null || childerPojoFilters.isEmpty()) {
+					throw new UnsupportedOperationException("And filters can not be null or empty");
+				}
 				return new AndPojoFilter<>(childerPojoFilters);
 			} else if (filter instanceof Or) {
+				if (childerPojoFilters == null || childerPojoFilters.isEmpty()) {
+					throw new UnsupportedOperationException("Or filters can not be null or empty");
+				}
 				return new OrPojoFilter<>(childerPojoFilters);
 			} else if (filter instanceof Not) {
 				return new NotPojoFilter<>(childerPojoFilters.get(0));

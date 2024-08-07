@@ -4,18 +4,31 @@ import org.junit.Assert;
 import org.junit.Test;
 import step.core.timeseries.metric.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MetricTypeTest {
 
+    @Test
+    public void testMetricAggregationParams() {
+         MetricAggregation aggregation = new MetricAggregation(MetricAggregationType.PERCENTILE, Map.of("pclValue", 80));
+         MetricType metric = new MetricType()
+                .setName("newMetric")
+                .setDisplayName("label")
+                .setDescription("Custom description")
+                .setAttributes(Collections.emptyList())
+                .setDefaultAggregation(aggregation)
+                .setDefaultGroupingAttributes(Arrays.asList("name"))
+                .setUnit("unit");
+         Assert.assertEquals(80, metric.getDefaultAggregation().getParams().get("pclValue"));
+         
+    }
+    
     @Test
     public void testBaseModel() {
         String name = "metricName";
         String label = "metricLabel";
         String unit = "ms";
-        MetricAggregation aggregation = MetricAggregation.COUNT;
+        MetricAggregation aggregation = new MetricAggregation(MetricAggregationType.COUNT);
         Map<String, String> seriesColors = Map.of();
         List<MetricAttribute> attributes = Arrays.asList(new MetricAttribute().setDisplayName("displayName").setName("name"));
 
