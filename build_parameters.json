@@ -2,7 +2,7 @@
 	"ACTION": "COMPILE",
 
 	"TYPE": "POM",
-	"FOLDER": "step-framework-parent/",
+	"FOLDER": ".",
 	"PARAMETERS": [
 		{
 			"NAME": "DEVELOPMENT",
