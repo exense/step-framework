@@ -3,6 +3,7 @@ package step.core.timeseries;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
 import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
+import step.core.timeseries.aggregation.TimeSeriesProcessedParams;
 import step.core.timeseries.query.OQLTimeSeriesFilterBuilder;
 import step.core.timeseries.query.TimeSeriesQuery;
 
@@ -60,6 +61,12 @@ public class TimeSeriesFilterBuilder {
         Filter timestampFilter = TimeSeriesFilterBuilder.buildFilter(query.getFrom(), query.getTo());
 
         return Filters.and(Arrays.asList(query.getFilter(), timestampFilter));
+    }
+    
+    public static Filter buildFilter(TimeSeriesProcessedParams params) {
+        Filter timestampFilter = TimeSeriesFilterBuilder.buildFilter(params.getFrom(), params.getTo());
+
+        return Filters.and(Arrays.asList(params.getFilter(), timestampFilter));
     }
 
     public static Filter buildFilter(TimeSeriesAggregationQuery query) {

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
+import step.core.collections.Filters;
 import step.core.collections.IndexField;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
@@ -13,6 +14,8 @@ import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
+import step.core.timeseries.query.TimeSeriesQuery;
+import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,15 +34,40 @@ public class TimeSeriesCollection {
 	private final Collection<Bucket> collection;
 	private final long resolution;
 	private final TimeSeriesIngestionPipeline ingestionPipeline;
+	private long ttl; // set to 0 in case deletion is never required
 
 	public TimeSeriesCollection(Collection<Bucket> collection, long resolution) {
-		this(collection, resolution, new TimeSeriesIngestionPipeline(collection, resolution));
+		this(collection, resolution, 0, new TimeSeriesIngestionPipeline(collection, resolution));
 	}
 	
-	public TimeSeriesCollection(Collection<Bucket> collection, long resolution, TimeSeriesIngestionPipeline ingestionPipeline) {
+	public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl) {
+		this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution));
+	}
+	
+	public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, TimeSeriesIngestionPipeline ingestionPipeline) {
 		this.collection = collection;
 		this.resolution = resolution;
+		this.ttl = ttl;
 		this.ingestionPipeline = ingestionPipeline;
+	}
+	
+	public void performHousekeeping() {
+		if (ttl > 0) {
+			long cleanupRangeStart = 0;
+			long cleanupRangeEnd = System.currentTimeMillis();
+			TimeSeriesQuery query = new TimeSeriesQueryBuilder().range(cleanupRangeStart, cleanupRangeEnd).build();
+			Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
+			this.collection.remove(filter);
+			logger.debug("Housekeeping successfully performed for collection " + this.collection.getName());
+		}
+		
+	}
+	
+	public void setTtl(long ttl) {
+		if (ttl < 0) {
+			throw new IllegalArgumentException("Negative ttl value is not allowed");
+		}
+		this.ttl = ttl;
 	}
 	
 	public void createIndexes(Set<IndexField> indexFields) {
@@ -69,37 +97,4 @@ public class TimeSeriesCollection {
 		this.ingestionPipeline.ingestBucket(bucket);
 	}
 	
-	protected TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
-        Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
-
-        Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
-        Function<Long, Long> projectionFunction = query.getProjectionFunction();
-        LongAdder bucketCount = new LongAdder();
-        long t1 = System.currentTimeMillis();
-        try (Stream<Bucket> stream = collection.findLazy(filter, null, null, null, 0)) {
-            stream.forEach(bucket -> {
-                bucketCount.increment();
-                BucketAttributes bucketAttributes = bucket.getAttributes();
-
-                BucketAttributes seriesKey;
-                if (CollectionUtils.isNotEmpty(query.getGroupDimensions())) {
-                    seriesKey = bucketAttributes.subset(query.getGroupDimensions());
-                } else {
-                    seriesKey = new BucketAttributes();
-                }
-                Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
-
-                long index = projectionFunction.apply(bucket.getBegin());
-                series.computeIfAbsent(index, i -> new BucketBuilder(i, i + query.getBucketSize()).withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit())).accumulate(bucket);
-            });
-        }
-        long t2 = System.currentTimeMillis();
-        if (logger.isDebugEnabled()) {
-            logger.info("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
-        }
-
-        Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-                e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        return new TimeSeriesAggregationResponse(result, query.getBucketSize()).withAxis(query.drawAxis());
-    }
 }

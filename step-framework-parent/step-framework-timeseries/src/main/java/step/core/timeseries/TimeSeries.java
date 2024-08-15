@@ -21,6 +21,10 @@ public class TimeSeries {
         aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections);
     }
     
+    public TimeSeriesCollection getCollection(long resolution) {
+        return this.collectionsByResolution.get(resolution);
+    }
+    
     public TimeSeriesIngestionPipeline getIngestionPipeline() {
         return this.handledCollections.get(0).getIngestionPipeline();
     }
@@ -35,6 +39,10 @@ public class TimeSeries {
      */
     public void createIndexes(Set<IndexField> indexFields) {
         this.handledCollections.forEach(c -> c.createIndexes(indexFields));
+    }
+    
+    public void performHousekeeping() {
+        this.handledCollections.forEach(TimeSeriesCollection::performHousekeeping);
     }
 
 //    public void performHousekeeping(TimeSeriesQuery housekeepingQuery) {

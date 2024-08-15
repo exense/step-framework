@@ -2,10 +2,7 @@ package step.core.timeseries;
 
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class TimeSeriesBuilder {
 	
@@ -31,7 +28,7 @@ public class TimeSeriesBuilder {
 		for (int i = 1; i < sortedResolutions.size(); i++) {
 			Long previousResolution = sortedResolutions.get(i - 1);
 			Long currentResolution = sortedResolutions.get(i);
-			if (previousResolution <= currentResolution || currentResolution % previousResolution != 0) {
+			if (Objects.equals(previousResolution, currentResolution) || currentResolution % previousResolution != 0) {
 				throw new IllegalArgumentException("Invalid resolution: " + currentResolution);
 			}
 		}
