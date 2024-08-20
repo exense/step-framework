@@ -13,7 +13,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <!-- internal dependencies -->
-        <exense-commons.version>2024.8.8-66b4c22362cc6a1a093a2735</exense-commons.version>
+        <exense-commons.version>2024.8.20-66c4a22263cd14607985712f</exense-commons.version>
         <dependencies.version>2024.8.8-66b4bbe662cc6a1a0934c750</dependencies.version>
 
         <!-- external dependencies, to be re-checked for candidates for upstreaming into exense-dependencies -->
