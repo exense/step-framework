@@ -69,7 +69,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private void flush(boolean flushAll) {
         lock.writeLock().lock();
         try {
-            debug("Flushing");
+            trace("Flushing");
             long now = System.currentTimeMillis();
 
             seriesQueue.forEach((k, v) -> {
@@ -81,7 +81,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             });
 
             flushCount.increment();
-            debug("Flushed");
+            trace("Flushed");
         } catch (Throwable e) {
             logger.error("Error while flushing", e);
         } finally {
@@ -101,9 +101,9 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         flush();
     }
 
-    private void debug(String message) {
-        if (logger.isDebugEnabled()) {
-            logger.debug(message);
+    private void trace(String message) {
+        if (logger.isTraceEnabled()) {
+            logger.trace(message);
         }
     }
 }
