@@ -8,7 +8,12 @@ public class TimeSeriesBuilder {
 	
 	private List<TimeSeriesCollection> handledCollections = new ArrayList<>();
 	private Map<Long, TimeSeriesCollection> collectionsByResolution = new TreeMap<>();
-	
+
+	public TimeSeriesBuilder registerCollections(List<TimeSeriesCollection> collections) {
+		collections.forEach(this::registerCollection);
+		return this;
+	}
+
 	public TimeSeriesBuilder registerCollection(TimeSeriesCollection collection) {
 		long resolution = collection.getResolution();
 		if (collectionsByResolution.containsKey(resolution)) {

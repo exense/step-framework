@@ -71,7 +71,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             long index = TimeSeries.timestampToBucketTimestamp(bucket.getBegin(), sourceResolution);
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
             bucketsForTimestamp.computeIfAbsent(bucket.getAttributes(), k -> {
-                BucketBuilder bucketBuilder = BucketBuilder.create(index).accumulate(bucket);
+                BucketBuilder bucketBuilder = BucketBuilder.create(index).withAttributes(bucket.getAttributes());
                 return bucketBuilder;
             }).accumulate(bucket);
         } finally {

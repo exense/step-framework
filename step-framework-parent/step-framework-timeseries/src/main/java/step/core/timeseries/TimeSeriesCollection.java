@@ -50,6 +50,10 @@ public class TimeSeriesCollection {
 		this.ttl = ttl;
 		this.ingestionPipeline = ingestionPipeline;
 	}
+
+	public boolean isEmpty() {
+		return getCollection().estimatedCount() == 0;
+	}
 	
 	public void performHousekeeping() {
 		if (ttl > 0) {
@@ -62,7 +66,11 @@ public class TimeSeriesCollection {
 		}
 		
 	}
-	
+
+	public long getTtl() {
+		return ttl;
+	}
+
 	public void setTtl(long ttl) {
 		if (ttl < 0) {
 			throw new IllegalArgumentException("Negative ttl value is not allowed");
@@ -87,14 +95,6 @@ public class TimeSeriesCollection {
 
 	public long getResolution() {
 		return resolution;
-	}
-	
-	public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
-		this.ingestionPipeline.ingestPoint(attributes, timestamp, value);
-	}
-	
-	public void ingestBucket(Bucket bucket) {
-		this.ingestionPipeline.ingestBucket(bucket);
 	}
 	
 }

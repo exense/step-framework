@@ -13,7 +13,6 @@ import step.core.timeseries.bucket.BucketBuilder;
 
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,12 +21,18 @@ public class TimeSeriesAggregationPipeline {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesAggregationPipeline.class);
     private Map<Long, TimeSeriesCollection> collectionsByResolution = new TreeMap<>();
-
+    // resolution - array index
+    private Map<Long, Integer> resolutionsIndexes = new HashMap<>();
+    // sorted
     private final List<TimeSeriesCollection> collections;
 
     public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections) {
         this.collections = collections;
-        collections.forEach(collection -> collectionsByResolution.put(collection.getResolution(), collection));
+        for (int i = 0; i < collections.size(); i++) {
+            TimeSeriesCollection collection = collections.get(i);
+            collectionsByResolution.put(collection.getResolution(), collection);
+            resolutionsIndexes.put(collection.getResolution(), i);
+        }
     }
     
     private long roundRequiredResolution(long targetResolution) {
@@ -52,7 +57,7 @@ public class TimeSeriesAggregationPipeline {
         Long resultFrom = roundDownToMultiple(query.getFrom(), sourceResolution);
         Long resultTo = roundUpToMultiple(query.getTo(), sourceResolution);
         if (query.isShrink()) { // we expand the interval to the closest completed resolutions
-            resultResolution = Long.MAX_VALUE;
+            resultResolution = resultTo - resultFrom;
         } else {
             Integer bucketsCount = query.getBucketsCount();
             if (bucketsCount != null && bucketsCount > 0) {
@@ -61,14 +66,17 @@ public class TimeSeriesAggregationPipeline {
                 } else {
                     long difference = resultTo - resultFrom;
                     resultResolution = Math.round(difference / (double) bucketsCount);
-                    resultResolution = Math.round((double) resultResolution / sourceResolution) * sourceResolution; // round to nearest multiple, up or down
+                    // there are situation when resultResolution/sourceResolution is below 0.5, and that would end up rounded in 0.
+                    resultResolution = Math.max(Math.round((double) resultResolution / sourceResolution), 1) * sourceResolution; // round to nearest multiple, up or down
                 }
             } else {
                 Long proposedResolution = query.getBucketsResolution();
                 if (proposedResolution != null && proposedResolution != 0) {
                     resultResolution = Math.max(sourceResolution, roundDownToMultiple(proposedResolution, sourceResolution));
                     resultResolution = roundDownToMultiple(resultResolution, sourceResolution);
-                    resultTo = roundUpToMultiple(query.getTo(), resultResolution);
+                    long diff = resultTo - resultFrom;
+                    diff = roundUpToMultiple(diff, resultResolution);
+                    resultTo = resultFrom + diff;
                 }
             }
         }
@@ -92,23 +100,45 @@ public class TimeSeriesAggregationPipeline {
     }
     
     private TimeSeriesCollection chooseTargetCollection(TimeSeriesAggregationQuery query) {
-        TimeSeriesCollection tsCollection = null;
+        long idealResolution = getIdealResolution(query);
+        long targetResolution = this.roundRequiredResolution(idealResolution); // find an existing resolution close to it
+        int targetResolutionIndex = this.resolutionsIndexes.get(targetResolution);
+        for (int i = targetResolutionIndex; i > 0; i--) { // find the best resolution with valid TTL
+            TimeSeriesCollection targetCollection = this.collections.get(targetResolutionIndex);
+            if (collectionTtlCoverInterval(targetCollection, query.getFrom(), query.getTo())) {
+                return targetCollection;
+            }
+        }
+        return this.collections.get(0);
+    }
+
+    private static long getIdealResolution(TimeSeriesAggregationQuery query) {
         Integer bucketsCount = query.getBucketsCount();
         Long bucketsResolution = query.getBucketsResolution();
+        long requestedRange = query.getTo() - query.getFrom();
+        int idealBucketsCount = 100;
+        long idealResolution;
         if (query.isShrink()) {
-            // TODO smart calculation for shrink resolution based on range, and ttl
-            tsCollection = this.collections.get(0);
+            idealResolution = requestedRange / idealBucketsCount;
         } else if (bucketsCount != null && bucketsCount > 0) {
-            // TODO calculate optimal resolution
-            tsCollection = this.collections.get(0);
+            idealResolution = requestedRange / bucketsCount;
         } else if (bucketsResolution != null && bucketsResolution > 0) {
-            // TODO round resolution to the lowest existing resolution
-            tsCollection = this.collections.get(0);
+            idealResolution = bucketsResolution;
         } else {
-            // TODO choose a default resolution
-            tsCollection = this.collections.get(0);
+            idealResolution = requestedRange / idealBucketsCount;
         }
-        return tsCollection;
+        return idealResolution;
+    }
+
+    private boolean collectionTtlCoverInterval(TimeSeriesCollection collection, long from, long to) {
+        long ttl = collection.getTtl();
+        if (ttl == 0) {
+            // housekeeping is disabled
+            return true;
+        }
+        long collectionEnd = System.currentTimeMillis();
+        long collectionStart = collectionEnd - ttl;
+        return collectionStart <= from && collectionEnd >= to;
     }
 
     public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery x) {
@@ -147,21 +177,23 @@ public class TimeSeriesAggregationPipeline {
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        return new TimeSeriesAggregationResponse(result, getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), sourceResolution))
-                .withAxis(drawAxis(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), sourceResolution));
+        return new TimeSeriesAggregationResponse(result, finalParams.getResolution())
+                .withAxis(drawAxis(finalParams));
     }
     
     public List<Long> getAvailableResolutions() {
 		return new ArrayList<>(collectionsByResolution.keySet());
 	}
     
-    public List<Long> drawAxis(Long from, Long to, boolean shrink, long resolution) {
+    public List<Long> drawAxis(TimeSeriesProcessedParams params) {
+        long from = params.getFrom();
+        long to = params.getTo();
         ArrayList<Long> legend = new ArrayList<>();
-        if (from != null && to != null) {
-            if (shrink) {
+        if (from >= 0 && to > 0) {
+            if (params.isShrink()) {
                 legend.add(from);
             } else {
-                for (long index = from; index < to; index += resolution) {
+                for (long index = from; index < to; index += params.getResolution()) {
                     legend.add(index);
                 }
             }
