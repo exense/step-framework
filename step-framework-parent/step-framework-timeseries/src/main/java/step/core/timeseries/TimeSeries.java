@@ -2,6 +2,7 @@ package step.core.timeseries;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import step.core.collections.Filter;
 import step.core.collections.Filters;
 import step.core.collections.IndexField;
 import step.core.collections.SearchOrder;
@@ -35,11 +36,12 @@ public class TimeSeries {
             TimeSeriesCollection collection = sortedCollections.get(i);
             if (collection.isEmpty()) {
                 String collectionName = collection.getCollection().getName();
-                logger.info("Populating time-series collection: " + collectionName);
+                logger.debug("Populating time-series collection: " + collectionName);
                 TimeSeriesCollection previousCollection = sortedCollections.get(i - 1);
                 try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection.getCollection(), collection.getResolution(), 30000)) {
                     SearchOrder searchOrder = new SearchOrder(TIMESTAMP_ATTRIBUTE, 1);
-                    previousCollection.getCollection().findLazy(Filters.empty(), searchOrder, null, null, 0).forEach(bucket -> {
+                    Filter filter = collection.getTtl() > 0 ? Filters.gte("begin", System.currentTimeMillis() - collection.getTtl()): Filters.empty();
+                    previousCollection.getCollection().findLazy(filter, searchOrder, null, null, 0).forEach(bucket -> {
                         ingestionPipeline.ingestBucket(bucket);
                     });
                     ingestionPipeline.flush();
