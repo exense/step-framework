@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) exense GmbH -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -8,13 +10,41 @@
     <version>0.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <!-- required metadata for maven central -->
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Step Framework</description>
+    <url>https://github.com/exense/step-framework</url>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Exense GmbH</name>
+            <organization>Exense GmbH</organization>
+            <organizationUrl>https://exense.ch</organizationUrl>
+            <email>support@exense.ch</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/exense/step-framework.git</connection>
+        <developerConnection>scm:git:https://github.com/exense/step-framework.git</developerConnection>
+        <url>https://github.com/exense/step-framework</url>
+    </scm>
+    <!-- metadata end -->
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <!-- internal dependencies -->
-        <exense-commons.version>2024.8.20-66c4a22263cd14607985712f</exense-commons.version>
-        <dependencies.version>2024.8.8-66b4bbe662cc6a1a0934c750</dependencies.version>
+        <exense-commons.version>2024.8.29-66d0408ee9f5583e61b7fb52</exense-commons.version>
+        <dependencies.version>2024.8.27</dependencies.version>
 
         <!-- external dependencies, to be re-checked for candidates for upstreaming into exense-dependencies -->
         <dep.jaxb.version>2.3.1</dep.jaxb.version>
