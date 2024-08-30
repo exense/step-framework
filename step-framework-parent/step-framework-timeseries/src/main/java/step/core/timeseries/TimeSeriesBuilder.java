@@ -34,7 +34,7 @@ public class TimeSeriesBuilder {
 			Long previousResolution = sortedResolutions.get(i - 1);
 			Long currentResolution = sortedResolutions.get(i);
 			if (Objects.equals(previousResolution, currentResolution) || currentResolution % previousResolution != 0) {
-				throw new IllegalArgumentException("Invalid resolution: " + currentResolution);
+				throw new IllegalArgumentException(String.format("Current resolution %d is not multiple of the previous resolution %d", currentResolution, previousResolution));
 			}
 		}
 	}
