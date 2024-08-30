@@ -8,7 +8,6 @@ import java.util.Set;
 
 public class TimeSeriesAggregationQueryBuilder {
 
-    private final TimeSeriesAggregationPipeline pipeline;
     private Set<String> groupDimensions = new HashSet<>();
     private Filter filter = Filters.empty();
     private Long from;
@@ -18,12 +17,6 @@ public class TimeSeriesAggregationQueryBuilder {
     private Integer bucketsCount;
     private Set<String> collectAttributeKeys;
     private int collectAttributesValuesLimit;
-
-
-    public TimeSeriesAggregationQueryBuilder(TimeSeriesAggregationPipeline aggregationPipeline) {
-        this.pipeline = aggregationPipeline;
-//        this.sourceResolution = aggregationPipeline.getSourceResolution();
-    }
 
     public TimeSeriesAggregationQueryBuilder withGroupDimensions(Set<String> groupDimensions) {
         this.groupDimensions = groupDimensions;

@@ -43,7 +43,12 @@ public class TimeSeriesCollection {
 	public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl) {
 		this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution));
 	}
-	
+
+	public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, long ingestionFlushPeriodMs) {
+		this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution, ingestionFlushPeriodMs));
+	}
+
+
 	public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, TimeSeriesIngestionPipeline ingestionPipeline) {
 		this.collection = collection;
 		this.resolution = resolution;
@@ -64,7 +69,11 @@ public class TimeSeriesCollection {
 			this.collection.remove(filter);
 			logger.debug("Housekeeping successfully performed for collection " + this.collection.getName());
 		}
-		
+	}
+
+	public void removeData(TimeSeriesQuery query) {
+		Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
+		this.collection.remove(filter);
 	}
 
 	public long getTtl() {

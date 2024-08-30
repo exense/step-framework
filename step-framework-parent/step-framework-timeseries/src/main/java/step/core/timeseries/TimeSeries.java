@@ -7,9 +7,8 @@ import step.core.collections.Filters;
 import step.core.collections.IndexField;
 import step.core.collections.SearchOrder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
-import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
-import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
+import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.util.*;
 
@@ -52,7 +51,14 @@ public class TimeSeries {
             }
         }
     }
-    
+
+    /**
+     * @return the first (smallest resolution) collection in the chain
+     */
+    public TimeSeriesCollection getDefaultCollection() {
+        return this.handledCollections.get(0);
+    }
+
     public TimeSeriesCollection getCollection(long resolution) {
         return this.collectionsByResolution.get(resolution);
     }
@@ -72,28 +78,21 @@ public class TimeSeries {
     public void createIndexes(Set<IndexField> indexFields) {
         this.handledCollections.forEach(c -> c.createIndexes(indexFields));
     }
-    
+
+    /**
+     * Perform standard housekeeping based on internal TTL settings
+     */
     public void performHousekeeping() {
         this.handledCollections.forEach(TimeSeriesCollection::performHousekeeping);
     }
 
-//    public void performHousekeeping(TimeSeriesQuery housekeepingQuery) {
-//        Filter filter = TimeSeriesFilterBuilder.buildFilter(housekeepingQuery);
-//        collection.remove(filter);
-//    }
+    /**
+     * Perform custom housekeeping.
+     */
+    public void performHousekeeping(TimeSeriesQuery query) {
+        this.handledCollections.forEach(collection -> collection.removeData(query));
+    }
 
-//    public TimeSeriesIngestionPipeline newIngestionPipeline() {
-//        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution);
-//    }
-//
-//    public TimeSeriesIngestionPipeline newIngestionPipeline(long flushingPeriodInMs) {
-//        return new TimeSeriesIngestionPipeline(collection, timeSeriesResolution, flushingPeriodInMs);
-//    }
-//
-//    public TimeSeriesAggregationPipeline getAggregationPipeline() {
-//        return new TimeSeriesAggregationPipeline(collection, timeSeriesResolution);
-//    }
-//
     public static long timestampToBucketTimestamp(long timestamp, long resolution) {
         return timestamp - timestamp % resolution;
     }
