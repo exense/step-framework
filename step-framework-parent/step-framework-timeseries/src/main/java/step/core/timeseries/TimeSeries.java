@@ -14,7 +14,7 @@ import java.util.*;
 
 import static step.core.timeseries.TimeSeriesConstants.TIMESTAMP_ATTRIBUTE;
 
-class TimeSeries {
+public class TimeSeries {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeries.class);
 
