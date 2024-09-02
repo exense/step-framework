@@ -3,8 +3,6 @@ package step.core.timeseries.ingestion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
-import step.core.timeseries.TimeSeries;
-import step.core.timeseries.TimeSeriesCollection;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
@@ -58,17 +56,13 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         return sourceResolution;
     }
 
-    //    public void ingestPoint(Map<String, Object> attributes, long timestamp, long value, TimeSeriesIngestionChain chain) {
-//        ingestPoint(new BucketAttributes(attributes), timestamp, value, chain);
-//    }
-    
     public void ingestBucket(Bucket bucket) {
         if (logger.isTraceEnabled()) {
             logger.trace("Ingesting bucket");
         }
         lock.readLock().lock();
         try {
-            long index = TimeSeries.timestampToBucketTimestamp(bucket.getBegin(), sourceResolution);
+            long index = timestampToBucketTimestamp(bucket.getBegin(), sourceResolution);
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
             bucketsForTimestamp.computeIfAbsent(bucket.getAttributes(), k -> {
                 BucketBuilder bucketBuilder = BucketBuilder.create(index).withAttributes(bucket.getAttributes());
@@ -85,12 +79,9 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         }
         lock.readLock().lock();
         try {
-            long index = TimeSeries.timestampToBucketTimestamp(timestamp, sourceResolution);
+            long index = timestampToBucketTimestamp(timestamp, sourceResolution);
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-            bucketsForTimestamp.computeIfAbsent(attributes, k -> {
-                BucketBuilder bucketBuilder = BucketBuilder.create(index).withAttributes(new BucketAttributes(attributes));
-                return bucketBuilder;
-            }).ingest(value);
+            bucketsForTimestamp.computeIfAbsent(attributes, k -> BucketBuilder.create(index).withAttributes(new BucketAttributes(attributes))).ingest(value);
         } finally {
             lock.readLock().unlock();
         }
@@ -132,6 +123,10 @@ public class TimeSeriesIngestionPipeline implements Closeable {
 
     public long getFlushCount() {
         return flushCount.longValue();
+    }
+
+    private static long timestampToBucketTimestamp(long timestamp, long resolution) {
+        return timestamp - timestamp % resolution;
     }
 
     @Override

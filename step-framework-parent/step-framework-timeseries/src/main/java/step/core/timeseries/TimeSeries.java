@@ -14,35 +14,33 @@ import java.util.*;
 
 import static step.core.timeseries.TimeSeriesConstants.TIMESTAMP_ATTRIBUTE;
 
-public class TimeSeries {
+class TimeSeries {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeries.class);
 
     private final List<TimeSeriesCollection> handledCollections;
-    private Map<Long, TimeSeriesCollection> collectionsByResolution = new TreeMap<>();
     private TimeSeriesAggregationPipeline aggregationPipeline;
     
 
     TimeSeries(List<TimeSeriesCollection> handledCollections) {
         this.handledCollections = handledCollections;
-        handledCollections.forEach(c -> collectionsByResolution.put(c.getResolution(), c));
         aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections);
     }
 
     public void createMissingData() {
-        List<TimeSeriesCollection> sortedCollections = new ArrayList<>(collectionsByResolution.values());
-        for (int i = 1; i < sortedCollections.size(); i++) {
-            TimeSeriesCollection collection = sortedCollections.get(i);
+        for (int i = 1; i < handledCollections.size(); i++) {
+            TimeSeriesCollection collection = handledCollections.get(i);
             if (collection.isEmpty()) {
                 String collectionName = collection.getCollection().getName();
                 logger.debug("Populating time-series collection: " + collectionName);
-                TimeSeriesCollection previousCollection = sortedCollections.get(i - 1);
+                TimeSeriesCollection previousCollection = handledCollections.get(i - 1);
                 try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection.getCollection(), collection.getResolution(), 30000)) {
                     SearchOrder searchOrder = new SearchOrder(TIMESTAMP_ATTRIBUTE, 1);
                     Filter filter = collection.getTtl() > 0 ? Filters.gte("begin", System.currentTimeMillis() - collection.getTtl()): Filters.empty();
-                    previousCollection.getCollection().findLazy(filter, searchOrder, null, null, 0).forEach(bucket -> {
-                        ingestionPipeline.ingestBucket(bucket);
-                    });
+                    previousCollection
+                            .getCollection()
+                            .findLazy(filter, searchOrder, null, null, 0)
+                            .forEach(ingestionPipeline::ingestBucket);
                     ingestionPipeline.flush();
                 } catch (Exception e) {
                     logger.error("Error while populating {} collection. Dropping the entire collection...", collectionName, e);
@@ -60,7 +58,12 @@ public class TimeSeries {
     }
 
     public TimeSeriesCollection getCollection(long resolution) {
-        return this.collectionsByResolution.get(resolution);
+        for (TimeSeriesCollection collection: handledCollections) {
+            if (collection.getResolution() == resolution) {
+                return collection;
+            }
+        }
+        throw new IllegalArgumentException("Collection with resolution not found " + resolution);
     }
     
     public TimeSeriesIngestionPipeline getIngestionPipeline() {
@@ -91,10 +94,6 @@ public class TimeSeries {
      */
     public void performHousekeeping(TimeSeriesQuery query) {
         this.handledCollections.forEach(collection -> collection.removeData(query));
-    }
-
-    public static long timestampToBucketTimestamp(long timestamp, long resolution) {
-        return timestamp - timestamp % resolution;
     }
 
 }
