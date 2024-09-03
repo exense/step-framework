@@ -2,12 +2,12 @@
 	"ACTION": "COMPILE",
 
 	"TYPE": "POM",
-	"FOLDER": "step-framework-parent/",
+	"FOLDER": ".",
 	"PARAMETERS": [
 		{
 			"NAME": "DEVELOPMENT",
 			"URL": "nexus-staging::https://nexus-enterprise-staging.exense.ch/repository/staging-maven/",
-			"CONFIG": "DefaultBuild"
+			"CONFIG": "SkipJavadoc"
 		},
 		{
 			"NAME": "INTEGRATION",
@@ -17,7 +17,7 @@
 		{
 			"NAME": "PRODUCTION",
 			"URL": "sonatype::https://oss.sonatype.org/service/local/staging/deploy/maven2",
-			"CONFIG": "DefaultBuild"
+			"CONFIG": "SignedBuild"
 		}
 	]
 }
