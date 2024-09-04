@@ -34,6 +34,51 @@ public class TimeSeriesAggregationPipeline {
             resolutionsIndexes.put(collection.getResolution(), i);
         }
     }
+
+    public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
+        TimeSeriesCollection targetCollection = chooseTargetCollection(query);
+        Collection<Bucket> selectedCollection = targetCollection.getCollection();
+        long sourceResolution = targetCollection.getResolution();
+        TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
+
+        Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
+
+        Filter filter = TimeSeriesFilterBuilder.buildFilter(finalParams);
+        LongAdder bucketCount = new LongAdder();
+        long t1 = System.currentTimeMillis();
+        try (Stream<Bucket> stream = selectedCollection.findLazy(filter, null, null, null, 0)) {
+            stream.forEach(bucket -> {
+                bucketCount.increment();
+                BucketAttributes bucketAttributes = bucket.getAttributes();
+
+                BucketAttributes seriesKey;
+                if (CollectionUtils.isNotEmpty(finalParams.getGroupDimensions())) {
+                    seriesKey = bucketAttributes.subset(finalParams.getGroupDimensions());
+                } else {
+                    seriesKey = new BucketAttributes();
+                }
+                Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
+
+                long index = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
+                series.computeIfAbsent(index, i -> new BucketBuilder(i, i + getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), finalParams.getResolution()))
+                        .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit())).accumulate(bucket);
+            });
+        }
+        long t2 = System.currentTimeMillis();
+        if (logger.isDebugEnabled()) {
+            logger.info("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
+        }
+
+        Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
+                e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
+        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution());
+        if (query.getTo() != null) {
+            // axis are calculated only when the interval is specified
+            response.withAxis(drawAxis(finalParams));
+        }
+
+        return response;
+    }
     
     private long roundRequiredResolution(long targetResolution) {
         List<Long> availableResolutions = getAvailableResolutions();
@@ -49,13 +94,15 @@ public class TimeSeriesAggregationPipeline {
         if (query.getBucketsCount() != null && (query.getFrom() == null || query.getTo() == null)) {
             throw new IllegalArgumentException("While splitting, from and to params must be set");
         }
-        if (query.getFrom() == null || query.getTo() == null) {
-            throw new IllegalArgumentException("From and To parameters must be specified");
+        if (query.getFrom() == null) {
+            throw new IllegalArgumentException("From parameters must be specified");
         }
 
         long resultResolution = sourceResolution;
         Long resultFrom = roundDownToMultiple(query.getFrom(), sourceResolution);
-        Long resultTo = roundUpToMultiple(query.getTo(), sourceResolution);
+        // if 'to' parameter is not specified, we take the current time.
+        long toParameter = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
+        Long resultTo = roundUpToMultiple(toParameter, sourceResolution);
         if (query.isShrink()) { // we expand the interval to the closest completed resolutions
             resultResolution = resultTo - resultFrom;
         } else {
@@ -100,6 +147,9 @@ public class TimeSeriesAggregationPipeline {
     }
     
     private TimeSeriesCollection chooseTargetCollection(TimeSeriesAggregationQuery query) {
+        if (query.getBucketsResolution() != null && query.getBucketsResolution() < collections.get(0).getResolution()) {
+            throw new IllegalArgumentException("Buckets resolution must be less than or equal to the minimum registered collection");
+        }
         long idealResolution = getIdealResolution(query);
         long targetResolution = this.roundRequiredResolution(idealResolution); // find an existing resolution close to it
         int targetResolutionIndex = this.resolutionsIndexes.get(targetResolution);
@@ -115,7 +165,8 @@ public class TimeSeriesAggregationPipeline {
     private static long getIdealResolution(TimeSeriesAggregationQuery query) {
         Integer bucketsCount = query.getBucketsCount();
         Long bucketsResolution = query.getBucketsResolution();
-        long requestedRange = query.getTo() - query.getFrom();
+        long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
+        long requestedRange = queryTo - query.getFrom();
         int idealBucketsCount = 100;
         long idealResolution;
         if (query.isShrink()) {
@@ -141,46 +192,7 @@ public class TimeSeriesAggregationPipeline {
         return collectionStart <= from && collectionEnd >= to;
     }
 
-    public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery x) {
-        TimeSeriesCollection targetCollection = chooseTargetCollection(x);
-        Collection<Bucket> selectedCollection = targetCollection.getCollection();
-        long sourceResolution = targetCollection.getResolution();
-        TimeSeriesProcessedParams finalParams = processQueryParams(x, sourceResolution);
 
-        Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
-
-        Filter filter = TimeSeriesFilterBuilder.buildFilter(finalParams);
-        LongAdder bucketCount = new LongAdder();
-        long t1 = System.currentTimeMillis();
-        try (Stream<Bucket> stream = selectedCollection.findLazy(filter, null, null, null, 0)) {
-            stream.forEach(bucket -> {
-                bucketCount.increment();
-                BucketAttributes bucketAttributes = bucket.getAttributes();
-
-                BucketAttributes seriesKey;
-                if (CollectionUtils.isNotEmpty(finalParams.getGroupDimensions())) {
-                    seriesKey = bucketAttributes.subset(finalParams.getGroupDimensions());
-                } else {
-                    seriesKey = new BucketAttributes();
-                }
-                Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
-
-                long index = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
-                series.computeIfAbsent(index, i -> new BucketBuilder(i, i + getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), sourceResolution))
-                        .withAccumulateAttributes(x.getCollectAttributeKeys(), x.getCollectAttributesValuesLimit())).accumulate(bucket);
-            });
-        }
-        long t2 = System.currentTimeMillis();
-        if (logger.isDebugEnabled()) {
-            logger.info("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
-        }
-
-        Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-                e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        return new TimeSeriesAggregationResponse(result, finalParams.getResolution())
-                .withAxis(drawAxis(finalParams));
-    }
-    
     public List<Long> getAvailableResolutions() {
 		return new ArrayList<>(collectionsByResolution.keySet());
 	}

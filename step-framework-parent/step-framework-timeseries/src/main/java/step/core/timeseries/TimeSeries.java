@@ -7,10 +7,12 @@ import step.core.collections.Filters;
 import step.core.collections.IndexField;
 import step.core.collections.SearchOrder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
+import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static step.core.timeseries.TimeSeriesConstants.TIMESTAMP_ATTRIBUTE;
 
@@ -37,10 +39,17 @@ public class TimeSeries {
                 try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection.getCollection(), collection.getResolution(), 30000)) {
                     SearchOrder searchOrder = new SearchOrder(TIMESTAMP_ATTRIBUTE, 1);
                     Filter filter = collection.getTtl() > 0 ? Filters.gte("begin", System.currentTimeMillis() - collection.getTtl()): Filters.empty();
-                    previousCollection
+
+                    try (Stream<Bucket> bucketStream = previousCollection
                             .getCollection()
-                            .findLazy(filter, searchOrder, null, null, 0)
-                            .forEach(ingestionPipeline::ingestBucket);
+                            .findLazy(filter, searchOrder, null, null, 0)) {
+
+                        bucketStream.forEach(ingestionPipeline::ingestBucket);
+
+                    } catch (Exception e) {
+                        logger.error("Error during stream processing in {} collection. Dropping the entire collection...", collectionName, e);
+                        collection.getCollection().drop();
+                    }
                     ingestionPipeline.flush();
                 } catch (Exception e) {
                     logger.error("Error while populating {} collection. Dropping the entire collection...", collectionName, e);
