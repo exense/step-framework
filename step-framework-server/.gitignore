@@ -1,0 +1,5 @@
+/src/main/resources/swagger/webapp/doc/rest/*.png
+/src/main/resources/swagger/webapp/doc/rest/*.map
+/src/main/resources/swagger/webapp/doc/rest/*.js
+/src/main/resources/swagger/webapp/doc/rest/*.css
+/src/main/resources/swagger/webapp/doc/rest/oauth2-redirect.html
