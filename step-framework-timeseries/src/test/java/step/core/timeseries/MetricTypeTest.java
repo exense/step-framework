@@ -30,7 +30,22 @@ public class MetricTypeTest {
         String unit = "ms";
         MetricAggregation aggregation = new MetricAggregation(MetricAggregationType.COUNT);
         Map<String, String> seriesColors = Map.of();
-        List<MetricAttribute> attributes = Arrays.asList(new MetricAttribute().setDisplayName("displayName").setName("name"));
+        List<MetricAttribute> attributes = Arrays.asList(
+                new MetricAttribute()
+                        .setType(MetricAttributeType.TEXT)
+                        .setDisplayName("displayName")
+                        .setMetadata(Map.of("metadataKey", "metadataValue"))
+                        .setName("name"),
+                new MetricAttribute()
+                        .setType(MetricAttributeType.NUMBER)
+                        .setDisplayName("Duration")
+                        .setName("duration"),
+                new MetricAttribute()
+                        .setType(MetricAttributeType.DATE)
+                        .setDisplayName("Created on")
+                        .setName("begin")
+
+        );
 
         List<String> grouping = Arrays.asList("groupBy");
         MetricType metric = new MetricType()
@@ -51,6 +66,8 @@ public class MetricTypeTest {
         Assert.assertEquals(attributes, metric.getAttributes());
         Assert.assertEquals(attributes.get(0).getDisplayName(), metric.getAttributes().get(0).getDisplayName());
         Assert.assertEquals(attributes.get(0).getName(), metric.getAttributes().get(0).getName());
+        Assert.assertEquals(attributes.get(0).getType(), MetricAttributeType.TEXT);
+        Assert.assertEquals("metadataValue", attributes.get(0).getMetadata().get("metadataKey"));
         Assert.assertEquals(grouping, metric.getDefaultGroupingAttributes());
         Assert.assertEquals(seriesColors, metric.getRenderingSettings().getSeriesColors());
 

@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.Filters;
+import step.core.collections.IndexField;
+import step.core.collections.Order;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.collections.inmemory.InMemoryCollectionFactory;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
@@ -42,6 +44,11 @@ public class TimeSeriesTest {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolution);
         return new TimeSeries(Arrays.asList(collection));
+    }
+
+    private TimeSeriesCollection getCollection(long resolution) {
+        InMemoryCollection<Bucket> collection = new InMemoryCollection<>();
+        return new TimeSeriesCollection(collection, resolution, 0);
     }
 
     @Test
@@ -104,6 +111,56 @@ public class TimeSeriesTest {
         assertEquals(nBuckets / 2, responseSeries.size());
         assertEquals(2, responseSeries.get(0L).getCount());
 
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidResolutionsTest() {
+        TimeSeriesCollection collection = getCollection(1);
+        collection.createIndexes(Set.of(new IndexField("name", Order.ASC, String.class)));
+        Assert.assertEquals(0, collection.getTtl());
+        Assert.assertTrue(collection.isEmpty());
+        new TimeSeriesBuilder()
+                .registerCollections(Arrays.asList(
+                                collection,
+                                getCollection(10),
+                                getCollection(95)  // should fail
+                        )
+                )
+                .build();
+
+    }
+
+    @Test
+    public void dataIngestionAndPopulationTest() {
+        TimeSeriesCollection collection1 = getCollection(1);
+        TimeSeriesCollection collection10 = getCollection(10);
+        TimeSeriesCollection collection100 = getCollection(100);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollection(collection1)
+                .registerCollection(collection10)
+                .registerCollection(collection100)
+                .build();
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
+            int nPoints = 10000;
+            Map<String, Object> attributes = Map.of("key", "value");
+            for (int i = 0; i < nPoints; i++) {
+                ingestionPipeline.ingestPoint(attributes, i, 10L);
+            }
+            ingestionPipeline.flush();
+            assertEquals(nPoints, collection1.getCollection().count(Filters.empty(), null));
+
+            collection10.getIngestionPipeline().flush();
+            assertEquals(nPoints / 10, collection10.getCollection().count(Filters.empty(), null));
+
+            collection100.getIngestionPipeline().flush();
+            assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
+
+            collection100.getCollection().drop();
+            assertEquals(0, collection100.getCollection().count(Filters.empty(), null));
+            timeSeries.createMissingData();
+            assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
+        }
+        timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder().build());
     }
 
     @Test
@@ -172,7 +229,7 @@ public class TimeSeriesTest {
         long duration = 1000;
 
         int timeSeriesResolution = 100;
-        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, timeSeriesResolution, 0, 10);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, timeSeriesResolution, 0);
         TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
 
@@ -619,6 +676,55 @@ public class TimeSeriesTest {
                 .build();
         TimeSeriesAggregationResponse response = pipeline.collect(query);
         assertEquals(1, response.getSeries().size());
+    }
+
+    @Test
+    public void specificResolutionRequest() {
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 100)
+                .window(20)
+                .build();
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(query);
+        assertEquals(5, response.getAxis().size());
+    }
+
+    @Test
+    public void getCollectionByResolution() {
+        TimeSeriesCollection col1 = getCollection(10);
+        TimeSeriesCollection col2 = getCollection(20);
+        TimeSeriesCollection col3 = getCollection(40);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollections(Arrays.asList(col2, col1, col3))
+                .build();
+        TimeSeriesCollection defaultCollection = timeSeries.getDefaultCollection();
+        Assert.assertEquals(col1.getResolution(), defaultCollection.getResolution());
+        Assert.assertEquals(10, timeSeries.getCollection(10).getResolution());
+        Assert.assertEquals(20, timeSeries.getCollection(20).getResolution());
+        Assert.assertEquals(40, timeSeries.getCollection(40).getResolution());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void timeSeriesWithDuplicateCollectionResolution() {
+        TimeSeriesCollection col1 = getCollection(10);
+        TimeSeriesCollection col2 = getCollection(20);
+        TimeSeriesCollection col3 = getCollection(20);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollections(Arrays.asList(col2, col1, col3))
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void getCollectionByInvalidResolution() {
+        TimeSeriesCollection col1 = getCollection(10);
+        TimeSeriesCollection col2 = getCollection(20);
+        TimeSeriesCollection col3 = getCollection(20);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollections(Arrays.asList(col2, col1, col3))
+                .build();
+        timeSeries.getCollection(30);
     }
 
 }

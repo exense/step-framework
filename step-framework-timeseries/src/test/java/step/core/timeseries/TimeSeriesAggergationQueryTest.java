@@ -112,4 +112,13 @@ public class TimeSeriesAggergationQueryTest {
         Assert.assertEquals(split, seriesResponse.size());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void noRangeWithBucketsCountTest() {
+        TimeSeries timeSeries = getNewTimeSeries(200);
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .split(5)
+                .build();
+        timeSeries.getAggregationPipeline().collect(query);
+    }
+
 }

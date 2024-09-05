@@ -48,48 +48,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         return groupDimensions;
     }
 
-//    public List<Long> drawAxis() {
-//        ArrayList<Long> legend = new ArrayList<>();
-//        if (from != null && to != null) {
-//            if (shrink) {
-//                legend.add(from);
-//            } else {
-//                for (long index = from; index < to; index += resultResolution) {
-//                    legend.add(index);
-//                }
-//            }
-//        }
-//        return legend;
-//    }
-//
-//    public Function<Long, Long> getProjectionFunction() {
-//        long start = Objects.requireNonNullElse(from, 0L);
-//        if (shrink) {
-//            return t -> start;
-//        } else {
-//            return t -> {
-//                long distanceFromStart = t - start;
-//                return distanceFromStart - distanceFromStart % resultResolution + start;
-//            };
-//        }
-//    }
-//
-//    public long getBucketSize() {
-//        if (shrink) {
-//            if (from != null) {
-//                return to - from;
-//            } else {
-//                return Long.MAX_VALUE;
-//            }
-//        } else {
-//            return resultResolution;
-//        }
-//    }
-//
-//    public long getResolution() {
-//        return resultResolution;
-//    }
-
     public Filter getFilter() {
         return filter;
     }

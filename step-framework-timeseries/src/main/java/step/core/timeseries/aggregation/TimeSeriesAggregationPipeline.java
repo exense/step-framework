@@ -155,7 +155,9 @@ public class TimeSeriesAggregationPipeline {
         int targetResolutionIndex = this.resolutionsIndexes.get(targetResolution);
         for (int i = targetResolutionIndex; i > 0; i--) { // find the best resolution with valid TTL
             TimeSeriesCollection targetCollection = this.collections.get(targetResolutionIndex);
-            if (collectionTtlCoverInterval(targetCollection, query.getFrom(), query.getTo())) {
+            long from = query.getFrom() != null ? query.getFrom() : 0;
+            long to = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
+            if (collectionTtlCoverInterval(targetCollection, from, to)) {
                 return targetCollection;
             }
         }
