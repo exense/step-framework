@@ -20,17 +20,17 @@ import java.util.stream.Stream;
 public class TimeSeriesAggregationPipeline {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesAggregationPipeline.class);
-    private Map<Long, TimeSeriesCollection> collectionsByResolution = new TreeMap<>();
     // resolution - array index
     private Map<Long, Integer> resolutionsIndexes = new HashMap<>();
     // sorted
     private final List<TimeSeriesCollection> collections;
+    private final List<Long> availableResolutions = new ArrayList<>();
 
     public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections) {
         this.collections = collections;
         for (int i = 0; i < collections.size(); i++) {
             TimeSeriesCollection collection = collections.get(i);
-            collectionsByResolution.put(collection.getResolution(), collection);
+            this.availableResolutions.add(collection.getResolution());
             resolutionsIndexes.put(collection.getResolution(), i);
         }
     }
@@ -80,7 +80,7 @@ public class TimeSeriesAggregationPipeline {
         return response;
     }
     
-    private long roundRequiredResolution(long targetResolution) {
+    private long roundDownToAvailableResolution(long targetResolution) {
         List<Long> availableResolutions = getAvailableResolutions();
         for (int i = 1; i < availableResolutions.size(); i++) {
             if (availableResolutions.get(i) > targetResolution) {
@@ -151,8 +151,8 @@ public class TimeSeriesAggregationPipeline {
             throw new IllegalArgumentException("Buckets resolution must be less than or equal to the minimum registered collection");
         }
         long idealResolution = getIdealResolution(query);
-        long targetResolution = this.roundRequiredResolution(idealResolution); // find an existing resolution close to it
-        int targetResolutionIndex = this.resolutionsIndexes.get(targetResolution);
+        long roundedResolution = this.roundDownToAvailableResolution(idealResolution);
+        int targetResolutionIndex = this.resolutionsIndexes.get(roundedResolution);
         for (int i = targetResolutionIndex; i > 0; i--) { // find the best resolution with valid TTL
             TimeSeriesCollection targetCollection = this.collections.get(targetResolutionIndex);
             long from = query.getFrom() != null ? query.getFrom() : 0;
@@ -196,7 +196,7 @@ public class TimeSeriesAggregationPipeline {
 
 
     public List<Long> getAvailableResolutions() {
-		return new ArrayList<>(collectionsByResolution.keySet());
+		return availableResolutions;
 	}
     
     public List<Long> drawAxis(TimeSeriesProcessedParams params) {

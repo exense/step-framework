@@ -29,7 +29,7 @@ public class TimeSeries {
         aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections);
     }
 
-    public void createMissingData() {
+    public void ingestDataForAllResolutions() {
         for (int i = 1; i < handledCollections.size(); i++) {
             TimeSeriesCollection collection = handledCollections.get(i);
             if (collection.isEmpty()) {

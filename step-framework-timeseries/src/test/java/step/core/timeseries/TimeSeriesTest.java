@@ -11,7 +11,6 @@ import step.core.collections.Filters;
 import step.core.collections.IndexField;
 import step.core.collections.Order;
 import step.core.collections.inmemory.InMemoryCollection;
-import step.core.collections.inmemory.InMemoryCollectionFactory;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 import step.core.ql.OQLFilterBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
@@ -157,7 +156,7 @@ public class TimeSeriesTest {
 
             collection100.getCollection().drop();
             assertEquals(0, collection100.getCollection().count(Filters.empty(), null));
-            timeSeries.createMissingData();
+            timeSeries.ingestDataForAllResolutions();
             assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
         }
         timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder().build());
