@@ -24,13 +24,11 @@ public class TimeSeriesAggregationPipeline {
     private Map<Long, Integer> resolutionsIndexes = new HashMap<>();
     // sorted
     private final List<TimeSeriesCollection> collections;
-    private final List<Long> availableResolutions = new ArrayList<>();
 
     public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections) {
         this.collections = collections;
         for (int i = 0; i < collections.size(); i++) {
             TimeSeriesCollection collection = collections.get(i);
-            this.availableResolutions.add(collection.getResolution());
             resolutionsIndexes.put(collection.getResolution(), i);
         }
     }
@@ -196,7 +194,7 @@ public class TimeSeriesAggregationPipeline {
 
 
     public List<Long> getAvailableResolutions() {
-		return availableResolutions;
+		return this.collections.stream().map(TimeSeriesCollection::getResolution).collect(Collectors.toList());
 	}
     
     public List<Long> drawAxis(TimeSeriesProcessedParams params) {
