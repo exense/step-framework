@@ -11,12 +11,14 @@ import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 import step.core.timeseries.query.TimeSeriesQuery;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
 import static step.core.timeseries.TimeSeriesConstants.TIMESTAMP_ATTRIBUTE;
 
-public class TimeSeries {
+public class TimeSeries implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeries.class);
 
@@ -105,4 +107,8 @@ public class TimeSeries {
         this.handledCollections.forEach(collection -> collection.removeData(query));
     }
 
+    @Override
+    public void close() {
+        this.handledCollections.forEach(c -> c.getIngestionPipeline().close());
+    }
 }
