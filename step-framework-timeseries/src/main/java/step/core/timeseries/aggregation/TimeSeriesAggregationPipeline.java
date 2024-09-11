@@ -34,7 +34,11 @@ public class TimeSeriesAggregationPipeline {
     }
 
     public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
-        TimeSeriesCollection targetCollection = chooseTargetCollection(query);
+        validateQuery(query);
+        long idealResolution = getIdealResolution(query);
+        long roundedResolution = this.roundDownToAvailableResolution(idealResolution);
+        TimeSeriesCollection targetCollection = chooseAvailableCollectionBasedOnTTL(roundedResolution, query);
+        boolean fallbackToHigherResolution = roundedResolution == targetCollection.getResolution();
         Collection<Bucket> selectedCollection = targetCollection.getCollection();
         long sourceResolution = targetCollection.getResolution();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
@@ -69,7 +73,7 @@ public class TimeSeriesAggregationPipeline {
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution());
+        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), fallbackToHigherResolution);
         if (query.getTo() != null) {
             // axis are calculated only when the interval is specified
             response.withAxis(drawAxis(finalParams));
@@ -143,23 +147,25 @@ public class TimeSeriesAggregationPipeline {
     private static long roundDownToMultiple(long value, long multiple) {
         return value - value % multiple;
     }
-    
-    private TimeSeriesCollection chooseTargetCollection(TimeSeriesAggregationQuery query) {
+
+    private void validateQuery(TimeSeriesAggregationQuery query) {
         if (query.getBucketsResolution() != null && query.getBucketsResolution() < collections.get(0).getResolution()) {
             throw new IllegalArgumentException("Buckets resolution must be less than or equal to the minimum registered collection");
         }
-        long idealResolution = getIdealResolution(query);
-        long roundedResolution = this.roundDownToAvailableResolution(idealResolution);
-        int targetResolutionIndex = this.resolutionsIndexes.get(roundedResolution);
-        for (int i = targetResolutionIndex; i > 0; i--) { // find the best resolution with valid TTL
-            TimeSeriesCollection targetCollection = this.collections.get(targetResolutionIndex);
+    }
+    
+    private TimeSeriesCollection chooseAvailableCollectionBasedOnTTL(long resolution, TimeSeriesAggregationQuery query) {
+
+        int targetResolutionIndex = this.resolutionsIndexes.get(resolution);
+        for (int i = targetResolutionIndex; i < this.collections.size(); i++) { // find the best resolution with valid TTL
+            TimeSeriesCollection targetCollection = this.collections.get(i);
             long from = query.getFrom() != null ? query.getFrom() : 0;
             long to = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
             if (collectionTtlCoverInterval(targetCollection, from, to)) {
                 return targetCollection;
             }
         }
-        return this.collections.get(0);
+        return this.collections.get(this.collections.size() - 1); // return highest resolution
     }
 
     private static long getIdealResolution(TimeSeriesAggregationQuery query) {

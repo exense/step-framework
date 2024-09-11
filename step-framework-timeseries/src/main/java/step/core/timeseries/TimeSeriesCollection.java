@@ -7,6 +7,7 @@ import step.core.collections.Filter;
 import step.core.collections.IndexField;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
+import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
@@ -24,24 +25,49 @@ public class TimeSeriesCollection {
     private long ttl; // set to 0 in case deletion is never required
 
     public TimeSeriesCollection(Collection<Bucket> collection, long resolution) {
-        this(collection, resolution, 0, new TimeSeriesIngestionPipeline(collection, resolution));
+        this(collection, new TimeSeriesCollectionSettings()
+                .setResolution(resolution)
+        );
     }
 
-    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl) {
-        this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution));
+    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long flushPeriod) {
+        this(collection, new TimeSeriesCollectionSettings()
+                .setResolution(resolution)
+                .setIngestionFlushingPeriodMs(flushPeriod)
+        );
     }
 
-    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, long ingestionFlushPeriodMs) {
-        this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution, ingestionFlushPeriodMs));
-    }
 
-
-    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, TimeSeriesIngestionPipeline ingestionPipeline) {
+    public TimeSeriesCollection(Collection<Bucket> collection, TimeSeriesCollectionSettings settings) {
         this.collection = collection;
-        this.resolution = resolution;
-        this.ttl = ttl;
-        this.ingestionPipeline = ingestionPipeline;
+        this.resolution = settings.getResolution();
+        this.ttl = settings.getTtl();
+        TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
+                .setResolution(settings.getResolution())
+                .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
+                .setMergeBucketsOnFlush(settings.isMergeBucketsOnIngestionFlush());
+        this.ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings);
     }
+
+//    public TimeSeriesCollection(Collection<Bucket> collection, long resolution) {
+//        this(collection, resolution, 0, new TimeSeriesIngestionPipeline(collection, resolution));
+//    }
+//
+//    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl) {
+//        this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution));
+//    }
+//
+//    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, long ingestionFlushPeriodMs) {
+//        this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution, ingestionFlushPeriodMs));
+//    }
+//
+//
+//    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, TimeSeriesIngestionPipeline ingestionPipeline) {
+//        this.collection = collection;
+//        this.resolution = resolution;
+//        this.ttl = ttl;
+//        this.ingestionPipeline = ingestionPipeline;
+//    }
 
     public boolean isEmpty() {
         return getCollection().estimatedCount() == 0;

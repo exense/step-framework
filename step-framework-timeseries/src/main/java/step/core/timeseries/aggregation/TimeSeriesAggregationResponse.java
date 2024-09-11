@@ -12,10 +12,12 @@ public class TimeSeriesAggregationResponse {
     private final Map<BucketAttributes, Map<Long, Bucket>> series;
 
     private final long resolution;
+    private final boolean higherResolutionUsed;
 
-    public TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution) {
+    public TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution, boolean higherResolutionUsed) {
         this.series = series;
         this.resolution = resolution;
+        this.higherResolutionUsed = higherResolutionUsed;
     }
 
     public TimeSeriesAggregationResponse withAxis(List<Long> axis) {
@@ -37,5 +39,9 @@ public class TimeSeriesAggregationResponse {
 
     public Map<Long, Bucket> getFirstSeries() {
         return series.values().stream().findFirst().get();
+    }
+
+    public boolean isHigherResolutionUsed() {
+        return higherResolutionUsed;
     }
 }

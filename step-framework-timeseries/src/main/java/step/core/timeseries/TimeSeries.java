@@ -9,11 +9,13 @@ import step.core.collections.SearchOrder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
+import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static step.core.timeseries.TimeSeriesConstants.TIMESTAMP_ATTRIBUTE;
@@ -38,7 +40,10 @@ public class TimeSeries implements Closeable {
                 String collectionName = collection.getCollection().getName();
                 logger.debug("Populating time-series collection: " + collectionName);
                 TimeSeriesCollection previousCollection = handledCollections.get(i - 1);
-                try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection.getCollection(), collection.getResolution(), 30000)) {
+                TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
+                        .setResolution(collection.getResolution())
+                        .setFlushingPeriodMs(TimeUnit.SECONDS.toMillis(30));
+                try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection.getCollection(), ingestionSettings)) {
                     SearchOrder searchOrder = new SearchOrder(TIMESTAMP_ATTRIBUTE, 1);
                     Filter filter = collection.getTtl() > 0 ? Filters.gte("begin", System.currentTimeMillis() - collection.getTtl()): Filters.empty();
 
@@ -47,12 +52,8 @@ public class TimeSeries implements Closeable {
                             .findLazy(filter, searchOrder, null, null, 0)) {
 
                         bucketStream.forEach(ingestionPipeline::ingestBucket);
-
-                    } catch (Exception e) {
-                        logger.error("Error during stream processing in {} collection. Dropping the entire collection...", collectionName, e);
-                        collection.getCollection().drop();
+                        ingestionPipeline.flush();
                     }
-                    ingestionPipeline.flush();
                 } catch (Exception e) {
                     logger.error("Error while populating {} collection. Dropping the entire collection...", collectionName, e);
                     collection.getCollection().drop();

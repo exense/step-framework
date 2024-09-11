@@ -352,7 +352,7 @@ public class TimeSeriesTest {
     private void testResolution(int resolutionMs, int expectedBucketCount) {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolutionMs, 0, resolutionMs);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolutionMs, resolutionMs);
         TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             for (int i = 0; i < 10; i++) {

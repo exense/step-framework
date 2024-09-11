@@ -50,21 +50,6 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         this.mergeBucketsOnFlush = settings.isMergeBucketsOnFlush();
     }
 
-//    public TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolution) {
-//        this.collection = collection;
-//        this.sourceResolution = resolution;
-//        this.scheduler = null;
-//        this.flushCallback = null;
-//    }
-//
-//
-//    public TimeSeriesIngestionPipeline(Collection<Bucket> collection, long resolution, long flushingPeriodInMs) {
-//        this.collection = collection;
-//        this.sourceResolution = resolution;
-//        scheduler = Executors.newScheduledThreadPool(1);
-//        scheduler.scheduleAtFixedRate(() -> flush(false), flushingPeriodInMs, flushingPeriodInMs, TimeUnit.MILLISECONDS);
-//    }
-//
     public TimeSeriesIngestionPipeline setFlushCallback(Consumer<Bucket> flushCallback) {
         this.flushCallback = flushCallback;
         return this;
@@ -165,9 +150,12 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             if (value instanceof Boolean) {
                 return Filters.equals(key, (boolean) value);
             } else if (value instanceof String) {
-                return Filters.equals(key, (boolean) value);
-            }
-            else throw new IllegalArgumentException(value.getClass().getSimpleName() + " is not a supported value type");
+                return Filters.equals(key, (String) value);
+            } else if (value instanceof Integer) {
+                return Filters.equals(key, (Integer) value);
+            } else if (value instanceof Long) {
+                return Filters.equals(key, (Long) value);
+            } else throw new IllegalArgumentException(value.getClass().getSimpleName() + " is not a supported value type");
         });
         return null;
     }
