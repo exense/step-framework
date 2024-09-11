@@ -51,7 +51,7 @@ public class TimeSeriesAggregationPipeline {
         try (Stream<Bucket> stream = selectedCollection.findLazy(filter, null, null, null, 0)) {
             stream.forEach(bucket -> {
                 bucketCount.increment();
-                BucketAttributes bucketAttributes = bucket.getAttributes();
+                BucketAttributes bucketAttributes = bucket.getAttributes() != null ? bucket.getAttributes() : new BucketAttributes();
 
                 BucketAttributes seriesKey;
                 if (CollectionUtils.isNotEmpty(finalParams.getGroupDimensions())) {
@@ -68,7 +68,7 @@ public class TimeSeriesAggregationPipeline {
         }
         long t2 = System.currentTimeMillis();
         if (logger.isDebugEnabled()) {
-            logger.info("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
+            logger.debug("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
         }
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->

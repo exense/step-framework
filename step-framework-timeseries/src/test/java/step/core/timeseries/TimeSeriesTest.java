@@ -35,10 +35,6 @@ public class TimeSeriesTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesTest.class);
 
-    private TimeSeries getNewTimeSeries() {
-        return this.getNewTimeSeries(10);
-    }
-
     private TimeSeries getNewTimeSeries(long resolution) {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolution);
@@ -228,7 +224,7 @@ public class TimeSeriesTest {
         long duration = 1000;
 
         int timeSeriesResolution = 100;
-        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, timeSeriesResolution, 0);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, timeSeriesResolution);
         TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
 

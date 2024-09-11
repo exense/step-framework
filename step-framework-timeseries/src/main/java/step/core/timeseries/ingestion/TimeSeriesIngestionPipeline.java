@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class TimeSeriesIngestionPipeline implements Closeable {
 
@@ -133,6 +134,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             if (foundBucket.isPresent()) {
                 Bucket existingBucket = foundBucket.get();
                 Bucket accumulatedBucket = new BucketBuilder(existingBucket.getBegin())
+                        .withAttributes(existingBucket.getAttributes())
                         .accumulate(existingBucket)
                         .accumulate(newBucket)
                         .build();
@@ -145,8 +147,9 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     }
 
     private Filter getAttributesFilter(BucketAttributes attributes) {
-        attributes.keySet().stream().map(key -> {
+        return Filters.and(attributes.keySet().stream().map(key -> {
             Object value = attributes.get(key);
+            key = "attributes." + key;
             if (value instanceof Boolean) {
                 return Filters.equals(key, (boolean) value);
             } else if (value instanceof String) {
@@ -156,8 +159,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             } else if (value instanceof Long) {
                 return Filters.equals(key, (Long) value);
             } else throw new IllegalArgumentException(value.getClass().getSimpleName() + " is not a supported value type");
-        });
-        return null;
+        }).collect(Collectors.toList()));
     }
 
     public long getFlushCount() {

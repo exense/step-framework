@@ -20,7 +20,9 @@ public class TimeSeriesHousekeepingTest {
     private TimeSeries getNewTimeSeries(long resolution) {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolution);
-        return new TimeSeries(Arrays.asList(collection));
+        return new TimeSeriesBuilder()
+                .registerCollection(collection)
+                .build();
     }
 
     @Test
@@ -41,8 +43,8 @@ public class TimeSeriesHousekeepingTest {
     public void ttlNotCoveringTest() {
         InMemoryCollection<Bucket> col1 = new InMemoryCollection<>();
         InMemoryCollection<Bucket> col2 = new InMemoryCollection<>();
-        TimeSeriesCollection tsCol1 = new TimeSeriesCollection(col1, 10, 10_000); // this live longer
-        TimeSeriesCollection tsCol2 = new TimeSeriesCollection(col2, 100, 40); // this should not cover the request
+        TimeSeriesCollection tsCol1 = new TimeSeriesCollection(col1, new TimeSeriesCollectionSettings().setResolution(10).setTtl(40)); // this live longer
+        TimeSeriesCollection tsCol2 = new TimeSeriesCollection(col2, new TimeSeriesCollectionSettings().setResolution(100).setTtl(10_000)); // this should not cover the request
         long now = System.currentTimeMillis();
         for (int i = 0; i < 5; i++) {
             Bucket bucket = new Bucket();
@@ -60,7 +62,7 @@ public class TimeSeriesHousekeepingTest {
                 .registerCollections(Arrays.asList(tsCol1, tsCol2))
                 .build();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 10000, now) // col2 collection should be ignored, even if it is the ideal target
+                .range(now - 1000, now) // col1 collection should be ignored, even if it is the ideal target
                 .split(1)
                 .withGroupDimensions(Set.of("col"))
                 .build();
@@ -69,9 +71,7 @@ public class TimeSeriesHousekeepingTest {
         BucketAttributes bucketAttributes = new ArrayList<>(response.keySet()).get(0);
 
         // all possible buckets belong to col2
-        Assert.assertEquals("1", bucketAttributes.get("col"));
-
-
+        Assert.assertEquals("2", bucketAttributes.get("col"));
     }
 
 }
