@@ -108,6 +108,10 @@ public class TimeSeries implements Closeable {
         this.handledCollections.forEach(collection -> collection.removeData(query));
     }
 
+    public List<TimeSeriesCollection> getCollections() {
+        return handledCollections;
+    }
+
     @Override
     public void close() {
         this.handledCollections.forEach(c -> c.getIngestionPipeline().close());

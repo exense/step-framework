@@ -49,6 +49,7 @@ public class TimeSeriesTest {
     @Test
     public void test() {
         TimeSeries timeSeries = getNewTimeSeries(1);
+        Assert.assertEquals(1, timeSeries.getCollections().size());
 
         // Create 1M buckets
         long nBuckets = 1_000_000L;
