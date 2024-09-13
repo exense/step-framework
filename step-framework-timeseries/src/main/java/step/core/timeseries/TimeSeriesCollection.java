@@ -49,26 +49,6 @@ public class TimeSeriesCollection {
         this.ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings);
     }
 
-//    public TimeSeriesCollection(Collection<Bucket> collection, long resolution) {
-//        this(collection, resolution, 0, new TimeSeriesIngestionPipeline(collection, resolution));
-//    }
-//
-//    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl) {
-//        this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution));
-//    }
-//
-//    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, long ingestionFlushPeriodMs) {
-//        this(collection, resolution, ttl, new TimeSeriesIngestionPipeline(collection, resolution, ingestionFlushPeriodMs));
-//    }
-//
-//
-//    public TimeSeriesCollection(Collection<Bucket> collection, long resolution, long ttl, TimeSeriesIngestionPipeline ingestionPipeline) {
-//        this.collection = collection;
-//        this.resolution = resolution;
-//        this.ttl = ttl;
-//        this.ingestionPipeline = ingestionPipeline;
-//    }
-
     public boolean isEmpty() {
         return getCollection().estimatedCount() == 0;
     }
