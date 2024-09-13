@@ -38,7 +38,7 @@ public class TimeSeriesAggregationPipeline {
         long idealResolution = getIdealResolution(query);
         long roundedResolution = this.roundDownToAvailableResolution(idealResolution);
         TimeSeriesCollection targetCollection = chooseAvailableCollectionBasedOnTTL(roundedResolution, query);
-        boolean fallbackToHigherResolution = roundedResolution == targetCollection.getResolution();
+        boolean fallbackToHigherResolution = roundedResolution != targetCollection.getResolution();
         Collection<Bucket> selectedCollection = targetCollection.getCollection();
         long sourceResolution = targetCollection.getResolution();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
