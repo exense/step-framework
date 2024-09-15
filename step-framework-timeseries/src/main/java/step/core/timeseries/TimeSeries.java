@@ -69,6 +69,15 @@ public class TimeSeries implements Closeable {
         return this.handledCollections.get(0);
     }
 
+    public boolean hasCollection(long resolution) {
+        for (TimeSeriesCollection collection: handledCollections) {
+            if (collection.getResolution() == resolution) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public TimeSeriesCollection getCollection(long resolution) {
         for (TimeSeriesCollection collection: handledCollections) {
             if (collection.getResolution() == resolution) {

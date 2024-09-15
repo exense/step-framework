@@ -22,7 +22,7 @@ public class TimeSeriesCollection {
     private final Collection<Bucket> collection;
     private final long resolution;
     private final TimeSeriesIngestionPipeline ingestionPipeline;
-    private long ttl; // set to 0 in case deletion is never required
+    private long ttl; // In milliseconds. set to 0 in case deletion is never required
 
     public TimeSeriesCollection(Collection<Bucket> collection, long resolution) {
         this(collection, new TimeSeriesCollectionSettings()
@@ -56,7 +56,7 @@ public class TimeSeriesCollection {
     public void performHousekeeping() {
         if (ttl > 0) {
             long cleanupRangeStart = 0;
-            long cleanupRangeEnd = System.currentTimeMillis();
+            long cleanupRangeEnd = System.currentTimeMillis() - ttl;
             TimeSeriesQuery query = new TimeSeriesQueryBuilder().range(cleanupRangeStart, cleanupRangeEnd).build();
             Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
             this.collection.remove(filter);
@@ -73,11 +73,11 @@ public class TimeSeriesCollection {
         return ttl;
     }
 
-    public void setTtl(long ttl) {
-        if (ttl < 0) {
+    public void setTtl(long ttlInMs) {
+        if (ttlInMs < 0) {
             throw new IllegalArgumentException("Negative ttl value is not allowed");
         }
-        this.ttl = ttl;
+        this.ttl = ttlInMs;
     }
 
     public void createIndexes(Set<IndexField> indexFields) {
