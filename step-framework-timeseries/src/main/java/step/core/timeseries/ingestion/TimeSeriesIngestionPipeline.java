@@ -140,10 +140,12 @@ public class TimeSeriesIngestionPipeline implements Closeable {
                         .build();
                 accumulatedBucket.setId(existingBucket.getId());
                 collection.save(accumulatedBucket);
-                return;
+            } else {
+                collection.save(newBucket);
             }
+        } else {
+            collection.save(newBucket);
         }
-        collection.save(newBucket);
     }
 
     private Filter getAttributesFilter(BucketAttributes attributes) {

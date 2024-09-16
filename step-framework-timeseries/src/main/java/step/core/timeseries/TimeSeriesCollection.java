@@ -81,7 +81,7 @@ public class TimeSeriesCollection {
     }
 
     public void createIndexes(Set<IndexField> indexFields) {
-        collection.createOrUpdateIndex("begin");
+        collection.createOrUpdateIndex(TimeSeriesConstants.TIMESTAMP_ATTRIBUTE);
         Set<IndexField> renamedFieldIndexes = indexFields.stream().map(i -> new IndexField("attributes." + i.fieldName,
                 i.order, i.fieldClass)).collect(Collectors.toSet());
         renamedFieldIndexes.forEach(collection::createOrUpdateIndex);

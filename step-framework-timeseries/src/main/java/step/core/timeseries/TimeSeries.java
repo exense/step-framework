@@ -13,7 +13,6 @@ import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -33,7 +32,13 @@ public class TimeSeries implements Closeable {
         aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections);
     }
 
-    public void ingestDataForAllResolutions() {
+    /**
+     * This method will ingest the data for all the resolutions which are empty.
+     * Each collection is ingesting the data from the previous collection only.
+     * <p>
+     * If this fails by any reason, the entire collection is dropped.
+     */
+    public void ingestDataForEmptyCollections() {
         for (int i = 1; i < handledCollections.size(); i++) {
             TimeSeriesCollection collection = handledCollections.get(i);
             if (collection.isEmpty()) {
@@ -70,21 +75,15 @@ public class TimeSeries implements Closeable {
     }
 
     public boolean hasCollection(long resolution) {
-        for (TimeSeriesCollection collection: handledCollections) {
-            if (collection.getResolution() == resolution) {
-                return true;
-            }
-        }
-        return false;
+        return handledCollections.stream().anyMatch(c -> c.getResolution() == resolution);
     }
 
     public TimeSeriesCollection getCollection(long resolution) {
-        for (TimeSeriesCollection collection: handledCollections) {
-            if (collection.getResolution() == resolution) {
-                return collection;
-            }
-        }
-        throw new IllegalArgumentException("Collection with resolution not found " + resolution);
+        return handledCollections
+                .stream()
+                .filter(collection -> collection.getResolution() == resolution)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Collection with resolution not found " + resolution));
     }
     
     public TimeSeriesIngestionPipeline getIngestionPipeline() {

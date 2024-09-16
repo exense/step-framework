@@ -21,7 +21,7 @@ public class TimeSeriesAggregationPipeline {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesAggregationPipeline.class);
     // resolution - array index
-    private Map<Long, Integer> resolutionsIndexes = new HashMap<>();
+    private final Map<Long, Integer> resolutionsIndexes = new HashMap<>();
     // sorted
     private final List<TimeSeriesCollection> collections;
 
@@ -73,7 +73,7 @@ public class TimeSeriesAggregationPipeline {
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), fallbackToHigherResolution);
+        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), targetCollection.getResolution(), fallbackToHigherResolution);
         if (query.getTo() != null) {
             // axis are calculated only when the interval is specified
             response.withAxis(drawAxis(finalParams));
@@ -155,12 +155,11 @@ public class TimeSeriesAggregationPipeline {
     }
     
     private TimeSeriesCollection chooseAvailableCollectionBasedOnTTL(long resolution, TimeSeriesAggregationQuery query) {
-
+        long from = query.getFrom() != null ? query.getFrom() : 0;
+        long to = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         int targetResolutionIndex = this.resolutionsIndexes.get(resolution);
         for (int i = targetResolutionIndex; i < this.collections.size(); i++) { // find the best resolution with valid TTL
             TimeSeriesCollection targetCollection = this.collections.get(i);
-            long from = query.getFrom() != null ? query.getFrom() : 0;
-            long to = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
             if (collectionTtlCoverInterval(targetCollection, from, to)) {
                 return targetCollection;
             }

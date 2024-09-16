@@ -153,7 +153,7 @@ public class TimeSeriesTest {
 
             collection100.getCollection().drop();
             assertEquals(0, collection100.getCollection().count(Filters.empty(), null));
-            timeSeries.ingestDataForAllResolutions();
+            timeSeries.ingestDataForEmptyCollections();
             assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
         }
         timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder().build());
