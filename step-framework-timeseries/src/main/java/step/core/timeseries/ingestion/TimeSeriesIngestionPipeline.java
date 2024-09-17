@@ -35,8 +35,9 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private final ConcurrentHashMap<Long, Map<Map<String, Object>, BucketBuilder>> seriesQueue = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private final LongAdder flushCount = new LongAdder();
-    private Consumer<Bucket> flushCallback;
     private final boolean mergeBucketsOnFlush;
+
+    private TimeSeriesIngestionPipeline nextPipeline;
 
     public TimeSeriesIngestionPipeline(Collection<Bucket> collection, TimeSeriesIngestionPipelineSettings settings) {
         this.collection = collection;
@@ -49,11 +50,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             scheduler = null;
         }
         this.mergeBucketsOnFlush = settings.isMergeBucketsOnFlush();
-    }
-
-    public TimeSeriesIngestionPipeline setFlushCallback(Consumer<Bucket> flushCallback) {
-        this.flushCallback = flushCallback;
-        return this;
+        this.nextPipeline = settings.getNextPipeline();
     }
 
     public long getResolution() {
@@ -110,8 +107,8 @@ public class TimeSeriesIngestionPipeline implements Closeable {
                     seriesQueue.remove(k).forEach((attributes, bucketBuilder) -> {
                         Bucket bucket = bucketBuilder.build();
                         saveOrMerge(bucket);
-                        if (flushCallback != null) {
-                            flushCallback.accept(bucket);
+                        if (nextPipeline != null) {
+                            nextPipeline.ingestBucket(bucket);
                         }
                     });
                 }
@@ -119,6 +116,9 @@ public class TimeSeriesIngestionPipeline implements Closeable {
 
             flushCount.increment();
             trace("Flushed");
+            if (flushAll && nextPipeline != null) {
+                nextPipeline.flush();
+            }
         } catch (Throwable e) {
             logger.error("Error while flushing", e);
         } finally {
@@ -184,5 +184,10 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         if (logger.isTraceEnabled()) {
             logger.trace(message);
         }
+    }
+
+    public TimeSeriesIngestionPipeline setNextPipeline(TimeSeriesIngestionPipeline nextPipeline) {
+        this.nextPipeline = nextPipeline;
+        return this;
     }
 }

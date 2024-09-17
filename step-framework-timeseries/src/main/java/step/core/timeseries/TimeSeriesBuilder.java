@@ -45,7 +45,7 @@ public class TimeSeriesBuilder {
 		for (int i = 0; i < handledCollections.size() - 1; i++) {
 			TimeSeriesIngestionPipeline pipeline = handledCollections.get(i).getIngestionPipeline();
 			TimeSeriesIngestionPipeline nextPipeline = handledCollections.get(i + 1).getIngestionPipeline();
-			pipeline.setFlushCallback((nextPipeline::ingestBucket));
+			pipeline.setNextPipeline(nextPipeline);
 		}
 	}
 	
