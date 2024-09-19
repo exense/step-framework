@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class TimeSeriesIngestionPipeline implements Closeable {
@@ -35,7 +34,6 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private final ConcurrentHashMap<Long, Map<Map<String, Object>, BucketBuilder>> seriesQueue = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private final LongAdder flushCount = new LongAdder();
-    private final boolean mergeBucketsOnFlush;
 
     private TimeSeriesIngestionPipeline nextPipeline;
 
@@ -49,7 +47,6 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         } else {
             scheduler = null;
         }
-        this.mergeBucketsOnFlush = settings.isMergeBucketsOnFlush();
         this.nextPipeline = settings.getNextPipeline();
     }
 
@@ -106,7 +103,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
                     // This enables concurrent execution of flushing and ingestion
                     seriesQueue.remove(k).forEach((attributes, bucketBuilder) -> {
                         Bucket bucket = bucketBuilder.build();
-                        saveOrMerge(bucket);
+                        collection.save(bucket);
                         if (nextPipeline != null) {
                             nextPipeline.ingestBucket(bucket);
                         }
@@ -124,44 +121,6 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         } finally {
             lock.writeLock().unlock();
         }
-    }
-
-    private void saveOrMerge(Bucket newBucket) {
-        if (mergeBucketsOnFlush) {
-            Equals beginFilter = Filters.equals("begin", newBucket.getBegin());
-            Filter attributesFilter = getAttributesFilter(newBucket.getAttributes());
-            Optional<Bucket> foundBucket = collection.find(Filters.and(Arrays.asList(beginFilter, attributesFilter)), null, null, null, 0).findAny();
-            if (foundBucket.isPresent()) {
-                Bucket existingBucket = foundBucket.get();
-                Bucket accumulatedBucket = new BucketBuilder(existingBucket.getBegin())
-                        .withAttributes(existingBucket.getAttributes())
-                        .accumulate(existingBucket)
-                        .accumulate(newBucket)
-                        .build();
-                accumulatedBucket.setId(existingBucket.getId());
-                collection.save(accumulatedBucket);
-            } else {
-                collection.save(newBucket);
-            }
-        } else {
-            collection.save(newBucket);
-        }
-    }
-
-    private Filter getAttributesFilter(BucketAttributes attributes) {
-        return Filters.and(attributes.keySet().stream().map(key -> {
-            Object value = attributes.get(key);
-            key = "attributes." + key;
-            if (value instanceof Boolean) {
-                return Filters.equals(key, (boolean) value);
-            } else if (value instanceof String) {
-                return Filters.equals(key, (String) value);
-            } else if (value instanceof Integer) {
-                return Filters.equals(key, (Integer) value);
-            } else if (value instanceof Long) {
-                return Filters.equals(key, (Long) value);
-            } else throw new IllegalArgumentException(value.getClass().getSimpleName() + " is not a supported value type");
-        }).collect(Collectors.toList()));
     }
 
     public long getFlushCount() {

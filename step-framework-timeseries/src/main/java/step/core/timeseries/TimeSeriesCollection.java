@@ -44,8 +44,7 @@ public class TimeSeriesCollection {
         this.ttl = settings.getTtl();
         TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
                 .setResolution(settings.getResolution())
-                .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
-                .setMergeBucketsOnFlush(settings.isMergeBucketsOnIngestionFlush());
+                .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs());
         this.ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings);
     }
 

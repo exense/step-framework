@@ -9,7 +9,6 @@ public class TimeSeriesIngestionPipelineSettings {
     private long resolution;
     private long flushingPeriodMs;
     private Consumer<Bucket> flushCallback; // optional callback to be triggered when a bucket is flushed
-    private boolean mergeBucketsOnFlush; // if true, the system will search and update the existing buckets instead of creating new ones
     private TimeSeriesIngestionPipeline nextPipeline; // optional
 
     public long getResolution() {
@@ -24,10 +23,6 @@ public class TimeSeriesIngestionPipelineSettings {
         return flushCallback;
     }
 
-    public boolean isMergeBucketsOnFlush() {
-        return mergeBucketsOnFlush;
-    }
-
     public TimeSeriesIngestionPipelineSettings setResolution(long resolution) {
         this.resolution = resolution;
         return this;
@@ -40,11 +35,6 @@ public class TimeSeriesIngestionPipelineSettings {
 
     public TimeSeriesIngestionPipelineSettings setFlushCallback(Consumer<Bucket> flushCallback) {
         this.flushCallback = flushCallback;
-        return this;
-    }
-
-    public TimeSeriesIngestionPipelineSettings setMergeBucketsOnFlush(boolean mergeBucketsOnFlush) {
-        this.mergeBucketsOnFlush = mergeBucketsOnFlush;
         return this;
     }
 
