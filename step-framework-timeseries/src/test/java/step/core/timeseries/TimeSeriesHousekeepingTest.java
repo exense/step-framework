@@ -15,15 +15,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
-public class TimeSeriesHousekeepingTest {
-
-    private TimeSeries getNewTimeSeries(long resolution) {
-        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolution);
-        return new TimeSeriesBuilder()
-                .registerCollection(collection)
-                .build();
-    }
+public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
 
     @Test
     public void simpleCleanupTest() {

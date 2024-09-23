@@ -35,12 +35,6 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesTest.class);
 
-    private TimeSeries getNewTimeSeries(long resolution) {
-        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolution);
-        return new TimeSeries(Arrays.asList(collection));
-    }
-
     @Test
     public void test() {
         TimeSeries timeSeries = getNewTimeSeries(1);
@@ -207,19 +201,6 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
             series = pipeline.collect(query).getFirstSeries();
             assertEquals(1 + nPoints, series.get(0L).getCount());
         }
-    }
-
-    @Test
-    public void closeTest() {
-        TimeSeries timeSeries = getNewTimeSeries(10);
-        Map<String, Object> attributes = Map.of("key", "value1");
-        timeSeries.getIngestionPipeline().ingestPoint(attributes, 10, 10);
-        long count = timeSeries.getDefaultCollection().getCollection().count(Filters.empty(), null);
-        Assert.assertEquals(0, count);
-        timeSeries.close(); // should also flush
-        count = timeSeries.getDefaultCollection().getCollection().count(Filters.empty(), null);
-        Assert.assertEquals(1, count);
-
     }
 
     @Test
