@@ -16,7 +16,7 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-public class TimeSeriesOQLTests {
+public class TimeSeriesOQLTest {
 
     @Test
     public void oqlAttributesTest() {

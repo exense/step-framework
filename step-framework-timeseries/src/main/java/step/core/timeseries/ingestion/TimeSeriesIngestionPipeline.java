@@ -87,6 +87,10 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     }
 
     // TODO flush method can be improved with a batcher (run when a specific timeout ends, or a specific amount of data is collected)
+
+    /**
+     * Flush will be triggered only on the specified ingestion. Other pipelines in the chain will not be flushed.
+     */
     public void flush() {
         flush(true);
     }
@@ -113,9 +117,6 @@ public class TimeSeriesIngestionPipeline implements Closeable {
 
             flushCount.increment();
             trace("Flushed");
-            if (flushAll && nextPipeline != null) {
-                nextPipeline.flush();
-            }
         } catch (Throwable e) {
             logger.error("Error while flushing", e);
         } finally {

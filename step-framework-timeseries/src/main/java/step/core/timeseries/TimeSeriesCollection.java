@@ -39,6 +39,9 @@ public class TimeSeriesCollection {
 
 
     public TimeSeriesCollection(Collection<Bucket> collection, TimeSeriesCollectionSettings settings) {
+        if (settings.getResolution() <= 0) {
+            throw new IllegalArgumentException("The resolution parameter must be greater than zero");
+        }
         this.collection = collection;
         this.resolution = settings.getResolution();
         this.ttl = settings.getTtl();

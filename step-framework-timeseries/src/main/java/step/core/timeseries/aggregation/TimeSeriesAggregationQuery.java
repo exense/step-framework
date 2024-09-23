@@ -5,9 +5,10 @@ import step.core.timeseries.query.TimeSeriesQuery;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.Function;
 
 public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
+
+    private TimeSeriesOptimizationType optimizationType;
 
     // Group
     private Set<String> groupDimensions;
@@ -28,6 +29,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     protected TimeSeriesAggregationQuery(
                                          Filter filter,
+                                         TimeSeriesOptimizationType optimizationType,
                                          Set<String> groupDimensions,
                                          Long bucketsResolution,
                                          Long from,
@@ -37,6 +39,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
                                          Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
         super(from, to, filter);
         this.shrink = shrink;
+        this.optimizationType = optimizationType;
         this.bucketsCount = bucketsCount;
         this.groupDimensions = groupDimensions;
         this.bucketsResolution = bucketsResolution;
@@ -86,5 +89,9 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     public TimeSeriesAggregationQuery setBucketsResolution(@Nullable Long bucketsResolution) {
         this.bucketsResolution = bucketsResolution;
         return this;
+    }
+
+    public TimeSeriesOptimizationType getOptimizationType() {
+        return optimizationType;
     }
 }

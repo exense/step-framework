@@ -11,6 +11,7 @@ import java.util.Set;
 
 public class TimeSeriesAggregationQueryBuilder {
 
+    private TimeSeriesOptimizationType optimizationType = TimeSeriesOptimizationType.MOST_EFFICIENT;
     private Set<String> groupDimensions = new HashSet<>();
     private Filter filter = Filters.empty();
     private Long from;
@@ -20,6 +21,11 @@ public class TimeSeriesAggregationQueryBuilder {
     private Integer bucketsCount;
     private Set<String> collectAttributeKeys;
     private int collectAttributesValuesLimit;
+
+    public TimeSeriesAggregationQueryBuilder withOptimizationType(TimeSeriesOptimizationType optimizationType) {
+        this.optimizationType = optimizationType;
+        return this;
+    }
 
     public TimeSeriesAggregationQueryBuilder withGroupDimensions(Set<String> groupDimensions) {
         this.groupDimensions = groupDimensions;
@@ -82,7 +88,7 @@ public class TimeSeriesAggregationQueryBuilder {
      */
     public TimeSeriesAggregationQuery build() {
         this.from = this.from != null ? this.from : 0;
-        return new TimeSeriesAggregationQuery(filter, groupDimensions, this.proposedResolution, this.from, this.to, shrink, this.bucketsCount, collectAttributeKeys, collectAttributesValuesLimit);
+        return new TimeSeriesAggregationQuery(filter, optimizationType, groupDimensions, this.proposedResolution, this.from, this.to, shrink, this.bucketsCount, collectAttributeKeys, collectAttributesValuesLimit);
     }
 
 

@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import static org.junit.Assert.*;
 
-public class TimeSeriesTest {
+public class TimeSeriesTest extends TimeSeriesBaseTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesTest.class);
 
@@ -39,11 +39,6 @@ public class TimeSeriesTest {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolution);
         return new TimeSeries(Arrays.asList(collection));
-    }
-
-    private TimeSeriesCollection getCollection(long resolution) {
-        InMemoryCollection<Bucket> collection = new InMemoryCollection<>();
-        return new TimeSeriesCollection(collection, resolution, 0);
     }
 
     @Test
@@ -212,6 +207,19 @@ public class TimeSeriesTest {
             series = pipeline.collect(query).getFirstSeries();
             assertEquals(1 + nPoints, series.get(0L).getCount());
         }
+    }
+
+    @Test
+    public void closeTest() {
+        TimeSeries timeSeries = getNewTimeSeries(10);
+        Map<String, Object> attributes = Map.of("key", "value1");
+        timeSeries.getIngestionPipeline().ingestPoint(attributes, 10, 10);
+        long count = timeSeries.getDefaultCollection().getCollection().count(Filters.empty(), null);
+        Assert.assertEquals(0, count);
+        timeSeries.close(); // should also flush
+        count = timeSeries.getDefaultCollection().getCollection().count(Filters.empty(), null);
+        Assert.assertEquals(1, count);
+
     }
 
     @Test

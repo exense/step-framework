@@ -35,12 +35,17 @@ public class TimeSeriesAggregationPipeline {
 
     public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         validateQuery(query);
-        long idealResolution = getIdealResolution(query);
-        long roundedResolution = this.roundDownToAvailableResolution(idealResolution);
-        TimeSeriesCollection targetCollection = chooseAvailableCollectionBasedOnTTL(roundedResolution, query);
-        boolean fallbackToHigherResolution = roundedResolution != targetCollection.getResolution();
-        Collection<Bucket> selectedCollection = targetCollection.getCollection();
-        long sourceResolution = targetCollection.getResolution();
+        long idealResolution = 0;
+        if (query.getOptimizationType() == TimeSeriesOptimizationType.MOST_ACCURATE) {
+            idealResolution = collections.get(0).getResolution(); // first collection with the best resolution
+        } else { // most efficient
+            idealResolution = this.roundDownToAvailableResolution(getIdealResolution(query));
+        }
+        TimeSeriesCollection availableTargetCollection = chooseAvailableCollectionBasedOnTTL(idealResolution, query);
+        boolean fallbackToHigherResolutionWithValidTTL = idealResolution != availableTargetCollection.getResolution();
+
+        Collection<Bucket> selectedCollection = availableTargetCollection.getCollection();
+        long sourceResolution = availableTargetCollection.getResolution();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
 
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
@@ -73,7 +78,7 @@ public class TimeSeriesAggregationPipeline {
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), targetCollection.getResolution(), fallbackToHigherResolution);
+        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), availableTargetCollection.getResolution(), fallbackToHigherResolutionWithValidTTL);
         if (query.getTo() != null) {
             // axis are calculated only when the interval is specified
             response.withAxis(drawAxis(finalParams));
