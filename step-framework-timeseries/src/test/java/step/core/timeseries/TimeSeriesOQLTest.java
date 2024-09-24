@@ -5,15 +5,18 @@ import org.junit.Test;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.ql.OQLFilterBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
+import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
+import step.core.timeseries.aggregation.TimeSeriesAggregationQueryBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 import step.core.timeseries.query.OQLTimeSeriesFilterBuilder;
 
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-public class TimeSeriesOQLTests {
+public class TimeSeriesOQLTest {
 
     @Test
     public void oqlAttributesTest() {
@@ -26,9 +29,10 @@ public class TimeSeriesOQLTests {
     @Test
     public void oqlTestWithoutFilter() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
 
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "FAILED"), 2L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "PASSED"), 1L, 10L);
@@ -36,21 +40,23 @@ public class TimeSeriesOQLTests {
         }
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        TimeSeriesAggregationResponse response = pipeline.newQueryBuilder()
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(0, 3)
                 .withGroupDimensions(Set.of("status"))
                 .withFilter(OQLFilterBuilder.getFilter("attributes.name = t1"))
-                .build()
-                .run();
+                .build();
+        TimeSeriesAggregationResponse response = pipeline.collect(query);
+
         assertEquals(2, response.getSeries().size());
     }
 
     @Test
     public void oqlTestWithFilter() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
 
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "FAILED"), 2L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "PASSED"), 1L, 10L);
@@ -58,12 +64,12 @@ public class TimeSeriesOQLTests {
         }
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        TimeSeriesAggregationResponse response = pipeline.newQueryBuilder()
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(0, 3)
                 .withGroupDimensions(Set.of("status"))
                 .withFilter(OQLFilterBuilder.getFilter("attributes.status = FAILED and attributes.name = t1"))
-                .build()
-                .run();
+                .build();
+        TimeSeriesAggregationResponse response = pipeline.collect(query);
         assertEquals(1, response.getSeries().size());
     }
 

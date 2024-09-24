@@ -8,14 +8,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
 import step.core.collections.Filters;
+import step.core.collections.IndexField;
+import step.core.collections.Order;
 import step.core.collections.inmemory.InMemoryCollection;
-import step.core.collections.inmemory.InMemoryCollectionFactory;
 import step.core.collections.mongodb.MongoDBCollectionFactory;
 import step.core.ql.OQLFilterBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
+import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
+import step.core.timeseries.aggregation.TimeSeriesAggregationQueryBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
+import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
@@ -27,14 +31,14 @@ import java.util.concurrent.atomic.LongAdder;
 
 import static org.junit.Assert.*;
 
-public class TimeSeriesTest {
+public class TimeSeriesTest extends TimeSeriesBaseTest {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesTest.class);
 
     @Test
     public void test() {
-        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
+        TimeSeries timeSeries = getNewTimeSeries(1);
+        Assert.assertEquals(1, timeSeries.getCollections().size());
 
         // Create 1M buckets
         long nBuckets = 1_000_000L;
@@ -45,50 +49,111 @@ public class TimeSeriesTest {
             entity.setMin(-i - 1);
             entity.setMax(i + 1);
             entity.setAttributes(new BucketAttributes(Map.of()));
-            bucketCollection.save(entity);
+            timeSeries.getDefaultCollection().getCollection().save(entity);
         }
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         // Query the time series with resolution = bucket size
-        Map<Long, Bucket> query = pipeline.newQueryBuilder().range(0, nBuckets * 1000)
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, nBuckets * 1000)
                 .window(1000)
-                .build()
-                .run()
-                .getSeries()
-                .get(new BucketAttributes(Map.of()));
-        assertEquals(nBuckets, query.size());
+                .build();
+
+        Map<Long, Bucket> responseSeries = pipeline.collect(query).getSeries().get(new BucketAttributes(Map.of()));
+        assertEquals(nBuckets, responseSeries.size());
         // Get the 2nd bucket
-        Bucket actual = query.get(1000L);
+        Bucket actual = responseSeries.get(1000L);
         assertEquals(1000, actual.getBegin());
         assertEquals(1, actual.getCount());
 
         // Query the time series with resolution = bucket size on a smaller time frame
-        query = pipeline.newQueryBuilder().range(1000, (nBuckets - 2) * 1000).window(1000).build().run().getSeries().get(new BucketAttributes(Map.of()));
-        assertEquals(nBuckets - 3, query.size()); // -2 in the end an -1 in the beginning
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(1000, (nBuckets - 2) * 1000)
+                .window(1000)
+                .build();
+        responseSeries = pipeline.collect(query).getSeries().get(new BucketAttributes(Map.of()));
+        assertEquals(nBuckets - 3, responseSeries.size()); // -2 in the end an -1 in the beginning
 
         // Query the time series with resolution = size of the whole time frame
-        query = pipeline.newQueryBuilder().range(0, nBuckets * 1000).window(nBuckets * 1000).build().run().getSeries().get(new BucketAttributes(Map.of()));
-        assertEquals(1, query.size());
-        Bucket bucket = query.get(0L);
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, nBuckets * 1000)
+                .window(nBuckets * 1000)
+                .build();
+        responseSeries = pipeline.collect(query).getSeries().get(new BucketAttributes(Map.of()));
+        assertEquals(1, responseSeries.size());
+        Bucket bucket = responseSeries.get(0L);
         assertEquals(nBuckets, bucket.getCount());
         assertEquals(nBuckets * 5, bucket.getSum());
         assertEquals(-nBuckets, bucket.getMin());
         assertEquals(nBuckets, bucket.getMax());
 
         // Query the time series with resolution = 2 x bucket size
-        query = pipeline.newQueryBuilder().range(0, nBuckets * 1000).window(2000).build().run().getSeries().get(new BucketAttributes(Map.of()));
-        assertEquals(nBuckets / 2, query.size());
-        assertEquals(2, query.get(0L).getCount());
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, nBuckets * 1000)
+                .window(2000)
+                .build();
+        responseSeries = pipeline.collect(query).getSeries().get(new BucketAttributes(Map.of()));
+        assertEquals(nBuckets / 2, responseSeries.size());
+        assertEquals(2, responseSeries.get(0L).getCount());
 
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidResolutionsTest() {
+        TimeSeriesCollection collection = getCollection(1);
+        collection.createIndexes(Set.of(new IndexField("name", Order.ASC, String.class)));
+        Assert.assertEquals(0, collection.getTtl());
+        Assert.assertTrue(collection.isEmpty());
+        new TimeSeriesBuilder()
+                .registerCollections(Arrays.asList(
+                                collection,
+                                getCollection(10),
+                                getCollection(95)  // should fail
+                        )
+                )
+                .build();
+
+    }
+
+    @Test
+    public void dataIngestionAndPopulationTest() {
+        TimeSeriesCollection collection1 = getCollection(1);
+        TimeSeriesCollection collection10 = getCollection(10);
+        TimeSeriesCollection collection100 = getCollection(100);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollection(collection1)
+                .registerCollection(collection10)
+                .registerCollection(collection100)
+                .build();
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
+            int nPoints = 10000;
+            Map<String, Object> attributes = Map.of("key", "value");
+            for (int i = 0; i < nPoints; i++) {
+                ingestionPipeline.ingestPoint(attributes, i, 10L);
+            }
+            ingestionPipeline.flush();
+            assertEquals(nPoints, collection1.getCollection().count(Filters.empty(), null));
+
+            collection10.getIngestionPipeline().flush();
+            assertEquals(nPoints / 10, collection10.getCollection().count(Filters.empty(), null));
+
+            collection100.getIngestionPipeline().flush();
+            assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
+
+            collection100.getCollection().drop();
+            assertEquals(0, collection100.getCollection().count(Filters.empty(), null));
+            timeSeries.ingestDataForEmptyCollections();
+            assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
+        }
+        timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder().build());
     }
 
     @Test
     public void ingestionPipeline() {
         // Create ingestion pipeline
-        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 100);
+        TimeSeries timeSeries = getNewTimeSeries(100);
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             // Ingest 1M points in series 1
             int nPoints = 1000000;
             Map<String, Object> attributes = Map.of("key", "value1");
@@ -111,16 +176,30 @@ public class TimeSeriesTest {
             assertEquals(2, ingestionPipeline.getFlushCount());
 
             // Query series 1
-//            Map<Long, Bucket> series = pipeline.newQueryBuilder().range(0L, 10L).withFilter(attributes).window(1000).run().getFirstSeries();
-//            assertEquals(nPoints, series.get(0L).getCount());
+            TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                    .range(0, 10L)
+                    .window(1000)
+                    .withFilter(attributes)
+                    .build();
+            Map<Long, Bucket> series = pipeline.collect(query).getFirstSeries();
+            assertEquals(nPoints, series.get(0L).getCount());
 
             // Query series 2
-//            series = pipeline.newQueryBuilder().range(0L, 10L).withFilter(attributes2).window(1000).run().getFirstSeries();
-//            assertEquals(1, series.get(0L).getCount());
+            query = new TimeSeriesAggregationQueryBuilder()
+                    .range(0, 10L)
+                    .window(1000)
+                    .withFilter(attributes2)
+                    .build();
+            series = pipeline.collect(query).getFirstSeries();
+            assertEquals(1, series.get(0L).getCount());
 
             // Query both series grouped together
-//            series = pipeline.newQueryBuilder().range(0L, 10L).window(1000).run().getFirstSeries();
-//            assertEquals(1 + nPoints, series.get(0L).getCount());
+            query = new TimeSeriesAggregationQueryBuilder()
+                    .range(0, 10L)
+                    .window(1000)
+                    .build();
+            series = pipeline.collect(query).getFirstSeries();
+            assertEquals(1 + nPoints, series.get(0L).getCount());
         }
     }
 
@@ -135,7 +214,8 @@ public class TimeSeriesTest {
         long duration = 1000;
 
         int timeSeriesResolution = 100;
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, timeSeriesResolution);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, timeSeriesResolution);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
 
         long start;
@@ -144,7 +224,7 @@ public class TimeSeriesTest {
         Map<String, Object> attributes = Map.of("key", "value1");
         Map<String, Object> attributes2 = Map.of("key", "value2");
 
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline(10)) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
             start = System.currentTimeMillis();
             for (int j = 0; j < nThreads; j++) {
@@ -165,35 +245,35 @@ public class TimeSeriesTest {
 
         long now = System.currentTimeMillis();
         // With a resolution equal to (now-start) the query can return 1 or 2 buckets
-        Map<Long, Bucket> series1 = aggregationPipeline.newQueryBuilder().withFilter(TimeSeriesFilterBuilder.buildFilter(attributes)).range(start, now).window(now - start).build().run().getFirstSeries();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .withFilter(attributes)
+                .range(start, now)
+                .window(now - start)
+                .build();
+        Map<Long, Bucket> series1 = aggregationPipeline.collect(query).getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() <= 2);
 
         // Split in 1 point
-        series1 = aggregationPipeline
-                .newQueryBuilder()
-                .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes))
+        query = new TimeSeriesAggregationQueryBuilder()
+                .withFilter(attributes)
                 .range(start, now)
                 .split(1)
-                .build()
-                .run()
-                .getFirstSeries();
+                .build();
+        series1 = aggregationPipeline.collect(query).getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertEquals(1, series1.size());
         Bucket firstBucket = series1.values().stream().findFirst().get();
-        long modulo = now % timeSeriesResolution;
-        long expectedEndBucket = (modulo > 0) ? (now - modulo + timeSeriesResolution) : now;
-        assertEquals(expectedEndBucket, (long) firstBucket.getEnd());
+        assertEquals(now - now % timeSeriesResolution + timeSeriesResolution, (long) firstBucket.getEnd());
         assertEquals(start - start % timeSeriesResolution, firstBucket.getBegin());
 
         // Split in 2 points
-        TimeSeriesAggregationResponse response = aggregationPipeline
-                .newQueryBuilder()
-                .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes))
+        query = new TimeSeriesAggregationQueryBuilder()
+                .withFilter(attributes)
                 .range(start, now)
                 .split(2)
-                .build()
-                .run();
+                .build();
+        TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         series1 = response.getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() <=3);
@@ -201,37 +281,32 @@ public class TimeSeriesTest {
         assertEquals(response.getResolution(), firstBucket.getEnd() - firstBucket.getBegin());
 
         // Use source resolution
-        series1 = aggregationPipeline
-                .newQueryBuilder()
+        query = new TimeSeriesAggregationQueryBuilder()
                 .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes))
-                .range(start, now).build()
-                .run()
-                .getFirstSeries();
+                .range(start, now)
+                .build();
+        series1 = aggregationPipeline.collect(query).getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
-        assertTrue(series1.size() >= duration / timeSeriesResolution);
+        assertTrue(series1.size() > duration / timeSeriesResolution);
 
         // Use double source resolution
         int window = timeSeriesResolution * 2;
-        series1 = aggregationPipeline
-                .newQueryBuilder()
+        query = new TimeSeriesAggregationQueryBuilder()
                 .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes))
                 .range(start, now)
                 .window(window)
-                .build()
-                .run()
-                .getFirstSeries();
+                .build();
+        series1 = aggregationPipeline.collect(query).getFirstSeries();
         assertEquals(count.longValue(), countPoints(series1));
         assertTrue(series1.size() > duration / window);
 
         // Use
-        Map<Long, Bucket> series2 = aggregationPipeline
-                .newQueryBuilder()
+        query = new TimeSeriesAggregationQueryBuilder()
                 .withFilter(TimeSeriesFilterBuilder.buildFilter(attributes2))
                 .range(start, now)
                 .window(now - start)
-                .build()
-                .run()
-                .getFirstSeries();
+                .build();
+        Map<Long, Bucket> series2 = aggregationPipeline.collect(query).getFirstSeries();
         assertEquals(count.longValue(), countPoints(series2));
         assertTrue(series2.size() <= 2);
     }
@@ -263,8 +338,9 @@ public class TimeSeriesTest {
     private void testResolution(int resolutionMs, int expectedBucketCount) {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, resolutionMs);
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline(resolutionMs)) {
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolutionMs, resolutionMs);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             for (int i = 0; i < 10; i++) {
                 ingestionPipeline.ingestPoint(Map.of(), i, 0L);
             }
@@ -272,7 +348,10 @@ public class TimeSeriesTest {
         // Assert the number of buckets persisted in the collection
         assertEquals(expectedBucketCount, bucketCollection.estimatedCount());
         // Assert the number of buckets after querying the time series
-        Map<Long, Bucket> firstSeries = timeSeries.getAggregationPipeline().newQueryBuilder().build().run().getFirstSeries();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .build();
+
+        Map<Long, Bucket> firstSeries = timeSeries.getAggregationPipeline().collect(query).getFirstSeries();
         assertEquals(expectedBucketCount, firstSeries.size());
     }
 
@@ -285,14 +364,19 @@ public class TimeSeriesTest {
     private void testQueryWithNumberOfPoints(int numberOfBuckets) {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             for (int i = 0; i < 10; i++) {
                 ingestionPipeline.ingestPoint(Map.of(), i, 0L);
             }
         }
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        TimeSeriesAggregationResponse response = pipeline.newQueryBuilder().range(0, 10).split(numberOfBuckets).build().run();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 10)
+                .split(numberOfBuckets)
+                .build();
+        TimeSeriesAggregationResponse response = pipeline.collect(query);
         Map<Long, Bucket> result = response.getFirstSeries();
         assertEquals(numberOfBuckets, result.size());
         assertEquals(10, countPoints(result));
@@ -303,43 +387,83 @@ public class TimeSeriesTest {
     public void testAxis() {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             for (int i = 0; i < 10; i++) {
                 ingestionPipeline.ingestPoint(Map.of(), i, 0L);
             }
         }
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationResponse response;
-
-        response = pipeline.newQueryBuilder().range(0, 10).window(5).build().run();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 10)
+                .window(5)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(0L, 5L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(0, 9).window(5).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 9)
+                .window(5)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(0L, 5L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(1, 9).window(5).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(1, 9)
+                .window(5)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(1L, 6L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(0, 10).split(1).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 10)
+                .split(1)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(0L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(0, 9).split(2).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 9)
+                .split(2)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(0L, 5L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(1, 3).split(2).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(1, 3)
+                .split(2)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(1L, 2L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(0, 5).window(1).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 5)
+                .window(1)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(0L, 1L, 2L, 3L, 4L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(0, 5).window(2).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 5)
+                .window(2)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(0L, 2L, 4L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(0, 5).split(2).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 5)
+                .split(2)
+                .build();
+        response = pipeline.collect(query);
         assertEquals(Arrays.asList(0L, 3L), response.getAxis());
 
-        response = pipeline.newQueryBuilder().range(1, 5).split(2).build().run();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(1, 5)
+                .split(2)
+                .build();
+        response = pipeline.collect(query);;
         assertEquals(Arrays.asList(1L, 3L), response.getAxis());
         Map<Long, Bucket> firstSeries = response.getFirstSeries();
         assertEquals(2, firstSeries.get(1L).getCount());
@@ -349,9 +473,10 @@ public class TimeSeriesTest {
     @Test
     public void testWithGroupDimensions() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 10);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 10);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
 
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "FAILED"), 2L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "PASSED"), 1L, 10L);
@@ -360,21 +485,43 @@ public class TimeSeriesTest {
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         // Group
-        Map<BucketAttributes, Map<Long, Bucket>> result = pipeline.newQueryBuilder().range(0, 10).withGroupDimensions(Set.of()).window(10).build().run().getSeries();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 10)
+                .withGroupDimensions(Set.of())
+                .window(10)
+                .build();
+        Map<BucketAttributes, Map<Long, Bucket>> result = pipeline.collect(query).getSeries();
         assertEquals(4, countPoints(result.get(Map.of())));
 
         // Group by name
-        result = pipeline.newQueryBuilder().range(0, 10).withGroupDimensions(Set.of("name")).window(10).build().run().getSeries();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 10)
+                .withGroupDimensions(Set.of("name"))
+                .window(10)
+                .build();
+        result = pipeline.collect(query).getSeries();
         assertEquals(2, countPoints(result.get(Map.of("name", "transaction1"))));
         assertEquals(2, countPoints(result.get(Map.of("name", "transaction2"))));
 
         // Filter status = PASSED and group by name
-        result = pipeline.newQueryBuilder().range(0, 10).withFilter(TimeSeriesFilterBuilder.buildFilter(Map.of("status", "PASSED"))).withGroupDimensions(Set.of("name")).window(10).build().run().getSeries();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 10)
+                .withGroupDimensions(Set.of("name"))
+                .window(10)
+                .withFilter(Map.of("status", "PASSED"))
+                .build();
+        result = pipeline.collect(query).getSeries();
         assertEquals(1, countPoints(result.get(Map.of("name", "transaction1"))));
         assertEquals(1, countPoints(result.get(Map.of("name", "transaction2"))));
 
         // Filter status = PASSED and group by name
-        result = pipeline.newQueryBuilder().range(0, 2).withFilter(TimeSeriesFilterBuilder.buildFilter(Map.of("status", "FAILED"))).withGroupDimensions(Set.of("name", "status")).window(10).build().run().getSeries();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 2)
+                .withGroupDimensions(Set.of("name", "status"))
+                .window(10)
+                .withFilter(Map.of("status", "FAILED"))
+                .build();
+        result = pipeline.collect(query).getSeries();
         assertEquals(1, countPoints(result.get(Map.of("name", "transaction1", "status", "FAILED"))));
         assertEquals(1, countPoints(result.get(Map.of("name", "transaction2", "status", "FAILED"))));
         assertNull(result.get(Map.of("name", "transaction1", "status", "PASSED")));
@@ -384,9 +531,10 @@ public class TimeSeriesTest {
     @Test
     public void testConfiguration() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
 
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "FAILED"), 2L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "PASSED"), 1L, 10L);
@@ -396,45 +544,62 @@ public class TimeSeriesTest {
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
 
         // No parameter
-        Map<BucketAttributes, Map<Long, Bucket>> result = pipeline.newQueryBuilder().build().run().getSeries();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .build();
+
+        Map<BucketAttributes, Map<Long, Bucket>> result = pipeline.collect(query).getSeries();
         // Expecting 0 dimension grouping
         assertEquals(4, countPoints(result.get(Map.of())));
 
-        Map<Long, Bucket> series = pipeline.newQueryBuilder().build().run().getFirstSeries();
+        Map<Long, Bucket> series = pipeline.collect(query).getFirstSeries();
         assertEquals(4, countPoints(series));
 
         // Range only
-        result = pipeline.newQueryBuilder().range(10, 10).build().run().getSeries();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(10, 10)
+                .build();
+        result = pipeline.collect(query).getSeries();
         assertEquals(0, result.size());
 
         // Filter only
-        result = pipeline.newQueryBuilder().build().run().getSeries();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .build();
+        result = pipeline.collect(query).getSeries();
         assertEquals(1, result.size());
 
         // Group
-        result = pipeline.newQueryBuilder().withGroupDimensions(Set.of()).build().run().getSeries();
-        assertEquals(1, result.size());
-
-        // Group by
-        result = pipeline.newQueryBuilder().withGroupDimensions(Set.of()).build().run().getSeries();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .withGroupDimensions(Set.of())
+                .build();
+        result = pipeline.collect(query).getSeries();
         assertEquals(1, result.size());
 
         // Window
-        result = pipeline.newQueryBuilder().withGroupDimensions(Set.of("name")).range(0, 2).window(10).build().run().getSeries();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .withGroupDimensions(Set.of("name"))
+                .range(0, 2)
+                .window(10)
+                .build();
+        result = pipeline.collect(query).getSeries();
         assertEquals(1, result.get(Map.of("name", "transaction1")).size());
 
         // Split
-        assertThrows(IllegalArgumentException.class, () -> pipeline.newQueryBuilder().split(2).build().run());
-        result = pipeline.newQueryBuilder().withGroupDimensions(Set.of("name")).range(0, 2).split(1).build().run().getSeries();
+        query = new TimeSeriesAggregationQueryBuilder()
+                .withGroupDimensions(Set.of("name"))
+                .range(0, 2)
+                .split(1)
+                .build();
+        result = pipeline.collect(query).getSeries();
         assertEquals(1, result.get(Map.of("name", "transaction1")).size());
     }
 
     @Test
     public void testHousekeeping() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
 
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "PASSED"), 1L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "transaction1", "status", "FAILED"), 2L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "transaction2", "status", "PASSED"), 1L, 10L);
@@ -455,9 +620,10 @@ public class TimeSeriesTest {
     @Test
     public void oqlTestWithoutFilter() {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeries timeSeries = new TimeSeries(bucketCollection, 1);
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
 
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "FAILED"), 2L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "PASSED"), 1L, 10L);
@@ -465,21 +631,22 @@ public class TimeSeriesTest {
         }
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        TimeSeriesAggregationResponse response = pipeline.newQueryBuilder()
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(0, 3)
                 .withGroupDimensions(Set.of("status"))
                 .withFilter(OQLFilterBuilder.getFilter("attributes.name = t1"))
-                .build()
-                .run();
+                .build();
+        TimeSeriesAggregationResponse response = pipeline.collect(query);
         assertEquals(2, response.getSeries().size());
     }
 
     @Test
     public void oqlTestWithFilter() {
-        InMemoryCollectionFactory collectionFactory = new InMemoryCollectionFactory(new Properties());
-        TimeSeries timeSeries = new TimeSeries(collectionFactory, "buckets", 1);
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
 
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.newIngestionPipeline()) {
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "FAILED"), 2L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "PASSED"), 1L, 10L);
@@ -487,21 +654,62 @@ public class TimeSeriesTest {
         }
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
-        TimeSeriesAggregationResponse response = pipeline.newQueryBuilder()
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(0, 3)
                 .withGroupDimensions(Set.of("status"))
                 .withFilter(OQLFilterBuilder.getFilter("attributes.name = t1 and attributes.status = FAILED"))
-                .build()
-                .run();
+                .build();
+        TimeSeriesAggregationResponse response = pipeline.collect(query);
         assertEquals(1, response.getSeries().size());
     }
 
     @Test
-    public void collectionFactoryConstructorTest() {
-        Properties properties = new Properties();
-        InMemoryCollectionFactory inMemoryCollectionFactory = new InMemoryCollectionFactory(properties);
-        TimeSeries timeSeries = new TimeSeries(inMemoryCollectionFactory, "buckets", 1000);
-        TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
+    public void specificResolutionRequest() {
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, 100)
+                .window(20)
+                .build();
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(query);
+        assertEquals(5, response.getAxis().size());
+    }
+
+    @Test
+    public void getCollectionByResolution() {
+        TimeSeriesCollection col1 = getCollection(10);
+        TimeSeriesCollection col2 = getCollection(20);
+        TimeSeriesCollection col3 = getCollection(40);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollections(Arrays.asList(col2, col1, col3))
+                .build();
+        TimeSeriesCollection defaultCollection = timeSeries.getDefaultCollection();
+        Assert.assertEquals(col1.getResolution(), defaultCollection.getResolution());
+        Assert.assertEquals(10, timeSeries.getCollection(10).getResolution());
+        Assert.assertEquals(20, timeSeries.getCollection(20).getResolution());
+        Assert.assertEquals(40, timeSeries.getCollection(40).getResolution());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void timeSeriesWithDuplicateCollectionResolution() {
+        TimeSeriesCollection col1 = getCollection(10);
+        TimeSeriesCollection col2 = getCollection(20);
+        TimeSeriesCollection col3 = getCollection(20);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollections(Arrays.asList(col2, col1, col3))
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void getCollectionByInvalidResolution() {
+        TimeSeriesCollection col1 = getCollection(10);
+        TimeSeriesCollection col2 = getCollection(20);
+        TimeSeriesCollection col3 = getCollection(20);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollections(Arrays.asList(col2, col1, col3))
+                .build();
+        timeSeries.getCollection(30);
     }
 
 }

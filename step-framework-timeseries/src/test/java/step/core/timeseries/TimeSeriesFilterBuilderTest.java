@@ -62,8 +62,7 @@ public class TimeSeriesFilterBuilderTest {
 
     @Test
     public void buildTimeSeriesAggregationQueryFilterTest() {
-        TimeSeriesAggregationPipeline pipeline = new TimeSeriesAggregationPipeline(null, 1000);
-        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder(pipeline)
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .withFilter(TimeSeriesFilterBuilder.buildFilter("field1 = abc"))
                 .range(10L, 20L)
                 .build();

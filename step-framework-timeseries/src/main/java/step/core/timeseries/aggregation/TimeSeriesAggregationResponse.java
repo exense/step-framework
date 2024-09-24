@@ -11,14 +11,29 @@ public class TimeSeriesAggregationResponse {
     private List<Long> axis;
     private final Map<BucketAttributes, Map<Long, Bucket>> series;
 
+    /**
+     * Resolution used in the final result series
+     */
     private final long resolution;
 
-    protected TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution) {
+    /**
+     * The resolution of the collection that was used to create this time-series.
+     */
+    private final long collectionResolution;
+
+    /**
+     * Set to true when data for the ideal resolution was not found, and a higher resolution was used instead.
+     */
+    private final boolean higherResolutionUsed;
+
+    public TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution, long collectionResolution, boolean higherResolutionUsed) {
         this.series = series;
         this.resolution = resolution;
+        this.collectionResolution = collectionResolution;
+        this.higherResolutionUsed = higherResolutionUsed;
     }
 
-    protected TimeSeriesAggregationResponse withAxis(List<Long> axis) {
+    public TimeSeriesAggregationResponse withAxis(List<Long> axis) {
         this.axis = axis;
         return this;
     }
@@ -37,5 +52,13 @@ public class TimeSeriesAggregationResponse {
 
     public Map<Long, Bucket> getFirstSeries() {
         return series.values().stream().findFirst().get();
+    }
+
+    public boolean isHigherResolutionUsed() {
+        return higherResolutionUsed;
+    }
+
+    public long getCollectionResolution() {
+        return collectionResolution;
     }
 }
