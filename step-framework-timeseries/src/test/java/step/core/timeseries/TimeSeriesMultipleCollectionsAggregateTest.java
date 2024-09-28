@@ -20,7 +20,7 @@ public class TimeSeriesMultipleCollectionsAggregateTest extends TimeSeriesBaseTe
         timeSeries.ingestDataForEmptyCollections();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, now)
+                .range(now - 10_000 * 1000, now)
                 .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertEquals(10000, response.getCollectionResolution());
