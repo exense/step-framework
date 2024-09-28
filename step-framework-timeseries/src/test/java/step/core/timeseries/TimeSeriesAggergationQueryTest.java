@@ -17,21 +17,11 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class TimeSeriesAggergationQueryTest {
-
-    private TimeSeries getNewTimeSeries() {
-        return this.getNewTimeSeries(10);
-    }
-
-    private TimeSeries getNewTimeSeries(long resolution) {
-        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolution);
-        return new TimeSeries(Arrays.asList(collection));
-    }
+public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void lowInvalidResolutionTest() {
-        TimeSeries timeSeries = getNewTimeSeries();
+        TimeSeries timeSeries = getNewTimeSeries(10);
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
@@ -42,7 +32,7 @@ public class TimeSeriesAggergationQueryTest {
 
     @Test
     public void lowValidResolutionTest() {
-        TimeSeries timeSeries = getNewTimeSeries();
+        TimeSeries timeSeries = getNewTimeSeries(10);
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
@@ -54,7 +44,7 @@ public class TimeSeriesAggergationQueryTest {
 
     @Test
     public void shrinkTest() {
-        TimeSeries timeSeries = getNewTimeSeries();
+        TimeSeries timeSeries = getNewTimeSeries(10);
 
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
             ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
@@ -76,7 +66,7 @@ public class TimeSeriesAggergationQueryTest {
 
     @Test
     public void emptyFiltersTest() {
-        TimeSeries timeSeries = getNewTimeSeries();
+        TimeSeries timeSeries = getNewTimeSeries(10);
         String oql = null;
         Map<String, String> params = null;
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
