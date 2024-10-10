@@ -5,7 +5,6 @@ import junitparams.Parameters;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.timeseries.bucket.Bucket;
 
@@ -14,11 +13,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RunWith(JUnitParamsRunner.class)
-public class TimeSeriesMultipleCollectionsTest {
+public class TimeSeriesMultipleCollectionsCreateTest {
 
     private TimeSeriesCollection getCollection(long resolution) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>();
         return new TimeSeriesCollection(col, resolution);
+    }
+
+    @Test()
+    @Parameters(method = "validResolutionsData")
+    public void validMultipleResolutionsTest(List<Long> resolutions) {
+        List<TimeSeriesCollection> collections = resolutions.stream().map(r -> getCollection(r)).collect(Collectors.toList());
+        new TimeSeriesBuilder()
+                .registerCollections(collections)
+                .build();
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -29,6 +37,7 @@ public class TimeSeriesMultipleCollectionsTest {
                 .registerCollections(collections)
                 .build();
     }
+
 
     @Test
     public void hasCollectionCheckTest() {
@@ -45,6 +54,17 @@ public class TimeSeriesMultipleCollectionsTest {
         timeSeries.close();
     }
 
+    private static Object[] validResolutionsData() {
+        return new Object[]{
+                Arrays.asList(10L),
+                Arrays.asList(10L, 20L),
+                Arrays.asList(10L, 100L),
+                Arrays.asList(10L, 100L, 200L, 1000L),
+                Arrays.asList(500L, 1000L),
+
+        };
+    }
+
     private static Object[] invalidResolutionsData() {
         return new Object[]{
                 Arrays.asList(100L, 200L, 300L),
@@ -54,6 +74,7 @@ public class TimeSeriesMultipleCollectionsTest {
                 Arrays.asList(-100L, 200L),
                 Arrays.asList(-200L, -100L),
                 Arrays.asList(0L),
+                Arrays.asList(0L, 100),
                 Arrays.asList(100L, 110L, 120L),
 
         };

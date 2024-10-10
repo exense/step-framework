@@ -79,7 +79,7 @@ public class TimeSeriesAggregationPipeline {
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
         TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), availableTargetCollection.getResolution(), fallbackToHigherResolutionWithValidTTL);
-        if (query.getTo() != null) {
+        if (query.getFrom() != null && query.getTo() != null) {
             // axis are calculated only when the interval is specified
             response.withAxis(drawAxis(finalParams));
         }

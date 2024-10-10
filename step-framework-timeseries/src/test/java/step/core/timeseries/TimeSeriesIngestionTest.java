@@ -3,12 +3,12 @@ package step.core.timeseries;
 import org.junit.Assert;
 import org.junit.Test;
 import step.core.collections.Filters;
-import step.core.collections.SearchOrder;
 import step.core.timeseries.bucket.Bucket;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
 
@@ -103,6 +103,93 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
             Assert.assertEquals(bucket.getCount(), b2.getCount());
         }
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void negativeTtlTest() {
+        getCollectionWithTTL(1000, -100);
+    }
+
+    @Test
+    public void initialIngestionWithTTLNotInRangeTest() {
+        List<TimeSeriesCollection> collections = Arrays.asList(
+                getCollectionWithTTL(100, 1000),
+                getCollectionWithTTL(200, 1000),
+                getCollectionWithTTL(400, 1000),
+                getCollectionWithTTL(800, 1000)
+        );
+        TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build();
+        Bucket b1 = getRandomBucket();
+        b1.setBegin(10); // ttl should not match it
+        timeSeries.getCollections().get(0).getCollection().save(b1);
+        timeSeries.ingestDataForEmptyCollections();
+        assertCollectionsAreEmpty(collections.subList(1, timeSeries.getCollections().size()));
+    }
+
+    @Test
+    public void initialIngestionWithTTLInRangeTest() {
+        List<TimeSeriesCollection> collections = Arrays.asList(
+                getCollectionWithTTL(100, 2000),
+                getCollectionWithTTL(200, 2000),
+                getCollectionWithTTL(400, 2000),
+                getCollectionWithTTL(800, 500)
+        );
+        TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build();
+        Bucket b1 = getRandomBucket();
+        b1.setBegin(System.currentTimeMillis() - 1000); // ttl should match it
+        timeSeries.getCollections().get(0).getCollection().save(b1);
+        timeSeries.ingestDataForEmptyCollections();
+        for (int i = 0; i < timeSeries.getCollections().size() - 1; i++) {
+            Assert.assertEquals(1, collections.get(i).getCollection().count(Filters.empty(), null));
+        }
+        Assert.assertEquals(0, collections.get(collections.size() - 1).getCollection().count(Filters.empty(), null));
+    }
+
+    @Test
+    public void ingestionWithPartialTTLMatchingTest() {
+        List<TimeSeriesCollection> collections = Arrays.asList(
+                getCollectionWithTTL(1000, 1000),
+                getCollectionWithTTL(2000, 1000)
+        );
+        TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build();
+        long now = System.currentTimeMillis();
+        Bucket b1 = getRandomBucket();
+        Bucket b2 = getRandomBucket();
+        b1.setBegin(now - 2000); // should not be ingested in the second collection
+        b2.setBegin(now - 500);
+        timeSeries.getDefaultCollection().getCollection().save(Arrays.asList(b1, b2));
+        timeSeries.ingestDataForEmptyCollections();
+        List<Bucket> foundBuckets = collections.get(1).getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+        Assert.assertEquals(1, foundBuckets.size());
+        Bucket foundBucket = foundBuckets.get(0);
+        Assert.assertEquals(b2.getCount(), foundBucket.getCount());
+    }
+
+    @Test
+    public void ingestionWithManyBucketsTest() {
+        TimeSeries timeSeries = getTimeSeriesWithResolutions(1000, 5000, 30_000);
+        long min = 0;
+        long max = 0;
+        long count = 0;
+        long sum = 0;
+        for (int i = 0; i < 1000; i++) {
+            Bucket b = getRandomBucket();
+            count += b.getCount();
+            min = Math.min(min, b.getMin());
+            max = Math.max(max, b.getMax());
+            sum += b.getSum();
+            timeSeries.getDefaultCollection().getCollection().save(b);
+        }
+        timeSeries.ingestDataForEmptyCollections();
+        TimeSeriesCollection lastCollection = timeSeries.getCollections().get(2);
+        List<Bucket> foundBuckets = lastCollection.getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+        Assert.assertEquals(1, foundBuckets.size());
+        Bucket foundBucket = foundBuckets.get(0);
+        Assert.assertEquals(max, foundBucket.getMax());
+        Assert.assertEquals(min, foundBucket.getMin());
+        Assert.assertEquals(sum, foundBucket.getSum());
+        Assert.assertEquals(count, foundBucket.getCount());
+    }
+
 
 
 }
