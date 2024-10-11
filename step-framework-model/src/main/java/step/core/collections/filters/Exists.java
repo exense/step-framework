@@ -33,6 +33,7 @@ public class Exists extends AbstractAtomicFilter {
         this.field = field;
     }
 
+    @Override
     public String getField() {
         return field;
     }

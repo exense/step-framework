@@ -1,19 +1,17 @@
 package step.core.timeseries.ingestion;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
-import step.core.collections.Filter;
-import step.core.collections.Filters;
-import step.core.collections.filters.Equals;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
 
 import java.io.Closeable;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,7 +32,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private final ConcurrentHashMap<Long, Map<Map<String, Object>, BucketBuilder>> seriesQueue = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private final LongAdder flushCount = new LongAdder();
-
+    private final Set<String> handledAttributes;
     private TimeSeriesIngestionPipeline nextPipeline;
 
     public TimeSeriesIngestionPipeline(Collection<Bucket> collection, TimeSeriesIngestionPipelineSettings settings) {
@@ -47,6 +45,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         } else {
             scheduler = null;
         }
+        this.handledAttributes = settings.getHandledAttributes();
         this.nextPipeline = settings.getNextPipeline();
     }
 
@@ -65,22 +64,36 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             bucketsForTimestamp.computeIfAbsent(bucket.getAttributes(), k ->
                             BucketBuilder
                                     .create(index)
-                                    .withAttributes(bucket.getAttributes()))
+                                    .withAttributes(selectHandledAttributesOnly(bucket.getAttributes())))
                     .accumulate(bucket);
         } finally {
             lock.readLock().unlock();
         }
     }
 
+    private BucketAttributes selectHandledAttributesOnly(BucketAttributes bucketAttributes) {
+        if (CollectionUtils.isNotEmpty(handledAttributes)) {
+            Map<String, Object> filteredMap = bucketAttributes.entrySet()
+                    .stream()
+                    .filter(entry -> handledAttributes.contains(entry.getKey()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            return new BucketAttributes(filteredMap);
+        } else {
+            return bucketAttributes;
+        }
+
+    }
+
     public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
         if (logger.isTraceEnabled()) {
             logger.trace("Ingesting point. Attributes=" + attributes.toString() + ", Timestamp=" + timestamp + ", Value=" + value);
         }
+        BucketAttributes bucketAttributes = selectHandledAttributesOnly(new BucketAttributes(attributes));
         lock.readLock().lock();
         try {
             long index = timestampToBucketTimestamp(timestamp, sourceResolution);
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-            bucketsForTimestamp.computeIfAbsent(attributes, k -> BucketBuilder.create(index).withAttributes(new BucketAttributes(attributes))).ingest(value);
+            bucketsForTimestamp.computeIfAbsent(attributes, k -> BucketBuilder.create(index).withAttributes(bucketAttributes)).ingest(value);
         } finally {
             lock.readLock().unlock();
         }

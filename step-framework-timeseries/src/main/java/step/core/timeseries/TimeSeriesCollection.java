@@ -11,6 +11,7 @@ import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ public class TimeSeriesCollection {
     private final long resolution;
     private final TimeSeriesIngestionPipeline ingestionPipeline;
     private long ttl; // In milliseconds. set to 0 in case deletion is never required
+    private final Set<String> handledAttributes;
 
     public TimeSeriesCollection(Collection<Bucket> collection, long resolution) {
         this(collection, new TimeSeriesCollectionSettings()
@@ -49,6 +51,7 @@ public class TimeSeriesCollection {
                 .setResolution(settings.getResolution())
                 .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs());
         this.ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings);
+        this.handledAttributes = settings.getHandledAttributes();
     }
 
     public boolean isEmpty() {
@@ -99,6 +102,10 @@ public class TimeSeriesCollection {
 
     public long getResolution() {
         return resolution;
+    }
+
+    public Set<String> getHandledAttributes() {
+        return handledAttributes;
     }
 
 }

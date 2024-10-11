@@ -10,6 +10,11 @@ public class Fulltext extends AbstractAtomicFilter {
         super();
     }
 
+    @Override
+    public String getField() {
+        return null;
+    }
+
     public Fulltext(String expression) {
         super();
         this.expression = expression;

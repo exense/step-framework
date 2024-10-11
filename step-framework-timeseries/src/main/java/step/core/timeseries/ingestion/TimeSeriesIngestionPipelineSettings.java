@@ -1,9 +1,13 @@
 package step.core.timeseries.ingestion;
 
+import java.util.List;
+import java.util.Set;
+
 public class TimeSeriesIngestionPipelineSettings {
 
     private long resolution;
     private long flushingPeriodMs;
+    private Set<String> handledAttributes;
     private TimeSeriesIngestionPipeline nextPipeline; // optional
 
     public long getResolution() {
@@ -31,5 +35,14 @@ public class TimeSeriesIngestionPipelineSettings {
 
     public TimeSeriesIngestionPipeline getNextPipeline() {
         return nextPipeline;
+    }
+
+    public Set<String> getHandledAttributes() {
+        return handledAttributes;
+    }
+
+    public TimeSeriesIngestionPipelineSettings setHandledAttributes(Set<String> handledAttributes) {
+        this.handledAttributes = handledAttributes;
+        return this;
     }
 }

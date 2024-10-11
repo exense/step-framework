@@ -42,5 +42,7 @@ import java.util.List;
 })
 public interface Filter {
 
+    String getField();
+
     List<Filter> getChildren();
 }
