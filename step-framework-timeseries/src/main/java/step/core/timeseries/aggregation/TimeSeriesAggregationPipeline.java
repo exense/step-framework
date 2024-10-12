@@ -10,7 +10,6 @@ import step.core.timeseries.TimeSeriesFilterBuilder;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
-import step.core.timeseries.query.OQLTimeSeriesFilterBuilder;
 
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
@@ -47,6 +46,7 @@ public class TimeSeriesAggregationPipeline {
         Set<String> attributes = new HashSet<>();
         attributes.addAll(query.getGroupDimensions());
         collectFilterAttributesRecursively(query.getFilter(), attributes);
+
         return attributes;
     }
 
@@ -58,15 +58,20 @@ public class TimeSeriesAggregationPipeline {
      */
     public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         validateQuery(query);
-        Set<String> usedAttributes = collectAllUsedAttributes(query);
+        Set<String> usedAttributes = collectAllUsedAttributes(query).stream().map(a -> a.replace("attributes.", "")).collect(Collectors.toSet());
+        long queryFrom = query.getFrom() != null ? query.getFrom() : 0;
+        long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         long idealResolution = 0;
         if (query.getOptimizationType() == TimeSeriesOptimizationType.MOST_ACCURATE) {
             idealResolution = collections.get(0).getResolution(); // first collection with the best resolution
         } else { // most efficient
             idealResolution = this.roundDownToAvailableResolution(getIdealResolution(query));
         }
-        TimeSeriesCollection idealAvailableCollection = chooseAvailableCollectionBasedOnTTL(idealResolution, query);
-        idealAvailableCollection = chooseCollectionWhichHandleAttributes(idealAvailableCollection.getResolution(), usedAttributes);
+        TimeSeriesCollection idealAvailableCollection = chooseFirstAvailableCollectionBasedOnTTL(idealResolution, query);
+        idealAvailableCollection = chooseLastCollectionWhichHandleAttributes(idealAvailableCollection.getResolution(), usedAttributes);
+
+        boolean fallbackToHigherResolutionWithValidTTL = idealResolution < idealAvailableCollection.getResolution();
+        boolean ttlCovered = collectionTtlCoverInterval(idealAvailableCollection, queryFrom, queryTo);
 
         Collection<Bucket> selectedCollection = idealAvailableCollection.getCollection();
         long sourceResolution = idealAvailableCollection.getResolution();
@@ -75,7 +80,7 @@ public class TimeSeriesAggregationPipeline {
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
         Filter filter = TimeSeriesFilterBuilder.buildFilter(finalParams);
-        boolean fallbackToHigherResolutionWithValidTTL = idealResolution != idealAvailableCollection.getResolution();
+
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
         try (Stream<Bucket> stream = selectedCollection.findLazy(filter, null, null, null, 0)) {
@@ -103,7 +108,7 @@ public class TimeSeriesAggregationPipeline {
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), idealAvailableCollection.getResolution(), fallbackToHigherResolutionWithValidTTL);
+        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), idealAvailableCollection.getResolution(), fallbackToHigherResolutionWithValidTTL, ttlCovered);
         if (query.getFrom() != null && query.getTo() != null) {
             // axis are calculated only when the interval is specified
             response.withAxis(drawAxis(finalParams));
@@ -184,7 +189,7 @@ public class TimeSeriesAggregationPipeline {
         }
     }
     
-    private TimeSeriesCollection chooseAvailableCollectionBasedOnTTL(long resolution, TimeSeriesAggregationQuery query) {
+    private TimeSeriesCollection chooseFirstAvailableCollectionBasedOnTTL(long resolution, TimeSeriesAggregationQuery query) {
         long from = query.getFrom() != null ? query.getFrom() : 0;
         long to = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         int targetResolutionIndex = this.resolutionsIndexes.get(resolution);
@@ -197,7 +202,7 @@ public class TimeSeriesAggregationPipeline {
         return this.collections.get(this.collections.size() - 1); // return highest resolution
     }
 
-    private TimeSeriesCollection chooseCollectionWhichHandleAttributes(long idealResolution, Set<String> attributes) {
+    private TimeSeriesCollection chooseLastCollectionWhichHandleAttributes(long idealResolution, Set<String> attributes) {
         Integer idealResolutionIndex = this.resolutionsIndexes.get(idealResolution);
         if (CollectionUtils.isEmpty(attributes)) {
             return this.collections.get(idealResolutionIndex);

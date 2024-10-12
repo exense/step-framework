@@ -44,12 +44,14 @@ public class TimeSeriesCollection {
         if (settings.getResolution() <= 0) {
             throw new IllegalArgumentException("The resolution parameter must be greater than zero");
         }
+        validateTtl(settings.getTtl());
         this.collection = collection;
         this.resolution = settings.getResolution();
         this.ttl = settings.getTtl();
         TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
                 .setResolution(settings.getResolution())
-                .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs());
+                .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
+                .setHandledAttributes(settings.getHandledAttributes());
         this.ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings);
         this.handledAttributes = settings.getHandledAttributes();
     }
@@ -79,10 +81,14 @@ public class TimeSeriesCollection {
     }
 
     public void setTtl(long ttlInMs) {
-        if (ttlInMs < 0) {
+        validateTtl(ttlInMs);
+        this.ttl = ttlInMs;
+    }
+
+    private void validateTtl(long ttl) {
+        if (ttl < 0) {
             throw new IllegalArgumentException("Negative ttl value is not allowed");
         }
-        this.ttl = ttlInMs;
     }
 
     public void createIndexes(Set<IndexField> indexFields) {
