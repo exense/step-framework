@@ -1,5 +1,6 @@
 package step.core.timeseries;
 
+import org.apache.commons.collections.CollectionUtils;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
 import java.util.*;
@@ -36,6 +37,18 @@ public class TimeSeriesBuilder {
 		}
 	}
 
+	private void validateCollectionsAttributes() {
+		for (int i = 1; i < handledCollections.size(); i++) {
+			Set<String> previousAttributes = handledCollections.get(i - 1).getHandledAttributes();
+			Set<String> currentAttributes = handledCollections.get(i).getHandledAttributes();
+			if (!CollectionUtils.isEmpty(previousAttributes)) {
+				if (CollectionUtils.isEmpty(currentAttributes) || !previousAttributes.containsAll(currentAttributes)) {
+					throw new IllegalArgumentException("Invalid collection attributes for collection with index " + i);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Ordered by resolution, each ingestion pipeline will send his collected bucket to the next ingestion pipeline
 	 */
@@ -53,8 +66,9 @@ public class TimeSeriesBuilder {
 		if (handledCollections.isEmpty()) {
 			throw new IllegalArgumentException("At least one time series collection must be registered");
 		}
-		validateResolutions();
 		handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
+		validateResolutions();
+		validateCollectionsAttributes();
 		linkIngestionPipelines();
 		return new TimeSeries(handledCollections);
 	}

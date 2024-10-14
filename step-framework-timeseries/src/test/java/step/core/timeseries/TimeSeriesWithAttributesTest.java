@@ -1,7 +1,10 @@
 package step.core.timeseries;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import step.core.collections.Filters;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
@@ -10,12 +13,10 @@ import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
+@RunWith(JUnitParamsRunner.class)
 public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
 
     @Test
@@ -196,9 +197,53 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         bucket.getAttributes().put("d", "4");
         timeSeries.getDefaultCollection().getIngestionPipeline().ingestBucket(bucket);
         timeSeries.getCollections().forEach(c -> c.getIngestionPipeline().flush());
+    }
+
+    @Parameters(method = "validAttributesData")
+    @Test
+    public void validAttributes(List<Set<String>> collectionsAttributes) {
+        List<TimeSeriesCollection> collections = new ArrayList<>();
+        for (int i = 0; i < collectionsAttributes.size(); i++) {
+            collections.add(getCollection((long) Math.pow(2, i), collectionsAttributes.get(i)));
+        }
+        new TimeSeriesBuilder()
+                .registerCollections(collections)
+                .build();
+    }
+
+    @Parameters(method = "invalidAttributesData")
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidAttributes(List<Set<String>> collectionsAttributes) {
+        List<TimeSeriesCollection> collections = new ArrayList<>();
+        for (int i = 0; i < collectionsAttributes.size(); i++) {
+            collections.add(getCollection((long) Math.pow(2, i), collectionsAttributes.get(i)));
+        }
+        new TimeSeriesBuilder()
+                .registerCollections(collections)
+                .build();
+    }
 
 
+    private static Object[] validAttributesData() {
+        return new Object[]{
+                List.of(Set.of("a", "b", "c"), Set.of("a", "b", "c"), Set.of("a", "b")),
+                List.of(Set.of(), Set.of("a", "b", "c"), Set.of("a", "b")),
+                List.of(Set.of(), Set.of(), Set.of("a", "b")),
+                List.of(Set.of(), Set.of(), Set.of()),
+                List.of(Set.of("a", "b", "c"), Set.of("a", "b"), Set.of("b")),
 
+        };
+    }
+
+    private static Object[] invalidAttributesData() {
+        return new Object[]{
+                List.of( Set.of("a", "b"), Set.of("a", "b", "c"), Set.of("a", "b", "c")),
+                List.of(Set.of("a", "b", "c"), Set.of("a", "b"), Set.of()),
+                List.of(Set.of(), Set.of("a", "b"), Set.of()),
+                List.of(Set.of(), Set.of("a", "b"), Set.of("a", "c")),
+                List.of(Set.of("a"), Set.of("b")),
+
+        };
     }
 
 }
