@@ -9,6 +9,11 @@ public class False extends AbstractAtomicFilter {
     }
 
     @Override
+    public String getField() {
+        return null;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
