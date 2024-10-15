@@ -18,6 +18,8 @@
  ******************************************************************************/
 package step.core.collections;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import step.core.collections.filters.*;
@@ -42,6 +44,7 @@ import java.util.List;
 })
 public interface Filter {
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     String getField();
 
     List<Filter> getChildren();

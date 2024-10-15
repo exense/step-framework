@@ -56,7 +56,7 @@ public class FiltersSerializationTest {
 
         ObjectWriter writer = objectMapper.writer();
         String filterAsJson = writer.writeValueAsString(filter);
-        assertEquals("{\"type\":\"Fulltext\",\"expression\":\"myFullttextExpression\",\"field\":null,\"children\":null}", filterAsJson);
+        assertEquals("{\"type\":\"Fulltext\",\"expression\":\"myFullttextExpression\",\"children\":null}", filterAsJson);
 
         ObjectReader reader = objectMapper.reader();
         Filter parsedFilter = reader.readValue("{\"type\":\"Fulltext\",\"expression\":\"myFullttextExpression\"}", Filter.class);
@@ -126,7 +126,7 @@ public class FiltersSerializationTest {
 
         ObjectWriter writer = objectMapper.writer();
         String filterAsJson = writer.writeValueAsString(filter);
-        assertEquals("{\"type\":\"And\",\"children\":[{\"type\":\"True\",\"field\":null,\"children\":null},{\"type\":\"True\",\"field\":null,\"children\":null}],\"field\":null}", filterAsJson);
+        assertEquals("{\"type\":\"And\",\"children\":[{\"type\":\"True\",\"children\":null},{\"type\":\"True\",\"children\":null}]}", filterAsJson);
 
         ObjectReader reader = objectMapper.reader();
         Filter parsedFilter = reader.readValue("{\"type\":\"And\",\"children\":[{\"type\":\"True\"},{\"type\":\"True\"}]}", Filter.class);
@@ -140,7 +140,7 @@ public class FiltersSerializationTest {
 
         ObjectWriter writer = objectMapper.writer();
         String filterAsJson = writer.writeValueAsString(filter);
-        assertEquals("{\"type\":\"Or\",\"children\":[{\"type\":\"True\",\"field\":null,\"children\":null},{\"type\":\"True\",\"field\":null,\"children\":null}],\"field\":null}", filterAsJson);
+        assertEquals("{\"type\":\"Or\",\"children\":[{\"type\":\"True\",\"children\":null},{\"type\":\"True\",\"children\":null}]}", filterAsJson);
 
         ObjectReader reader = objectMapper.reader();
         Filter parsedFilter = reader.readValue("{\"type\":\"Or\",\"children\":[{\"type\":\"True\"},{\"type\":\"True\"}]}", Filter.class);
@@ -154,7 +154,7 @@ public class FiltersSerializationTest {
 
         ObjectWriter writer = objectMapper.writer();
         String filterAsJson = writer.writeValueAsString(filter);
-        assertEquals("{\"type\":\"Not\",\"children\":[{\"type\":\"False\",\"field\":null,\"children\":null}],\"field\":null}", filterAsJson);
+        assertEquals("{\"type\":\"Not\",\"children\":[{\"type\":\"False\",\"children\":null}]}", filterAsJson);
 
         ObjectReader reader = objectMapper.reader();
         Filter parsedFilter = reader.readValue("{\"type\":\"Not\",\"children\":[{\"type\":\"False\"}]}", Filter.class);

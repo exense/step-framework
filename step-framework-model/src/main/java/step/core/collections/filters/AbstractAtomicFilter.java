@@ -1,5 +1,6 @@
 package step.core.collections.filters;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import step.core.collections.Filter;
 
 import java.util.List;
