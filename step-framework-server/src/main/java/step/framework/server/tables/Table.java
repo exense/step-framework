@@ -25,15 +25,28 @@ public class Table<T> {
     private Supplier<List<T>> resultListFactory;
     private BiFunction<T, Session<?>, T> resultItemEnricher;
 
+    private final boolean internalOnly;
+
+    /**
+     * @param collection the collection backing this table
+     * @param requiredAccessRight the right required to perform read requests on this table
+     * @param filtered if the table is subject to context filtering (See {@link step.core.objectenricher.ObjectFilter})
+     * @param internalOnly if this table is only accessible for internal operations
+     */
+    public Table(Collection<T> collection, String requiredAccessRight, boolean filtered, boolean internalOnly) {
+        this.collection = collection;
+        this.requiredAccessRight = requiredAccessRight;
+        this.filtered = filtered;
+        this.internalOnly = internalOnly;
+    }
+
     /**
      * @param collection the collection backing this table
      * @param requiredAccessRight the right required to perform read requests on this table
      * @param filtered if the table is subject to context filtering (See {@link step.core.objectenricher.ObjectFilter})
      */
     public Table(Collection<T> collection, String requiredAccessRight, boolean filtered) {
-        this.collection = collection;
-        this.requiredAccessRight = requiredAccessRight;
-        this.filtered = filtered;
+        this(collection, requiredAccessRight, filtered, false);
     }
 
     /**
@@ -109,6 +122,10 @@ public class Table<T> {
 
     public boolean isFiltered() {
         return filtered;
+    }
+
+    public boolean isInternalOnly() {
+        return internalOnly;
     }
 
     public Optional<BiFunction<TableParameters, Session<?>, Filter>> getTableFiltersFactory() {

@@ -58,6 +58,9 @@ public class TableService {
         // Assert right
         assertSessionHasRequiredAccessRight(table, session);
 
+        // Check internal access rights
+        allowOnlyInternalRequestsToInternalTables(table, request);
+
         // Create the filter
         final Filter filter = createFilter(request, session, table);
 
@@ -108,6 +111,9 @@ public class TableService {
         Table<T> table = getTable(tableName);
         // Assert right
         assertSessionHasRequiredAccessRight(table, session);
+        // Check internal access rights
+        allowOnlyInternalRequestsToInternalTables(table, request);
+
         Collection<T> collection = table.getCollection();
         // Create the filter
         final Filter filter = createFilter(request, session, table);
@@ -126,6 +132,8 @@ public class TableService {
             Session<?> session) throws TableServiceException {
         // assert rights
         assertSessionHasRequiredAccessRight(table, session);
+        // Check internal access rights
+        allowOnlyInternalRequestsToInternalTables(table, parameters);
         // validate parameters
         TableBulkOperationTargetType targetType = parameters.getTargetType();
         validateParameters(parameters, targetType);
@@ -232,6 +240,14 @@ public class TableService {
             throw new TableServiceException("Missing right " + requiredAccessRight + " to access table");
         }
     }
+
+    private <T> void allowOnlyInternalRequestsToInternalTables(Table<T> table, TableQueryRequest request) throws TableServiceException{
+        if (table.isInternalOnly() && !request.isInternalRequest()) {
+            throw new TableServiceException("Refusing to access internal table using non-internal request");
+        }
+    }
+
+
 
     private SearchOrder getSearchOrder(TableRequest request) {
         SearchOrder searchOrder;
