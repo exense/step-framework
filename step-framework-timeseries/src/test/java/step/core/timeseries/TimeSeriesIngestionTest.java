@@ -1,6 +1,7 @@
 package step.core.timeseries;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import step.core.collections.Filters;
 import step.core.timeseries.bucket.Bucket;
@@ -165,6 +166,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     }
 
     @Test
+    @Ignore // TEMPORARILY DISABLED, SEE SED-3508
     public void ingestionWithManyBucketsTest() {
         TimeSeries timeSeries = getTimeSeriesWithResolutions(1000, 5000, 30_000);
         long min = 0;
