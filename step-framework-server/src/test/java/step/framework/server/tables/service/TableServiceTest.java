@@ -38,8 +38,10 @@ public class TableServiceTest {
     private static final String VALUE_1 = "value1";
     private static final String VALUE_2 = "value2";
     private static final String VALUE_3 = "value3";
-    private static final String ENRICHED_ATTRIBUTE_KEY = "entichedAttributes";
-    private static final String ENRICHED_ATTRIBUTE_VALUE = "value";
+    private static final String ENRICHED_ATTRIBUTE_KEY = "enrichedAttribute";
+    private static final String ENRICHED_ATTRIBUTE_VALUE = "enriched";
+    private static final String TRANSFORMED_ATTRIBUTE_KEY = "transformedAttribute";
+    private static final String TRANSFORMED_ATTRIBUTE_VALUE = "transformed";
     private static final String TABLE_WITH_FILTER_FACTORY = "tableWithFilterFactory";
     private static final String TABLE_WITH_FILTER_FACTORY_WITH_SESSION = "tableWithFilterFactoryWithSession";
     private Bean bean1;
@@ -147,6 +149,31 @@ public class TableServiceTest {
         assertEquals(List.of(bean1), response.getData());
         actualBean = (Bean) response.getData().get(0);
         assertFalse(actualBean.hasAttribute(ENRICHED_ATTRIBUTE_KEY));
+
+        // Test with ResultItemEnricher AND ResultItemTransformer
+        table.withResultItemTransformer((e, session) -> {
+            e.addAttribute(TRANSFORMED_ATTRIBUTE_KEY, TRANSFORMED_ATTRIBUTE_VALUE);
+            return e;
+        });
+        bean1.getAttributes().clear();
+        request = new TableRequest();
+        request.setFilters(List.of(new FieldFilter("property1", VALUE_1, false)));
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean1), response.getData());
+        actualBean = (Bean) response.getData().get(0);
+        assertEquals(TRANSFORMED_ATTRIBUTE_VALUE, actualBean.getAttribute(TRANSFORMED_ATTRIBUTE_KEY));
+        assertEquals(ENRICHED_ATTRIBUTE_VALUE, actualBean.getAttribute(ENRICHED_ATTRIBUTE_KEY));
+
+        // Test again with enrichment disabled
+        bean1.getAttributes().clear();
+        request = new TableRequest();
+        request.setPerformEnrichment(false);
+        request.setFilters(List.of(new FieldFilter("property1", VALUE_1, false)));
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean1), response.getData());
+        actualBean = (Bean) response.getData().get(0);
+        assertFalse(actualBean.hasAttribute(ENRICHED_ATTRIBUTE_KEY));
+        assertEquals(TRANSFORMED_ATTRIBUTE_VALUE, actualBean.getAttribute(TRANSFORMED_ATTRIBUTE_KEY));
 
         // Test custom ResultListFactory
         ArrayList<Bean> customResultList = new ArrayList<>();

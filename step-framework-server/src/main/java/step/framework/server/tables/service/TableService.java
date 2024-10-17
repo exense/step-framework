@@ -20,6 +20,7 @@ import step.framework.server.tables.service.bulk.TableBulkOperationTargetType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
@@ -73,7 +74,7 @@ public class TableService {
         // Calculate counts
         long estimatedTotalCount;
         long count;
-        if(request.isCalculateCounts()) {
+        if (request.isCalculateCounts()) {
             estimatedTotalCount = collection.estimatedCount();
             count = collection.count(filter, table.getCountLimit().orElse(defaultMaxResultCount));
         } else {
@@ -94,12 +95,17 @@ public class TableService {
         SearchOrder searchOrder = getSearchOrder(request);
 
         // Perform the search
-        BiFunction<T, Session<?>, T> enricher = table.getResultItemEnricher().orElse((a, b) -> a);
-
         Stream<T> result = collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration));
+        Optional<BiFunction<T, Session<?>, T>> transformer = table.getResultItemTransformer();
+        if (transformer.isPresent()) {
+            result = result.map(item -> transformer.get().apply(item, session));
+        }
+
         if (request.isPerformEnrichment()) {
-            // Enrich stream
-            result = result.map(t -> enricher.apply(t, session));
+            Optional<BiFunction<T, Session<?>, T>> enricher = table.getResultItemEnricher();
+            if (enricher.isPresent()) {
+                result = result.map(item -> enricher.get().apply(item, session));
+            }
         }
         return result;
     }
@@ -108,6 +114,7 @@ public class TableService {
         Table<T> table = getTable(tableName);
         // Assert right
         assertSessionHasRequiredAccessRight(table, session);
+
         Collection<T> collection = table.getCollection();
         // Create the filter
         final Filter filter = createFilter(request, session, table);
@@ -166,13 +173,13 @@ public class TableService {
 
         List<String> warningMessages = new ArrayList<>();
         LongAdder skipped = new LongAdder();
-        warnings.forEach( (k,v) -> {
+        warnings.forEach((k, v) -> {
             warningMessages.add(k + " (" + v.longValue() + " occurrences)");
             skipped.add(v.longValue());
         });
         List<String> errorMessages = new ArrayList<>();
         LongAdder errorCount = new LongAdder();
-        errors.forEach( (k,v) -> {
+        errors.forEach((k, v) -> {
             errorMessages.add(k + " (" + v.longValue() + " occurrences)");
             errorCount.add(v.longValue());
         });
