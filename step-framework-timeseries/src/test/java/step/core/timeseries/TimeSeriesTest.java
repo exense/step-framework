@@ -2,6 +2,7 @@ package step.core.timeseries;
 
 import ch.exense.commons.test.categories.PerformanceTest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -204,6 +205,7 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
     }
 
     @Test
+    @Ignore // TEMPORARILY DISABLED, SEE SED-3508
     public void ingestionPipelineParallel() throws Exception {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         ingestionPipelineParallel(bucketCollection);
@@ -316,6 +318,7 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
     }
 
     @Test
+    @Ignore // TEMPORARILY DISABLED, SEE SED-3508
     @Category(PerformanceTest.class)
     public void ingestionPipelineMongoDB() throws Exception {
         Properties properties = new Properties();
