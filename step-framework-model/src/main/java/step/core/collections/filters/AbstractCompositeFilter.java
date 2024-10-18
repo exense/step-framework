@@ -19,6 +19,11 @@ public class AbstractCompositeFilter implements Filter {
     }
 
     @Override
+    public String getField() {
+        return null;
+    }
+
+    @Override
     public List<Filter> getChildren() {
         return children;
     }

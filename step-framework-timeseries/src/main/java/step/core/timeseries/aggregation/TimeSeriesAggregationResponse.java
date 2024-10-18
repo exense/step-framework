@@ -26,11 +26,17 @@ public class TimeSeriesAggregationResponse {
      */
     private final boolean higherResolutionUsed;
 
-    public TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution, long collectionResolution, boolean higherResolutionUsed) {
+    /**
+     * Set to false when the requested range data was partially or entirely deleted.
+     */
+    private final boolean ttlCovered;
+
+    public TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution, long collectionResolution, boolean higherResolutionUsed, boolean ttlCovered) {
         this.series = series;
         this.resolution = resolution;
         this.collectionResolution = collectionResolution;
         this.higherResolutionUsed = higherResolutionUsed;
+        this.ttlCovered = ttlCovered;
     }
 
     public TimeSeriesAggregationResponse withAxis(List<Long> axis) {
@@ -60,5 +66,9 @@ public class TimeSeriesAggregationResponse {
 
     public long getCollectionResolution() {
         return collectionResolution;
+    }
+
+    public boolean isTtlCovered() {
+        return ttlCovered;
     }
 }

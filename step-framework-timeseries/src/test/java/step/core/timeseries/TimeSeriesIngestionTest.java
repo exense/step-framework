@@ -169,7 +169,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     @Ignore // TEMPORARILY DISABLED, SEE SED-3508
     public void ingestionWithManyBucketsTest() {
         TimeSeries timeSeries = getTimeSeriesWithResolutions(1000, 5000, 30_000);
-        long min = 0;
+        long min = 999999;
         long max = 0;
         long count = 0;
         long sum = 0;
@@ -186,10 +186,10 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
         List<Bucket> foundBuckets = lastCollection.getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
         Assert.assertEquals(1, foundBuckets.size());
         Bucket foundBucket = foundBuckets.get(0);
+        Assert.assertEquals(count, foundBucket.getCount());
+        Assert.assertEquals(sum, foundBucket.getSum());
         Assert.assertEquals(max, foundBucket.getMax());
         Assert.assertEquals(min, foundBucket.getMin());
-        Assert.assertEquals(sum, foundBucket.getSum());
-        Assert.assertEquals(count, foundBucket.getCount());
     }
 
 

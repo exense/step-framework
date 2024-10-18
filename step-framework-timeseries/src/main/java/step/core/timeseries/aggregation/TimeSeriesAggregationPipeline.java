@@ -33,24 +33,54 @@ public class TimeSeriesAggregationPipeline {
         }
     }
 
+    private void collectFilterAttributesRecursively(Filter filter, Set<String> collectedAttributes) {
+        if (filter.getField() != null) {
+            collectedAttributes.add(filter.getField());
+        }
+        if (filter.getChildren() != null) {
+            filter.getChildren().forEach(c -> collectFilterAttributesRecursively(c, collectedAttributes));
+        }
+    }
+
+    private Set<String> collectAllUsedAttributes(TimeSeriesAggregationQuery query) {
+        Set<String> attributes = new HashSet<>();
+        attributes.addAll(query.getGroupDimensions());
+        collectFilterAttributesRecursively(query.getFilter(), attributes);
+
+        return attributes;
+    }
+
+    /**
+     * Process order for calculating the ideal resolution:
+     * 1. Split range and round to a good resolution
+     * 2. Go from bottom to top and find the lowest resolution with a valid TTL
+     * 3. Go backward from the resolution obtained above and choose the first collection which handle all the attributes
+     */
     public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         validateQuery(query);
+        Set<String> usedAttributes = collectAllUsedAttributes(query).stream().map(a -> a.replace("attributes.", "")).collect(Collectors.toSet());
+        long queryFrom = query.getFrom() != null ? query.getFrom() : 0;
+        long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         long idealResolution = 0;
         if (query.getOptimizationType() == TimeSeriesOptimizationType.MOST_ACCURATE) {
             idealResolution = collections.get(0).getResolution(); // first collection with the best resolution
         } else { // most efficient
             idealResolution = this.roundDownToAvailableResolution(getIdealResolution(query));
         }
-        TimeSeriesCollection availableTargetCollection = chooseAvailableCollectionBasedOnTTL(idealResolution, query);
-        boolean fallbackToHigherResolutionWithValidTTL = idealResolution != availableTargetCollection.getResolution();
+        TimeSeriesCollection idealAvailableCollection = chooseFirstAvailableCollectionBasedOnTTL(idealResolution, query);
+        idealAvailableCollection = chooseLastCollectionWhichHandleAttributes(idealAvailableCollection.getResolution(), usedAttributes);
 
-        Collection<Bucket> selectedCollection = availableTargetCollection.getCollection();
-        long sourceResolution = availableTargetCollection.getResolution();
+        boolean fallbackToHigherResolutionWithValidTTL = idealResolution < idealAvailableCollection.getResolution();
+        boolean ttlCovered = collectionTtlCoverInterval(idealAvailableCollection, queryFrom, queryTo);
+
+        Collection<Bucket> selectedCollection = idealAvailableCollection.getCollection();
+        long sourceResolution = idealAvailableCollection.getResolution();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
 
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
         Filter filter = TimeSeriesFilterBuilder.buildFilter(finalParams);
+
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
         try (Stream<Bucket> stream = selectedCollection.findLazy(filter, null, null, null, 0)) {
@@ -78,7 +108,7 @@ public class TimeSeriesAggregationPipeline {
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), availableTargetCollection.getResolution(), fallbackToHigherResolutionWithValidTTL);
+        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), idealAvailableCollection.getResolution(), fallbackToHigherResolutionWithValidTTL, ttlCovered);
         if (query.getFrom() != null && query.getTo() != null) {
             // axis are calculated only when the interval is specified
             response.withAxis(drawAxis(finalParams));
@@ -159,7 +189,7 @@ public class TimeSeriesAggregationPipeline {
         }
     }
     
-    private TimeSeriesCollection chooseAvailableCollectionBasedOnTTL(long resolution, TimeSeriesAggregationQuery query) {
+    private TimeSeriesCollection chooseFirstAvailableCollectionBasedOnTTL(long resolution, TimeSeriesAggregationQuery query) {
         long from = query.getFrom() != null ? query.getFrom() : 0;
         long to = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         int targetResolutionIndex = this.resolutionsIndexes.get(resolution);
@@ -170,6 +200,21 @@ public class TimeSeriesAggregationPipeline {
             }
         }
         return this.collections.get(this.collections.size() - 1); // return highest resolution
+    }
+
+    private TimeSeriesCollection chooseLastCollectionWhichHandleAttributes(long idealResolution, Set<String> attributes) {
+        Integer idealResolutionIndex = this.resolutionsIndexes.get(idealResolution);
+        if (CollectionUtils.isEmpty(attributes)) {
+            return this.collections.get(idealResolutionIndex);
+        } else {
+            for (int i = idealResolutionIndex; i >= 0; i--) {
+                TimeSeriesCollection currentCollection = this.collections.get(i);
+                if (CollectionUtils.isEmpty(currentCollection.getHandledAttributes()) || currentCollection.getHandledAttributes().containsAll(attributes)) {
+                    return currentCollection;
+                }
+            }
+        }
+        return this.collections.get(0);
     }
 
     private static long getIdealResolution(TimeSeriesAggregationQuery query) {

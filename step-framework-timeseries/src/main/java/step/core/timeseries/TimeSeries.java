@@ -46,6 +46,7 @@ public class TimeSeries implements Closeable {
                 logger.debug("Populating time-series collection: " + collectionName);
                 TimeSeriesCollection previousCollection = handledCollections.get(i - 1);
                 TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
+                        .setHandledAttributes(collection.getHandledAttributes())
                         .setResolution(collection.getResolution())
                         .setFlushingPeriodMs(TimeUnit.SECONDS.toMillis(30));
                 try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection.getCollection(), ingestionSettings)) {

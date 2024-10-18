@@ -1,10 +1,14 @@
 package step.core.timeseries;
 
+import java.util.List;
+import java.util.Set;
+
 public class TimeSeriesCollectionSettings {
 
     private long resolution;
     private long ttl;
     private long ingestionFlushingPeriodMs;
+    private Set<String> handledAttributes;
 
     public long getResolution() {
         return resolution;
@@ -33,4 +37,12 @@ public class TimeSeriesCollectionSettings {
         return this;
     }
 
+    public Set<String> getHandledAttributes() {
+        return handledAttributes;
+    }
+
+    public TimeSeriesCollectionSettings setHandledAttributes(Set<String> handledAttributes) {
+        this.handledAttributes = handledAttributes;
+        return this;
+    }
 }

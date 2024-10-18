@@ -11,6 +11,7 @@ import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ public class TimeSeriesCollection {
     private final long resolution;
     private final TimeSeriesIngestionPipeline ingestionPipeline;
     private long ttl; // In milliseconds. set to 0 in case deletion is never required
+    private final Set<String> handledAttributes;
 
     public TimeSeriesCollection(Collection<Bucket> collection, long resolution) {
         this(collection, new TimeSeriesCollectionSettings()
@@ -42,13 +44,16 @@ public class TimeSeriesCollection {
         if (settings.getResolution() <= 0) {
             throw new IllegalArgumentException("The resolution parameter must be greater than zero");
         }
+        validateTtl(settings.getTtl());
         this.collection = collection;
         this.resolution = settings.getResolution();
         this.ttl = settings.getTtl();
         TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
                 .setResolution(settings.getResolution())
-                .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs());
+                .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
+                .setHandledAttributes(settings.getHandledAttributes());
         this.ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings);
+        this.handledAttributes = settings.getHandledAttributes();
     }
 
     public boolean isEmpty() {
@@ -76,10 +81,14 @@ public class TimeSeriesCollection {
     }
 
     public void setTtl(long ttlInMs) {
-        if (ttlInMs < 0) {
+        validateTtl(ttlInMs);
+        this.ttl = ttlInMs;
+    }
+
+    private void validateTtl(long ttl) {
+        if (ttl < 0) {
             throw new IllegalArgumentException("Negative ttl value is not allowed");
         }
-        this.ttl = ttlInMs;
     }
 
     public void createIndexes(Set<IndexField> indexFields) {
@@ -99,6 +108,10 @@ public class TimeSeriesCollection {
 
     public long getResolution() {
         return resolution;
+    }
+
+    public Set<String> getHandledAttributes() {
+        return handledAttributes;
     }
 
 }

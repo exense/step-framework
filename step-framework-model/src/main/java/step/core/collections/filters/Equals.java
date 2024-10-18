@@ -17,6 +17,7 @@ public class Equals extends AbstractAtomicFilter {
         this.expectedValue = expectedValue;
     }
 
+    @Override
     public String getField() {
         return field;
     }
