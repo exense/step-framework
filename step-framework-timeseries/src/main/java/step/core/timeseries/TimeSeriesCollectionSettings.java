@@ -1,10 +1,13 @@
 package step.core.timeseries;
 
+import java.util.Set;
+
 public class TimeSeriesCollectionSettings {
 
     private long resolution;
     private long ttl;
     private long ingestionFlushingPeriodMs;
+    private Set<String> ignoredAttributes;
 
     public long getResolution() {
         return resolution;
@@ -33,4 +36,12 @@ public class TimeSeriesCollectionSettings {
         return this;
     }
 
+    public Set<String> getIgnoredAttributes() {
+        return ignoredAttributes;
+    }
+
+    public TimeSeriesCollectionSettings setIgnoredAttributes(Set<String> ignoredAttributes) {
+        this.ignoredAttributes = ignoredAttributes;
+        return this;
+    }
 }

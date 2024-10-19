@@ -17,6 +17,7 @@ public class Gt extends AbstractAtomicFilter {
         this.value = value;
     }
 
+    @Override
     public String getField() {
         return field;
     }

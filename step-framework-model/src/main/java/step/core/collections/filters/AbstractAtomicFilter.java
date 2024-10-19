@@ -1,10 +1,11 @@
 package step.core.collections.filters;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import step.core.collections.Filter;
 
 import java.util.List;
 
-public class AbstractAtomicFilter implements Filter {
+public abstract class AbstractAtomicFilter implements Filter {
 
     public AbstractAtomicFilter() {
         super();
@@ -14,5 +15,7 @@ public class AbstractAtomicFilter implements Filter {
     public List<Filter> getChildren() {
         return null;
     }
+
+    public abstract String getField();
 
 }
