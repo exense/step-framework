@@ -202,14 +202,14 @@ public class TimeSeriesAggregationPipeline {
         return this.collections.get(this.collections.size() - 1); // return highest resolution
     }
 
-    private TimeSeriesCollection chooseLastCollectionWhichHandleAttributes(long idealResolution, Set<String> attributes) {
+    private TimeSeriesCollection chooseLastCollectionWhichHandleAttributes(long idealResolution, Set<String> queryAttributes) {
         Integer idealResolutionIndex = this.resolutionsIndexes.get(idealResolution);
-        if (CollectionUtils.isEmpty(attributes)) {
+        if (CollectionUtils.isEmpty(queryAttributes)) {
             return this.collections.get(idealResolutionIndex);
         } else {
             for (int i = idealResolutionIndex; i >= 0; i--) {
                 TimeSeriesCollection currentCollection = this.collections.get(i);
-                if (CollectionUtils.isEmpty(currentCollection.getHandledAttributes()) || currentCollection.getHandledAttributes().containsAll(attributes)) {
+                if (CollectionUtils.isEmpty(currentCollection.getIgnoredAttributes()) || currentCollection.getIgnoredAttributes().stream().noneMatch(queryAttributes::contains)) {
                     return currentCollection;
                 }
             }

@@ -37,13 +37,14 @@ public class TimeSeriesBuilder {
 		}
 	}
 
-	private void validateCollectionsAttributes() {
-		for (int i = 1; i < handledCollections.size(); i++) {
-			Set<String> previousAttributes = handledCollections.get(i - 1).getHandledAttributes();
-			Set<String> currentAttributes = handledCollections.get(i).getHandledAttributes();
-			if (!CollectionUtils.isEmpty(previousAttributes)) {
-				if (CollectionUtils.isEmpty(currentAttributes) || !previousAttributes.containsAll(currentAttributes)) {
-					throw new IllegalArgumentException("Invalid collection attributes for collection with index " + i);
+	private void validateCollectionsIgnoredAttributes() {
+		for (int i = 0; i < handledCollections.size() - 1; i++) {
+			Set<String> current = handledCollections.get(i).getIgnoredAttributes();
+			Set<String> nextAttributes = handledCollections.get(i + 1).getIgnoredAttributes();
+
+			if (CollectionUtils.isNotEmpty(current)) {
+				if (nextAttributes == null || !nextAttributes.containsAll(current)) {
+					throw new IllegalArgumentException("Invalid ignored attributes for collection with index " + i);
 				}
 			}
 		}
@@ -68,7 +69,7 @@ public class TimeSeriesBuilder {
 		}
 		handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
 		validateResolutions();
-		validateCollectionsAttributes();
+		validateCollectionsIgnoredAttributes();
 		linkIngestionPipelines();
 		return new TimeSeries(handledCollections);
 	}

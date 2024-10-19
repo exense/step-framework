@@ -1,6 +1,5 @@
 package step.core.timeseries;
 
-import java.util.List;
 import java.util.Set;
 
 public class TimeSeriesCollectionSettings {
@@ -8,7 +7,7 @@ public class TimeSeriesCollectionSettings {
     private long resolution;
     private long ttl;
     private long ingestionFlushingPeriodMs;
-    private Set<String> handledAttributes;
+    private Set<String> ignoredAttributes;
 
     public long getResolution() {
         return resolution;
@@ -37,12 +36,12 @@ public class TimeSeriesCollectionSettings {
         return this;
     }
 
-    public Set<String> getHandledAttributes() {
-        return handledAttributes;
+    public Set<String> getIgnoredAttributes() {
+        return ignoredAttributes;
     }
 
-    public TimeSeriesCollectionSettings setHandledAttributes(Set<String> handledAttributes) {
-        this.handledAttributes = handledAttributes;
+    public TimeSeriesCollectionSettings setIgnoredAttributes(Set<String> ignoredAttributes) {
+        this.ignoredAttributes = ignoredAttributes;
         return this;
     }
 }

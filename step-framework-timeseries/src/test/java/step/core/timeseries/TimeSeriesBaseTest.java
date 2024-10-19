@@ -8,7 +8,6 @@ import step.core.timeseries.bucket.BucketAttributes;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class TimeSeriesBaseTest {
 
@@ -22,11 +21,11 @@ public class TimeSeriesBaseTest {
         return getCollection(resolution, null);
     }
 
-    protected TimeSeriesCollection getCollection(long resolution, Set<String> attributes) {
+    protected TimeSeriesCollection getCollection(long resolution, Set<String> ignoredAttributes) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>();
         TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
                 .setResolution(resolution)
-                .setHandledAttributes(attributes);
+                .setIgnoredAttributes(ignoredAttributes);
         return new TimeSeriesCollection(col, settings);
     }
 
@@ -34,12 +33,12 @@ public class TimeSeriesBaseTest {
         return getCollectionWithTTL(resolution, ttl, null);
     }
 
-    protected TimeSeriesCollection getCollectionWithTTL(long resolution, long ttl, Set<String> attributes) {
+    protected TimeSeriesCollection getCollectionWithTTL(long resolution, long ttl, Set<String> ignoredAttributes) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>();
         TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
                 .setTtl(ttl)
                 .setResolution(resolution)
-                .setHandledAttributes(attributes);
+                .setIgnoredAttributes(ignoredAttributes);
         return new TimeSeriesCollection(col, settings);
     }
 
