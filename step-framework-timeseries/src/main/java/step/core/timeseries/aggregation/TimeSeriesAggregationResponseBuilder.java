@@ -4,11 +4,12 @@ import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class TimeSeriesAggregationResponseBuilder {
 
-    private long start;
-    private long end;
+    private Long start;
+    private Long end;
     private Map<BucketAttributes, Map<Long, Bucket>> series;
     private long resolution;
     private long collectionResolution;
@@ -68,6 +69,8 @@ public class TimeSeriesAggregationResponseBuilder {
         return this;
     }
     public TimeSeriesAggregationResponse build() {
-        return new TimeSeriesAggregationResponse(series, start, resolution, collectionResolution, higherResolutionUsed);
+        Objects.requireNonNull(start);
+        Objects.requireNonNull(end);
+        return new TimeSeriesAggregationResponse(series, start, end, resolution, collectionResolution, higherResolutionUsed);
     }
 }

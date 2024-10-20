@@ -9,6 +9,7 @@ import java.util.Map;
 public class TimeSeriesAggregationResponse {
 
     private long start;
+    private long end;
     private final Map<BucketAttributes, Map<Long, Bucket>> series;
 
     /**
@@ -26,11 +27,21 @@ public class TimeSeriesAggregationResponse {
      */
     private final boolean higherResolutionUsed;
 
-    TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long start, long resolution, long collectionResolution, boolean higherResolutionUsed) {
+    TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long start, long end, long resolution, long collectionResolution, boolean higherResolutionUsed) {
         this.series = series;
         this.resolution = resolution;
         this.collectionResolution = collectionResolution;
         this.higherResolutionUsed = higherResolutionUsed;
+        this.start = start;
+        this.end = end;
+    }
+
+    public long getStart() {
+        return start;
+    }
+
+    public long getEnd() {
+        return end;
     }
 
     public long getResolution() {
