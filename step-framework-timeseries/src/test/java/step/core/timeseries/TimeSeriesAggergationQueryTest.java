@@ -13,6 +13,7 @@ import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -37,6 +38,7 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .window(10)
+                .range(0, 10000)
                 .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
     }
@@ -107,6 +109,28 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
         TimeSeries timeSeries = getNewTimeSeries(200);
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .split(5)
+                .build();
+        timeSeries.getAggregationPipeline().collect(query);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void tooBigSplitTest() {
+        TimeSeries timeSeries = getNewTimeSeries(200);
+        long now = System.currentTimeMillis();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, now)
+                .split(TimeSeriesAggregationPipeline.MAX_INTERVALS_IN_RESPONSE + 1)
+                .build();
+        timeSeries.getAggregationPipeline().collect(query);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void tooSmallWindowTest() {
+        TimeSeries timeSeries = getNewTimeSeries(200);
+        long now = System.currentTimeMillis();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(now - TimeSeriesAggregationPipeline.MAX_INTERVALS_IN_RESPONSE * 1001, now)
+                .window(1000)
                 .build();
         timeSeries.getAggregationPipeline().collect(query);
     }

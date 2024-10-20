@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 public class TimeSeriesAggregationPipeline {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesAggregationPipeline.class);
+    public static final int MAX_INTERVALS_IN_RESPONSE = 2000;
+    public static final int IDEAL_RESPONSE_INTERVALS  = 100;
     // resolution - array index
     private final Map<Long, Integer> resolutionsIndexes = new HashMap<>();
     // sorted
@@ -47,6 +49,10 @@ public class TimeSeriesAggregationPipeline {
         Collection<Bucket> selectedCollection = availableTargetCollection.getCollection();
         long sourceResolution = availableTargetCollection.getResolution();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
+
+        if ((finalParams.getTo() - finalParams.getFrom()) / finalParams.getResolution() > MAX_INTERVALS_IN_RESPONSE) {
+            throw new IllegalArgumentException("TimeSeries request results in too many result intervals");
+        }
 
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
@@ -78,13 +84,15 @@ public class TimeSeriesAggregationPipeline {
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
-        TimeSeriesAggregationResponse response = new TimeSeriesAggregationResponse(result, finalParams.getResolution(), availableTargetCollection.getResolution(), fallbackToHigherResolutionWithValidTTL);
-        if (query.getFrom() != null && query.getTo() != null) {
-            // axis are calculated only when the interval is specified
-            response.withAxis(drawAxis(finalParams));
-        }
 
-        return response;
+        return new TimeSeriesAggregationResponseBuilder()
+                .setSeries(result)
+                .setStart(finalParams.getFrom())
+                .setEnd(finalParams.getTo())
+                .setResolution(finalParams.getResolution())
+                .setCollectionResolution(availableTargetCollection.getResolution())
+                .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
+                .build();
     }
     
     private long roundDownToAvailableResolution(long targetResolution) {
@@ -104,33 +112,29 @@ public class TimeSeriesAggregationPipeline {
         if (query.getFrom() == null) {
             throw new IllegalArgumentException("From parameters must be specified");
         }
-
-        long resultResolution = sourceResolution;
-        Long resultFrom = roundDownToMultiple(query.getFrom(), sourceResolution);
         // if 'to' parameter is not specified, we take the current time.
         long toParameter = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
+        long resultResolution = sourceResolution;
+
+        Long resultFrom = roundDownToMultiple(query.getFrom(), sourceResolution);
         Long resultTo = roundUpToMultiple(toParameter, sourceResolution);
+        long rangeDiff = resultTo - resultFrom;
+
         if (query.isShrink()) { // we expand the interval to the closest completed resolutions
-            resultResolution = resultTo - resultFrom;
+            resultResolution = rangeDiff;
         } else {
             Integer bucketsCount = query.getBucketsCount();
             if (bucketsCount != null && bucketsCount > 0) {
-                if ((resultTo - resultFrom) / sourceResolution <= bucketsCount) { // not enough buckets
-                    resultResolution = sourceResolution;
-                } else {
-                    long difference = resultTo - resultFrom;
-                    resultResolution = Math.round(difference / (double) bucketsCount);
-                    // there are situation when resultResolution/sourceResolution is below 0.5, and that would end up rounded in 0.
-                    resultResolution = Math.max(Math.round((double) resultResolution / sourceResolution), 1) * sourceResolution; // round to nearest multiple, up or down
-                }
+                resultResolution = getResolutionBasedOnBucketsCount(sourceResolution, rangeDiff, bucketsCount);
             } else {
                 Long proposedResolution = query.getBucketsResolution();
                 if (proposedResolution != null && proposedResolution != 0) {
                     resultResolution = Math.max(sourceResolution, roundDownToMultiple(proposedResolution, sourceResolution));
                     resultResolution = roundDownToMultiple(resultResolution, sourceResolution);
-                    long diff = resultTo - resultFrom;
-                    diff = roundUpToMultiple(diff, resultResolution);
-                    resultTo = resultFrom + diff;
+                    rangeDiff = roundUpToMultiple(rangeDiff, resultResolution);
+                    resultTo = resultFrom + rangeDiff;
+                } else { // no resolution settings specified
+                    resultResolution = getResolutionBasedOnBucketsCount(sourceResolution, rangeDiff, IDEAL_RESPONSE_INTERVALS);
                 }
             }
         }
@@ -144,7 +148,20 @@ public class TimeSeriesAggregationPipeline {
                 .setCollectAttributeKeys(query.getCollectAttributeKeys())
                 .setCollectAttributesValuesLimit(query.getCollectAttributesValuesLimit());
     }
-    
+
+    private static long getResolutionBasedOnBucketsCount(long sourceResolution, long rangeDiff, Integer bucketsCount) {
+        long resultResolution;
+        if (rangeDiff / sourceResolution <= bucketsCount) { // not enough buckets
+            resultResolution = sourceResolution;
+        } else {
+            long difference = rangeDiff;
+            resultResolution = Math.round(difference / (double) bucketsCount);
+            // there are situation when resultResolution/sourceResolution is below 0.5, and that would end up rounded in 0.
+            resultResolution = Math.max(Math.round((double) resultResolution / sourceResolution), 1) * sourceResolution; // round to nearest multiple, up or down
+        }
+        return resultResolution;
+    }
+
     private static long roundUpToMultiple(long value, long multiple) {
         return (long) Math.ceil((double) value / multiple) * multiple;
     }
@@ -177,16 +194,15 @@ public class TimeSeriesAggregationPipeline {
         Long bucketsResolution = query.getBucketsResolution();
         long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         long requestedRange = queryTo - query.getFrom();
-        int idealBucketsCount = 100;
         long idealResolution;
         if (query.isShrink()) {
-            idealResolution = requestedRange / idealBucketsCount;
+            idealResolution = requestedRange / IDEAL_RESPONSE_INTERVALS;
         } else if (bucketsCount != null && bucketsCount > 0) {
             idealResolution = requestedRange / bucketsCount;
         } else if (bucketsResolution != null && bucketsResolution > 0) {
             idealResolution = bucketsResolution;
         } else {
-            idealResolution = requestedRange / idealBucketsCount;
+            idealResolution = requestedRange / IDEAL_RESPONSE_INTERVALS;
         }
         return idealResolution;
     }
