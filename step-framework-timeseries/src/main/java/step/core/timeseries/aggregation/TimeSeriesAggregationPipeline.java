@@ -20,14 +20,19 @@ import java.util.stream.Stream;
 public class TimeSeriesAggregationPipeline {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesAggregationPipeline.class);
-    public static final int MAX_INTERVALS_IN_RESPONSE = 2000;
     public static final int IDEAL_RESPONSE_INTERVALS  = 100;
     // resolution - array index
     private final Map<Long, Integer> resolutionsIndexes = new HashMap<>();
     // sorted
     private final List<TimeSeriesCollection> collections;
+    private int responseMaxIntervals;
 
     public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections) {
+        this(collections, 0);
+    }
+
+    public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, int responseMaxIntervals) {
+        this.responseMaxIntervals = responseMaxIntervals;
         this.collections = collections;
         for (int i = 0; i < collections.size(); i++) {
             TimeSeriesCollection collection = collections.get(i);
@@ -167,19 +172,22 @@ public class TimeSeriesAggregationPipeline {
             if (query.getFrom() == null || query.getTo() == null) {
                 throw new IllegalArgumentException("While splitting, from and to params must be set");
             }
-            if (query.getBucketsCount() > MAX_INTERVALS_IN_RESPONSE) {
-                throw new IllegalArgumentException("Buckets count must be less than or equal to " + MAX_INTERVALS_IN_RESPONSE);
+            if (responseMaxIntervals > 0 && query.getBucketsCount() > responseMaxIntervals) {
+                throw new IllegalArgumentException("Buckets count must be less than or equal to " + responseMaxIntervals);
             }
         }
-        if (query.getBucketsResolution() != null && query.getBucketsResolution() < collections.get(0).getResolution()) {
-            throw new IllegalArgumentException("Buckets resolution must be less than or equal to the minimum registered collection");
+        if (query.getBucketsResolution() != null) {
+            long firstCollectionResolution = collections.get(0).getResolution();
+            if (query.getBucketsResolution() < firstCollectionResolution) {
+                throw new IllegalArgumentException("Buckets resolution must be less than or equal to the minimum registered collection: " + firstCollectionResolution);
+            }
         }
         if (query.getFrom() != null && query.getTo() != null) {
             if (query.getFrom() > query.getTo()) {
-                throw new IllegalArgumentException("Invalid requested range");
+                throw new IllegalArgumentException("Invalid requested range: 'from' timestamp is greater than 'to' timestamp.");
             }
-            if (query.getBucketsResolution() != null && (query.getTo() - query.getFrom()) / query.getBucketsResolution() > MAX_INTERVALS_IN_RESPONSE) {
-                throw new IllegalArgumentException("Requested resolution results in too many response intervals");
+            if (responseMaxIntervals > 0 && query.getBucketsResolution() != null && (query.getTo() - query.getFrom()) / query.getBucketsResolution() > responseMaxIntervals) {
+                throw new IllegalArgumentException("Requested resolution + " + query.getBucketsResolution() + " exceeds the maximum response intervals: " + responseMaxIntervals);
             }
         }
 
