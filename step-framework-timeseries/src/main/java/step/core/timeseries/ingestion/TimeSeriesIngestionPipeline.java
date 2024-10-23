@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 public class TimeSeriesIngestionPipeline implements Closeable {
 
@@ -45,7 +44,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         } else {
             scheduler = null;
         }
-        this.ignoredAttributes = settings.getHandledAttributes();
+        this.ignoredAttributes = settings.getIgnoredAttributes();
         this.nextPipeline = settings.getNextPipeline();
     }
 

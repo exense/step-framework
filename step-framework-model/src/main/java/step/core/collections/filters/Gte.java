@@ -1,7 +1,5 @@
 package step.core.collections.filters;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.Objects;
 
 public class Gte extends AbstractAtomicFilter {
