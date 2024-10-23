@@ -33,7 +33,7 @@ public class TimeSeries implements Closeable {
 
     TimeSeries(List<TimeSeriesCollection> handledCollections, TimeSeriesSettings settings) {
         this.handledCollections = handledCollections;
-        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, settings.getResponseMaxIntervals());
+        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, settings.getResponseMaxIntervals(), settings.getIdealResponseIntervals());
     }
 
     /**

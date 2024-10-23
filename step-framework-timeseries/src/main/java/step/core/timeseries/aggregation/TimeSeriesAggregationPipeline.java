@@ -20,19 +20,16 @@ import java.util.stream.Stream;
 public class TimeSeriesAggregationPipeline {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesAggregationPipeline.class);
-    public static final int IDEAL_RESPONSE_INTERVALS  = 100;
     // resolution - array index
     private final Map<Long, Integer> resolutionsIndexes = new HashMap<>();
     // sorted
     private final List<TimeSeriesCollection> collections;
     private int responseMaxIntervals;
+    private int idealResponseIntervals;
 
-    public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections) {
-        this(collections, 0);
-    }
-
-    public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, int responseMaxIntervals) {
+    public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, int responseMaxIntervals, int idealResponseIntervals) {
         this.responseMaxIntervals = responseMaxIntervals;
+        this.idealResponseIntervals = idealResponseIntervals;
         this.collections = collections;
         for (int i = 0; i < collections.size(); i++) {
             TimeSeriesCollection collection = collections.get(i);
@@ -132,7 +129,7 @@ public class TimeSeriesAggregationPipeline {
                     rangeDiff = roundUpToMultiple(rangeDiff, resultResolution);
                     resultTo = resultFrom + rangeDiff;
                 } else { // no resolution settings specified
-                    resultResolution = getResolutionBasedOnBucketsCount(sourceResolution, rangeDiff, IDEAL_RESPONSE_INTERVALS);
+                    resultResolution = getResolutionBasedOnBucketsCount(sourceResolution, rangeDiff, idealResponseIntervals);
                 }
             }
         }
@@ -206,20 +203,20 @@ public class TimeSeriesAggregationPipeline {
         return this.collections.get(this.collections.size() - 1); // return highest resolution
     }
 
-    private static long getIdealResolution(TimeSeriesAggregationQuery query) {
+    private long getIdealResolution(TimeSeriesAggregationQuery query) {
         Integer bucketsCount = query.getBucketsCount();
         Long bucketsResolution = query.getBucketsResolution();
         long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         long requestedRange = queryTo - query.getFrom();
         long idealResolution;
         if (query.isShrink()) {
-            idealResolution = requestedRange / IDEAL_RESPONSE_INTERVALS;
+            idealResolution = requestedRange / idealResponseIntervals;
         } else if (bucketsCount != null && bucketsCount > 0) {
             idealResolution = requestedRange / bucketsCount;
         } else if (bucketsResolution != null && bucketsResolution > 0) {
             idealResolution = bucketsResolution;
         } else {
-            idealResolution = requestedRange / IDEAL_RESPONSE_INTERVALS;
+            idealResolution = requestedRange / idealResponseIntervals;
         }
         return idealResolution;
     }
