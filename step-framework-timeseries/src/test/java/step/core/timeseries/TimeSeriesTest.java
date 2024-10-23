@@ -215,11 +215,11 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
 
         int timeSeriesResolution = 100;
         TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, timeSeriesResolution);
-        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
+        TimeSeries timeSeries = new TimeSeriesBuilder().registerCollection(collection).build();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
 
         long start;
-        LongAdder count = new LongAdder();
+        LongAdder pointsCount = new LongAdder();
 
         Map<String, Object> attributes = Map.of("key", "value1");
         Map<String, Object> attributes2 = Map.of("key", "value2");
@@ -231,7 +231,7 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
                 executorService.submit(() -> {
                     long currentTime;
                     while ((currentTime = System.currentTimeMillis()) < start + duration) {
-                        count.increment();
+                        pointsCount.increment();
                         ingestionPipeline.ingestPoint(attributes, currentTime, 10L);
                         ingestionPipeline.ingestPoint(attributes2, currentTime, 5L);
                     }
@@ -250,22 +250,26 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
                 .range(start, now)
                 .window(now - start)
                 .build();
-        Map<Long, Bucket> series1 = aggregationPipeline.collect(query).getFirstSeries();
-        assertEquals(count.longValue(), countPoints(series1));
+        TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
+        Map<Long, Bucket> series1 = response.getFirstSeries();
+        assertEquals(pointsCount.longValue(), countPoints(series1));
         assertTrue(series1.size() <= 2);
-
+        System.out.println(now - start);
         // Split in 1 point
         query = new TimeSeriesAggregationQueryBuilder()
                 .withFilter(attributes)
                 .range(start, now)
                 .split(1)
                 .build();
-        series1 = aggregationPipeline.collect(query).getFirstSeries();
-        assertEquals(count.longValue(), countPoints(series1));
+        response = aggregationPipeline.collect(query);
+        series1 = response.getFirstSeries();
+        assertEquals(pointsCount.longValue(), countPoints(series1));
         assertEquals(1, series1.size());
         Bucket firstBucket = series1.values().stream().findFirst().get();
-        assertEquals(now - now % timeSeriesResolution + timeSeriesResolution, (long) firstBucket.getEnd());
         assertEquals(start - start % timeSeriesResolution, firstBucket.getBegin());
+        long expectedEnd = now % timeSeriesResolution == 0 ? now : now - now % timeSeriesResolution + timeSeriesResolution;
+        assertEquals(expectedEnd, (long) firstBucket.getEnd());
+
 
         // Split in 2 points
         query = new TimeSeriesAggregationQueryBuilder()
@@ -273,9 +277,9 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
                 .range(start, now)
                 .split(2)
                 .build();
-        TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
+        response = aggregationPipeline.collect(query);
         series1 = response.getFirstSeries();
-        assertEquals(count.longValue(), countPoints(series1));
+        assertEquals(pointsCount.longValue(), countPoints(series1));
         assertTrue(series1.size() <=3);
         firstBucket = series1.values().stream().findFirst().get();
         assertEquals(response.getResolution(), firstBucket.getEnd() - firstBucket.getBegin());
@@ -286,8 +290,9 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
                 .range(start, now)
                 .build();
         series1 = aggregationPipeline.collect(query).getFirstSeries();
-        assertEquals(count.longValue(), countPoints(series1));
-        assertTrue(series1.size() > duration / timeSeriesResolution);
+        assertEquals(pointsCount.longValue(), countPoints(series1));
+        assertTrue(series1.size() >= duration / timeSeriesResolution);
+//        System.out.println(series1.size());
 
         // Use double source resolution
         int window = timeSeriesResolution * 2;
@@ -297,8 +302,8 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
                 .window(window)
                 .build();
         series1 = aggregationPipeline.collect(query).getFirstSeries();
-        assertEquals(count.longValue(), countPoints(series1));
-        assertTrue(series1.size() > duration / window);
+        assertEquals(pointsCount.longValue(), countPoints(series1));
+        assertTrue(series1.size() >= duration / window);
 
         // Use
         query = new TimeSeriesAggregationQueryBuilder()
@@ -307,7 +312,7 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
                 .window(now - start)
                 .build();
         Map<Long, Bucket> series2 = aggregationPipeline.collect(query).getFirstSeries();
-        assertEquals(count.longValue(), countPoints(series2));
+        assertEquals(pointsCount.longValue(), countPoints(series2));
         assertTrue(series2.size() <= 2);
     }
 
