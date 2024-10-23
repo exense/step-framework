@@ -260,4 +260,8 @@ public class TimeSeriesAggregationPipeline {
             return resultResolution;
         }
     }
+
+    public int getResponseMaxIntervals() {
+        return responseMaxIntervals;
+    }
 }

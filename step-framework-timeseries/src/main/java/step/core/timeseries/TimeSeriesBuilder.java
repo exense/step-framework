@@ -9,6 +9,8 @@ public class TimeSeriesBuilder {
 	
 	private final List<TimeSeriesCollection> handledCollections = new ArrayList<>();
 
+	private int responseMaxIntervals;
+
 	public TimeSeriesBuilder registerCollections(List<TimeSeriesCollection> collections) {
 		collections.forEach(this::registerCollection);
 		return this;
@@ -48,7 +50,16 @@ public class TimeSeriesBuilder {
 			pipeline.setNextPipeline(nextPipeline);
 		}
 	}
-	
+
+	public int getResponseMaxIntervals() {
+		return responseMaxIntervals;
+	}
+
+	public TimeSeriesBuilder setResponseMaxIntervals(int responseMaxIntervals) {
+		this.responseMaxIntervals = responseMaxIntervals;
+		return this;
+	}
+
 	public TimeSeries build() {
 		if (handledCollections.isEmpty()) {
 			throw new IllegalArgumentException("At least one time series collection must be registered");
@@ -56,7 +67,7 @@ public class TimeSeriesBuilder {
 		validateResolutions();
 		handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
 		linkIngestionPipelines();
-		return new TimeSeries(handledCollections);
+		return new TimeSeries(handledCollections, new TimeSeriesSettings().setResponseMaxIntervals(responseMaxIntervals));
 	}
 	
 }

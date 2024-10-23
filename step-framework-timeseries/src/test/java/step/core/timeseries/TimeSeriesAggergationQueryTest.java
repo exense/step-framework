@@ -121,21 +121,33 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void tooBigSplitTest() {
-        TimeSeries timeSeries = getNewTimeSeries(200);
+        TimeSeriesCollection collection = getCollection(200);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollection(collection)
+                .setResponseMaxIntervals(1000)
+                .build();
         long now = System.currentTimeMillis();
+        TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
+
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(0, now)
-                .split(TimeSeriesAggregationPipeline.MAX_INTERVALS_IN_RESPONSE + 1)
+                .split(aggregationPipeline.getResponseMaxIntervals() + 1)
                 .build();
-        timeSeries.getAggregationPipeline().collect(query);
+
+        aggregationPipeline.collect(query);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooSmallWindowTest() {
-        TimeSeries timeSeries = getNewTimeSeries(200);
+        TimeSeriesCollection collection = getCollection(200);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollection(collection)
+                .setResponseMaxIntervals(1000)
+                .build();
         long now = System.currentTimeMillis();
+        TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - TimeSeriesAggregationPipeline.MAX_INTERVALS_IN_RESPONSE * 1001, now)
+                .range(now - aggregationPipeline.getResponseMaxIntervals() * 1001L, now)
                 .window(1000)
                 .build();
         timeSeries.getAggregationPipeline().collect(query);
