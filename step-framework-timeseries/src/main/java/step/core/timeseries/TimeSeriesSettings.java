@@ -2,13 +2,13 @@ package step.core.timeseries;
 
 public class TimeSeriesSettings {
 
-    private static final int DEFAULT_RESPONSE_MAX_INTERVALS = 1000;
-    private static final int DEFAULT_IDEAL_RESPONSE_INTERVALS = 100;
+    public static final int DEFAULT_RESPONSE_MAX_INTERVALS = 1000;
+    public static final int DEFAULT_IDEAL_RESPONSE_INTERVALS = 100;
 
     /**
      * Optional limit representing the maximum intervals which cover the requested time range
      */
-    private int responseMaxIntervals= DEFAULT_RESPONSE_MAX_INTERVALS;
+    private int responseMaxIntervals = DEFAULT_RESPONSE_MAX_INTERVALS;
 
     /**
      * Defines in how many equal intervals the requested range will be split. Use a higher value for more granular response.

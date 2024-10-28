@@ -10,6 +10,7 @@ public class TimeSeriesBuilder {
 	private final List<TimeSeriesCollection> handledCollections = new ArrayList<>();
 
 	private int responseMaxIntervals;
+	private int idealResponseIntervals;
 
 	public TimeSeriesBuilder registerCollections(List<TimeSeriesCollection> collections) {
 		collections.forEach(this::registerCollection);
@@ -20,7 +21,29 @@ public class TimeSeriesBuilder {
 		handledCollections.add(collection);
 		return this;
 	}
-	
+
+	public List<TimeSeriesCollection> getHandledCollections() {
+		return handledCollections;
+	}
+
+	public int getResponseMaxIntervals() {
+		return responseMaxIntervals;
+	}
+
+	public TimeSeriesBuilder setResponseMaxIntervals(int responseMaxIntervals) {
+		this.responseMaxIntervals = responseMaxIntervals;
+		return this;
+	}
+
+	public int getIdealResponseIntervals() {
+		return idealResponseIntervals;
+	}
+
+	public TimeSeriesBuilder setIdealResponseIntervals(int idealResponseIntervals) {
+		this.idealResponseIntervals = idealResponseIntervals;
+		return this;
+	}
+
 	/**
 	 * Each pipeline must have a resolution multiplier of the one before.
 	 */
@@ -51,15 +74,6 @@ public class TimeSeriesBuilder {
 		}
 	}
 
-	public int getResponseMaxIntervals() {
-		return responseMaxIntervals;
-	}
-
-	public TimeSeriesBuilder setResponseMaxIntervals(int responseMaxIntervals) {
-		this.responseMaxIntervals = responseMaxIntervals;
-		return this;
-	}
-
 	public TimeSeries build() {
 		if (handledCollections.isEmpty()) {
 			throw new IllegalArgumentException("At least one time series collection must be registered");
@@ -67,7 +81,9 @@ public class TimeSeriesBuilder {
 		validateResolutions();
 		handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
 		linkIngestionPipelines();
-		return new TimeSeries(handledCollections, new TimeSeriesSettings().setResponseMaxIntervals(responseMaxIntervals));
+		return new TimeSeries(handledCollections, new TimeSeriesSettings()
+				.setResponseMaxIntervals(responseMaxIntervals)
+				.setIdealResponseIntervals(idealResponseIntervals));
 	}
 	
 }
