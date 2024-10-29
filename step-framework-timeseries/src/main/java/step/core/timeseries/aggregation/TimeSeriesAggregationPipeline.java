@@ -190,7 +190,7 @@ public class TimeSeriesAggregationPipeline {
                 throw new IllegalArgumentException("Invalid requested range: 'from' timestamp is greater than 'to' timestamp.");
             }
             if (responseMaxIntervals > 0 && query.getBucketsResolution() != null && (query.getTo() - query.getFrom()) / query.getBucketsResolution() > responseMaxIntervals) {
-                throw new IllegalArgumentException("Requested resolution + " + query.getBucketsResolution() + " exceeds the maximum response intervals: " + responseMaxIntervals);
+                throw new IllegalArgumentException("Requested resolution of " + query.getBucketsResolution() + " ms exceeds the maximum response intervals: " + responseMaxIntervals);
             }
         }
 
