@@ -28,6 +28,12 @@ public class TimeSeriesAggregationPipeline {
     private int idealResponseIntervals;
 
     public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, int responseMaxIntervals, int idealResponseIntervals) {
+        if (responseMaxIntervals <= 0) {
+            throw new IllegalArgumentException("responseMaxIntervals must be greater than 0");
+        }
+        if (idealResponseIntervals <=0) {
+            throw new IllegalArgumentException("idealResponseIntervals must be greater than 0");
+        }
         this.responseMaxIntervals = responseMaxIntervals;
         this.idealResponseIntervals = idealResponseIntervals;
         this.collections = collections;

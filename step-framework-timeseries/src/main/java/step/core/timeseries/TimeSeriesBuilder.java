@@ -1,5 +1,6 @@
 package step.core.timeseries;
 
+import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
 import java.util.*;
@@ -8,9 +9,8 @@ import java.util.stream.Collectors;
 public class TimeSeriesBuilder {
 	
 	private final List<TimeSeriesCollection> handledCollections = new ArrayList<>();
+	private TimeSeriesSettings settings = new TimeSeriesSettings();
 
-	private int responseMaxIntervals;
-	private int idealResponseIntervals;
 
 	public TimeSeriesBuilder registerCollections(List<TimeSeriesCollection> collections) {
 		collections.forEach(this::registerCollection);
@@ -26,21 +26,13 @@ public class TimeSeriesBuilder {
 		return handledCollections;
 	}
 
-	public int getResponseMaxIntervals() {
-		return responseMaxIntervals;
+	public TimeSeriesSettings getSettings() {
+		return settings;
 	}
 
-	public TimeSeriesBuilder setResponseMaxIntervals(int responseMaxIntervals) {
-		this.responseMaxIntervals = responseMaxIntervals;
-		return this;
-	}
-
-	public int getIdealResponseIntervals() {
-		return idealResponseIntervals;
-	}
-
-	public TimeSeriesBuilder setIdealResponseIntervals(int idealResponseIntervals) {
-		this.idealResponseIntervals = idealResponseIntervals;
+	public TimeSeriesBuilder setSettings(TimeSeriesSettings settings) {
+		Objects.requireNonNull(settings, "Settings object cannot be null");
+		this.settings = settings;
 		return this;
 	}
 
@@ -81,9 +73,7 @@ public class TimeSeriesBuilder {
 		validateResolutions();
 		handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
 		linkIngestionPipelines();
-		return new TimeSeries(handledCollections, new TimeSeriesSettings()
-				.setResponseMaxIntervals(responseMaxIntervals)
-				.setIdealResponseIntervals(idealResponseIntervals));
+		return new TimeSeries(handledCollections, settings);
 	}
 	
 }
