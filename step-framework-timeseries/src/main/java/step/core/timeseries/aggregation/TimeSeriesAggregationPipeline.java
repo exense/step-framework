@@ -25,13 +25,21 @@ public class TimeSeriesAggregationPipeline {
     // sorted
     private final List<TimeSeriesCollection> collections;
 
-    public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections) {
+    private boolean ttlEnabled;
+
+    public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, boolean ttlEnabled) {
         this.collections = collections;
+        this.ttlEnabled = ttlEnabled;
         for (int i = 0; i < collections.size(); i++) {
             TimeSeriesCollection collection = collections.get(i);
             resolutionsIndexes.put(collection.getResolution(), i);
         }
     }
+
+    public void setTtlEnabled(boolean ttlEnabled) {
+        this.ttlEnabled = ttlEnabled;
+    }
+
 
     private void collectFilterAttributesRecursively(Filter filter, Set<String> collectedAttributes) {
         if (filter.getField() != null) {
@@ -67,7 +75,7 @@ public class TimeSeriesAggregationPipeline {
         } else { // most efficient
             idealResolution = this.roundDownToAvailableResolution(getIdealResolution(query));
         }
-        TimeSeriesCollection idealAvailableCollection = chooseFirstAvailableCollectionBasedOnTTL(idealResolution, query);
+        TimeSeriesCollection idealAvailableCollection = ttlEnabled ? chooseFirstAvailableCollectionBasedOnTTL(idealResolution, query) : this.collections.get(this.resolutionsIndexes.get(idealResolution));
         idealAvailableCollection = chooseLastCollectionWhichHandleAttributes(idealAvailableCollection.getResolution(), usedAttributes);
 
         boolean fallbackToHigherResolutionWithValidTTL = idealResolution < idealAvailableCollection.getResolution();

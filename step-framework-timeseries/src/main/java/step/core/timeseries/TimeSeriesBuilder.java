@@ -10,6 +10,8 @@ public class TimeSeriesBuilder {
 	
 	private final List<TimeSeriesCollection> handledCollections = new ArrayList<>();
 
+	private boolean ttlEnabled = false;
+
 	public TimeSeriesBuilder registerCollections(List<TimeSeriesCollection> collections) {
 		collections.forEach(this::registerCollection);
 		return this;
@@ -19,7 +21,12 @@ public class TimeSeriesBuilder {
 		handledCollections.add(collection);
 		return this;
 	}
-	
+
+	public TimeSeriesBuilder setTtlEnabled(boolean ttlEnabled) {
+		this.ttlEnabled = ttlEnabled;
+		return this;
+	}
+
 	/**
 	 * Each pipeline must have a resolution multiplier of the one before.
 	 */
@@ -71,7 +78,7 @@ public class TimeSeriesBuilder {
 		validateResolutions();
 		validateCollectionsIgnoredAttributes();
 		linkIngestionPipelines();
-		return new TimeSeries(handledCollections);
+		return new TimeSeries(handledCollections, ttlEnabled);
 	}
 	
 }
