@@ -54,6 +54,7 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
         col2.save(col2Bucket);
         TimeSeries timeSeries = new TimeSeriesBuilder()
                 .registerCollections(Arrays.asList(tsCol1, tsCol2))
+                .setTtlEnabled(true)
                 .build();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(now - 1000, now) // col1 collection should be ignored, even if it is the ideal target
@@ -74,6 +75,7 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
         long now = System.currentTimeMillis();
         TimeSeries timeSeries = new TimeSeriesBuilder()
                 .registerCollection(collection)
+                .setTtlEnabled(true)
                 .build();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
@@ -87,6 +89,13 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
                 .build();
         response = aggregationPipeline.collect(query);
         Assert.assertFalse(response.isTtlCovered());
+
+        timeSeries.setTtlEnabled(false);
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(now - 60_000, now)
+                .build();
+        response = aggregationPipeline.collect(query);
+        Assert.assertTrue(response.isTtlCovered());
     }
 
 }

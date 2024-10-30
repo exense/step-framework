@@ -57,6 +57,7 @@ public class TimeSeriesBaseTest {
     protected TimeSeries getTimeSeriesWithResolutions(long... resolutions) {
         return new TimeSeriesBuilder()
                 .registerCollections(Arrays.stream(resolutions).mapToObj(this::getCollection).collect(Collectors.toList()))
+                .setTtlEnabled(true)
                 .build();
     }
 

@@ -183,6 +183,7 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
                         getCollectionWithTTL(10000, 5000L, Set.of("a", "b")),
                         getCollectionWithTTL(20000, 10_000L, Set.of("a", "b", "c"))
                 ))
+                .setTtlEnabled(true)
                 .build();
         Bucket bucket = getRandomBucket();
         long now = System.currentTimeMillis();

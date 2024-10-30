@@ -79,7 +79,7 @@ public class TimeSeriesAggregationPipeline {
         idealAvailableCollection = chooseLastCollectionWhichHandleAttributes(idealAvailableCollection.getResolution(), usedAttributes);
 
         boolean fallbackToHigherResolutionWithValidTTL = idealResolution < idealAvailableCollection.getResolution();
-        boolean ttlCovered = collectionTtlCoverInterval(idealAvailableCollection, queryFrom, queryTo);
+        boolean ttlCovered = ttlEnabled ? collectionTtlCoverInterval(idealAvailableCollection, queryFrom, queryTo) : true;
 
         Collection<Bucket> selectedCollection = idealAvailableCollection.getCollection();
         long sourceResolution = idealAvailableCollection.getResolution();
