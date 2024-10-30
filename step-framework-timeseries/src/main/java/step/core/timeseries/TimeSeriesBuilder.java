@@ -1,5 +1,6 @@
 package step.core.timeseries;
 
+import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
 import java.util.*;
@@ -8,6 +9,8 @@ import java.util.stream.Collectors;
 public class TimeSeriesBuilder {
 	
 	private final List<TimeSeriesCollection> handledCollections = new ArrayList<>();
+	private TimeSeriesSettings settings = new TimeSeriesSettings();
+
 
 	public TimeSeriesBuilder registerCollections(List<TimeSeriesCollection> collections) {
 		collections.forEach(this::registerCollection);
@@ -18,7 +21,21 @@ public class TimeSeriesBuilder {
 		handledCollections.add(collection);
 		return this;
 	}
-	
+
+	public List<TimeSeriesCollection> getHandledCollections() {
+		return handledCollections;
+	}
+
+	public TimeSeriesSettings getSettings() {
+		return settings;
+	}
+
+	public TimeSeriesBuilder setSettings(TimeSeriesSettings settings) {
+		Objects.requireNonNull(settings, "Settings object cannot be null");
+		this.settings = settings;
+		return this;
+	}
+
 	/**
 	 * Each pipeline must have a resolution multiplier of the one before.
 	 */
@@ -48,7 +65,7 @@ public class TimeSeriesBuilder {
 			pipeline.setNextPipeline(nextPipeline);
 		}
 	}
-	
+
 	public TimeSeries build() {
 		if (handledCollections.isEmpty()) {
 			throw new IllegalArgumentException("At least one time series collection must be registered");
@@ -56,7 +73,7 @@ public class TimeSeriesBuilder {
 		validateResolutions();
 		handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
 		linkIngestionPipelines();
-		return new TimeSeries(handledCollections);
+		return new TimeSeries(handledCollections, settings);
 	}
 	
 }

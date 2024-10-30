@@ -13,6 +13,7 @@ import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -37,8 +38,11 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .window(10)
+                .range(0, 10000)
                 .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
+        Assert.assertEquals(0, response.getStart());
+        Assert.assertEquals(10_000, response.getEnd());
     }
 
 
@@ -58,10 +62,12 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
                 .build();
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationResponse response = pipeline.collect(query);
+        Assert.assertEquals(0, response.getStart());
         Assert.assertTrue(response.getResolution() > System.currentTimeMillis() - 3_000);
         response.getSeries().values().forEach(map -> {
             Assert.assertTrue(map.values().size() <= 1);
         });
+
     }
 
     @Test
@@ -85,7 +91,7 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
         int bucketsCount = 20;
         for (int i = 0; i < bucketsCount; i++) {
             Bucket bucket = new Bucket();
-            bucket.setBegin(i * 1000);
+            bucket.setBegin(i * 1000); // one every second
             timeSeries.getDefaultCollection().getCollection().save(bucket);
         }
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
@@ -100,6 +106,8 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
         Assert.assertEquals(1, response.getSeries().size());
         Map<Long, Bucket> seriesResponse = response.getFirstSeries();
         Assert.assertEquals(split, seriesResponse.size());
+        Assert.assertEquals(0, response.getStart());
+        Assert.assertEquals(10_000, response.getEnd());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -109,6 +117,72 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
                 .split(5)
                 .build();
         timeSeries.getAggregationPipeline().collect(query);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void tooBigSplitTest() {
+        TimeSeriesCollection collection = getCollection(200);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollection(collection)
+                .setSettings(new TimeSeriesSettings().setResponseMaxIntervals(1000))
+                .build();
+        long now = System.currentTimeMillis();
+        TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
+
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(0, now)
+                .split(aggregationPipeline.getResponseMaxIntervals() + 1)
+                .build();
+
+        aggregationPipeline.collect(query);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void tooSmallWindowTest() {
+        TimeSeriesCollection collection = getCollection(200);
+        TimeSeries timeSeries = new TimeSeriesBuilder()
+                .registerCollection(collection)
+                .setSettings(new TimeSeriesSettings().setResponseMaxIntervals(1000))
+                .build();
+        long now = System.currentTimeMillis();
+        TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(now - aggregationPipeline.getResponseMaxIntervals() * 1001L, now)
+                .window(1000)
+                .build();
+        timeSeries.getAggregationPipeline().collect(query);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidIntervalTest() {
+        TimeSeries timeSeries = getNewTimeSeries(200);
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(10000, 1000)
+                .window(1000)
+                .build();
+        timeSeries.getAggregationPipeline().collect(query);
+    }
+
+    @Test
+    public void responseRangeWithCustomWindowTest() {
+        TimeSeries timeSeries = getNewTimeSeries(1000);
+        TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                .range(2000, 10_000)
+                .window(5000) // should end up in 2 buckets
+                .build();
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(query);
+        Assert.assertEquals(2000, response.getStart());
+        Assert.assertEquals(12_000, response.getEnd());
+        Assert.assertEquals(5000, response.getResolution());
+
+        query = new TimeSeriesAggregationQueryBuilder()
+                .range(2000, 9500)
+                .window(5000) // should end up in 2 buckets
+                .build();
+        response = timeSeries.getAggregationPipeline().collect(query);
+        Assert.assertEquals(2000, response.getStart());
+        Assert.assertEquals(12_000, response.getEnd());
+        Assert.assertEquals(5000, response.getResolution());
     }
 
 }
