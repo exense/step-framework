@@ -14,6 +14,7 @@ public class TimeSeriesAggregationResponseBuilder {
     private long resolution;
     private long collectionResolution;
     private boolean higherResolutionUsed;
+    private boolean ttlCovered;
 
     public long getStart() {
         return start;
@@ -68,9 +69,15 @@ public class TimeSeriesAggregationResponseBuilder {
         this.higherResolutionUsed = higherResolutionUsed;
         return this;
     }
+
+    public TimeSeriesAggregationResponseBuilder setTtlCovered(boolean ttlCovered) {
+        this.ttlCovered = ttlCovered;
+        return this;
+    }
+
     public TimeSeriesAggregationResponse build() {
         Objects.requireNonNull(start);
         Objects.requireNonNull(end);
-        return new TimeSeriesAggregationResponse(series, start, end, resolution, collectionResolution, higherResolutionUsed);
+        return new TimeSeriesAggregationResponse(series, start, end, resolution, collectionResolution, higherResolutionUsed, ttlCovered);
     }
 }

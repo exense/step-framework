@@ -1,5 +1,6 @@
 package step.core.timeseries;
 
+import org.apache.commons.collections.CollectionUtils;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
 import java.util.*;
@@ -63,7 +64,16 @@ public class TimeSeriesBuilder {
 			pipeline.setNextPipeline(nextPipeline);
 		}
 	}
-	
+
+	public TimeSeriesBuilder setSettings(TimeSeriesSettings settings) {
+		this.settings = settings;
+		return this;
+	}
+
+	public TimeSeriesSettings getSettings() {
+		return settings;
+	}
+
 	public TimeSeries build() {
 		if (handledCollections.isEmpty()) {
 			throw new IllegalArgumentException("At least one time series collection must be registered");
@@ -72,7 +82,8 @@ public class TimeSeriesBuilder {
 		validateResolutions();
 		validateCollectionsIgnoredAttributes();
 		linkIngestionPipelines();
-		return new TimeSeries(handledCollections);
+		return new TimeSeries(handledCollections, settings);
 	}
-	
+
+
 }

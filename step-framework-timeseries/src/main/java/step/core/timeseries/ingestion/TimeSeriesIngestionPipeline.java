@@ -1,5 +1,6 @@
 package step.core.timeseries.ingestion;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
@@ -12,6 +13,7 @@ import step.core.timeseries.bucket.BucketBuilder;
 
 import java.io.Closeable;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;

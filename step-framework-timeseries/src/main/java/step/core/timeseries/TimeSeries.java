@@ -34,7 +34,8 @@ public class TimeSeries implements Closeable {
 
     TimeSeries(List<TimeSeriesCollection> handledCollections, TimeSeriesSettings settings) {
         this.handledCollections = handledCollections;
-        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, settings.getResponseMaxIntervals(), settings.getIdealResponseIntervals());
+        this.ttlEnabled = settings.isTtlEnabled();
+        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, settings.getResponseMaxIntervals(), settings.getIdealResponseIntervals(), settings.isTtlEnabled());
     }
     public boolean isTtlEnabled() {
         return ttlEnabled;

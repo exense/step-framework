@@ -24,8 +24,8 @@ public class TimeSeriesAggregationPipeline {
     private final Map<Long, Integer> resolutionsIndexes = new HashMap<>();
     // sorted
     private final List<TimeSeriesCollection> collections;
-    private int responseMaxIntervals;
-    private int idealResponseIntervals;
+    private final int responseMaxIntervals;
+    private final int idealResponseIntervals;
     private boolean ttlEnabled;
 
     public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, int responseMaxIntervals, int idealResponseIntervals, boolean ttlEnabled) {
@@ -131,8 +131,9 @@ public class TimeSeriesAggregationPipeline {
                 .setStart(finalParams.getFrom())
                 .setEnd(finalParams.getTo())
                 .setResolution(finalParams.getResolution())
-                .setCollectionResolution(availableTargetCollection.getResolution())
+                .setCollectionResolution(idealAvailableCollection.getResolution())
                 .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
+                .setTtlCovered(ttlCovered)
                 .build();
     }
     
