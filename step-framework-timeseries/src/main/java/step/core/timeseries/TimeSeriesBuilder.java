@@ -1,6 +1,5 @@
 package step.core.timeseries;
 
-import org.apache.commons.collections.CollectionUtils;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
 import java.util.*;
@@ -9,8 +8,8 @@ import java.util.stream.Collectors;
 public class TimeSeriesBuilder {
 	
 	private final List<TimeSeriesCollection> handledCollections = new ArrayList<>();
+	private TimeSeriesSettings settings = new TimeSeriesSettings();
 
-	private boolean ttlEnabled = false;
 
 	public TimeSeriesBuilder registerCollections(List<TimeSeriesCollection> collections) {
 		collections.forEach(this::registerCollection);
@@ -21,12 +20,7 @@ public class TimeSeriesBuilder {
 		handledCollections.add(collection);
 		return this;
 	}
-
-	public TimeSeriesBuilder setTtlEnabled(boolean ttlEnabled) {
-		this.ttlEnabled = ttlEnabled;
-		return this;
-	}
-
+	
 	/**
 	 * Each pipeline must have a resolution multiplier of the one before.
 	 */
@@ -78,7 +72,7 @@ public class TimeSeriesBuilder {
 		validateResolutions();
 		validateCollectionsIgnoredAttributes();
 		linkIngestionPipelines();
-		return new TimeSeries(handledCollections, ttlEnabled);
+		return new TimeSeries(handledCollections);
 	}
 	
 }

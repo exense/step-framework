@@ -29,15 +29,13 @@ public class TimeSeries implements Closeable {
     private boolean ttlEnabled;
 
     TimeSeries(List<TimeSeriesCollection> handledCollections) {
-        this(handledCollections, false);
+        this(handledCollections, new TimeSeriesSettings());
     }
 
-    TimeSeries(List<TimeSeriesCollection> handledCollections, boolean ttlEnabled) {
+    TimeSeries(List<TimeSeriesCollection> handledCollections, TimeSeriesSettings settings) {
         this.handledCollections = handledCollections;
-        this.ttlEnabled = ttlEnabled;
-        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, ttlEnabled);
+        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, settings.getResponseMaxIntervals(), settings.getIdealResponseIntervals());
     }
-
     public boolean isTtlEnabled() {
         return ttlEnabled;
     }

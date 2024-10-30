@@ -1,15 +1,17 @@
 package step.core.timeseries.ingestion;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
+import step.core.collections.Filter;
+import step.core.collections.Filters;
+import step.core.collections.filters.Equals;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
 
 import java.io.Closeable;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;

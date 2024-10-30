@@ -8,7 +8,8 @@ import java.util.Map;
 
 public class TimeSeriesAggregationResponse {
 
-    private List<Long> axis;
+    private long start;
+    private long end;
     private final Map<BucketAttributes, Map<Long, Bucket>> series;
 
     /**
@@ -31,21 +32,22 @@ public class TimeSeriesAggregationResponse {
      */
     private final boolean ttlCovered;
 
-    public TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long resolution, long collectionResolution, boolean higherResolutionUsed, boolean ttlCovered) {
+    TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long start, long end, long resolution, long collectionResolution, boolean higherResolutionUsed, boolean ttlCovered) {
         this.series = series;
         this.resolution = resolution;
         this.collectionResolution = collectionResolution;
         this.higherResolutionUsed = higherResolutionUsed;
+        this.start = start;
+        this.end = end;
         this.ttlCovered = ttlCovered;
     }
 
-    public TimeSeriesAggregationResponse withAxis(List<Long> axis) {
-        this.axis = axis;
-        return this;
+    public long getStart() {
+        return start;
     }
 
-    public List<Long> getAxis() {
-        return axis;
+    public long getEnd() {
+        return end;
     }
 
     public long getResolution() {
