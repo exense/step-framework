@@ -2,7 +2,7 @@ package step.core.timeseries;
 
 public class TimeSeriesSettings {
 
-    public static final int DEFAULT_RESPONSE_MAX_INTERVALS = 1000;
+    public static final int DEFAULT_RESPONSE_MAX_INTERVALS = 4000;
     public static final int DEFAULT_IDEAL_RESPONSE_INTERVALS = 100;
 
     /**
