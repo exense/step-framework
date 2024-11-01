@@ -19,6 +19,7 @@ public class Regex extends AbstractAtomicFilter {
         this.caseSensitive = caseSensitive;
     }
 
+    @Override
     public String getField() {
         return field;
     }

@@ -25,7 +25,8 @@ public class TimeSeries implements Closeable {
 
     private final List<TimeSeriesCollection> handledCollections;
     private final TimeSeriesAggregationPipeline aggregationPipeline;
-    
+
+    private boolean ttlEnabled;
 
     TimeSeries(List<TimeSeriesCollection> handledCollections) {
         this(handledCollections, new TimeSeriesSettings());
@@ -33,7 +34,17 @@ public class TimeSeries implements Closeable {
 
     TimeSeries(List<TimeSeriesCollection> handledCollections, TimeSeriesSettings settings) {
         this.handledCollections = handledCollections;
-        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, settings.getResponseMaxIntervals(), settings.getIdealResponseIntervals());
+        this.ttlEnabled = settings.isTtlEnabled();
+        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, settings.getResponseMaxIntervals(), settings.getIdealResponseIntervals(), settings.isTtlEnabled());
+    }
+    public boolean isTtlEnabled() {
+        return ttlEnabled;
+    }
+
+    public TimeSeries setTtlEnabled(boolean ttlEnabled) {
+        this.ttlEnabled = ttlEnabled;
+        this.aggregationPipeline.setTtlEnabled(ttlEnabled);
+        return this;
     }
 
     /**
@@ -50,6 +61,7 @@ public class TimeSeries implements Closeable {
                 logger.debug("Populating time-series collection: " + collectionName);
                 TimeSeriesCollection previousCollection = handledCollections.get(i - 1);
                 TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
+                        .setIgnoredAttributes(collection.getIgnoredAttributes())
                         .setResolution(collection.getResolution())
                         .setFlushingPeriodMs(TimeUnit.SECONDS.toMillis(30));
                 try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection.getCollection(), ingestionSettings)) {

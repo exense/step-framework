@@ -15,6 +15,8 @@ public class TimeSeriesSettings {
      */
     private int idealResponseIntervals = DEFAULT_IDEAL_RESPONSE_INTERVALS;
 
+    private boolean ttlEnabled;
+
     public int getResponseMaxIntervals() {
         return responseMaxIntervals;
     }
@@ -30,6 +32,15 @@ public class TimeSeriesSettings {
 
     public TimeSeriesSettings setIdealResponseIntervals(int idealResponseIntervals) {
         this.idealResponseIntervals = idealResponseIntervals;
+        return this;
+    }
+
+    public boolean isTtlEnabled() {
+        return ttlEnabled;
+    }
+
+    public TimeSeriesSettings setTtlEnabled(boolean ttlEnabled) {
+        this.ttlEnabled = ttlEnabled;
         return this;
     }
 }

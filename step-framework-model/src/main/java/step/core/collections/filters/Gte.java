@@ -5,6 +5,7 @@ import java.util.Objects;
 public class Gte extends AbstractAtomicFilter {
 
     private String field;
+
     private long value;
 
     public Gte() {
@@ -17,6 +18,7 @@ public class Gte extends AbstractAtomicFilter {
         this.value = value;
     }
 
+    @Override
     public String getField() {
         return field;
     }

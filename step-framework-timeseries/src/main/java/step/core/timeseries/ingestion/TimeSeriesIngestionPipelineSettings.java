@@ -1,9 +1,12 @@
 package step.core.timeseries.ingestion;
 
+import java.util.Set;
+
 public class TimeSeriesIngestionPipelineSettings {
 
     private long resolution;
     private long flushingPeriodMs;
+    private Set<String> ignoredAttributes;
     private TimeSeriesIngestionPipeline nextPipeline; // optional
 
     public long getResolution() {
@@ -31,5 +34,14 @@ public class TimeSeriesIngestionPipelineSettings {
 
     public TimeSeriesIngestionPipeline getNextPipeline() {
         return nextPipeline;
+    }
+
+    public Set<String> getIgnoredAttributes() {
+        return ignoredAttributes;
+    }
+
+    public TimeSeriesIngestionPipelineSettings setIgnoredAttributes(Set<String> ignoredAttributes) {
+        this.ignoredAttributes = ignoredAttributes;
+        return this;
     }
 }
