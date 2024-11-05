@@ -115,6 +115,11 @@ public class Filters {
 		return new Exists(field);
 	}
 
+	/**
+	 * Helper method to extract all attributes (fields) on which the filters are applied
+	 * @param filter the filter for which with extract the list of attributes
+	 * @return the set of attributes
+	 */
 	public static Set<String> collectFilterAttributes(Filter filter) {
 		Set<String> collectedAttributes = new HashSet<>();
 		collectFilterAttributesRecursively(filter, collectedAttributes);
