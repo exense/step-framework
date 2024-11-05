@@ -268,7 +268,7 @@ public class TableService {
         if (requestFilters != null) {
             requestFilters.forEach(f -> filters.add(f.toFilter()));
         }
-        table.getImplicitTableFiltersFactory().ifPresent(factory -> filters.add(factory.apply(filters)));
+        table.getDerivedTableFiltersFactory().ifPresent(factory -> filters.add(factory.apply(filters)));
 
         // Create final filter
         return filters.size() > 0 ? Filters.and(filters) : Filters.empty();

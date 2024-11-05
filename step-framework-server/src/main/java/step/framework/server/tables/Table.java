@@ -19,7 +19,7 @@ public class Table<T> {
 
     private final boolean filtered;
     private BiFunction<TableParameters, Session<?>, Filter> tableFiltersFactory;
-    private Function<ArrayList<Filter>, Filter> implicitTableFiltersFactory;
+    private Function<ArrayList<Filter>, Filter> derivedTableFiltersFactory;
 
     private Integer maxFindDuration;
     private Integer countLimit;
@@ -58,11 +58,11 @@ public class Table<T> {
     }
 
     /**
-     * @param implicitTableFiltersFactory a factory for additional filters to be applied at each table request
+     * @param derivedTableFiltersFactory a factory for additional filters derived from provided filters to be applied at each table request
      * @return this instance
      */
-    public Table<T> withImplicitTableFiltersFactory(Function<ArrayList<Filter>, Filter> implicitTableFiltersFactory) {
-        this.implicitTableFiltersFactory = implicitTableFiltersFactory;
+    public Table<T> withDerivedTableFiltersFactory(Function<ArrayList<Filter>, Filter> derivedTableFiltersFactory) {
+        this.derivedTableFiltersFactory = derivedTableFiltersFactory;
         return this;
     }
 
@@ -175,7 +175,7 @@ public class Table<T> {
         return Optional.ofNullable(resultItemTransformer);
     }
 
-    public Optional<Function<ArrayList<Filter>, Filter>> getImplicitTableFiltersFactory() {
-        return Optional.ofNullable(implicitTableFiltersFactory);
+    public Optional<Function<ArrayList<Filter>, Filter>> getDerivedTableFiltersFactory() {
+        return Optional.ofNullable(derivedTableFiltersFactory);
     }
 }
