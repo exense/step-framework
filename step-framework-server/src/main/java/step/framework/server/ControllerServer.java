@@ -256,6 +256,9 @@ public class ControllerServer {
 		ResourceCollection resourceCollection = new ResourceCollection(resources);
 		servletContextHandler.setBaseResource(resourceCollection);
 		servletContextHandler.setContextPath(contextRoot);
+		// Add the CacheControlFilter for resources
+		FilterHolder cacheControlFilter = new FilterHolder(new CacheControlFilter());
+		servletContextHandler.addFilter(cacheControlFilter, "/*", null);
 		addHandler(servletContextHandler);
 	}
 
