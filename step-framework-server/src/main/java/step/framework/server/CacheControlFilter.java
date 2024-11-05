@@ -25,7 +25,7 @@ public class CacheControlFilter implements Filter {
 
             // Check if the request is for the index HTML file which is also implicit for the root URI context (welcome file)
             if (request.getRequestURI().endsWith("index.html") || request.getPathInContext().equals("/")) {
-                // Set Cache-Control header to cache HTML files for 1 hour
+                // Set Cache-Control header to never cache HTML files
                 httpResponse.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
             }
         }
