@@ -19,7 +19,9 @@
 package step.core.collections;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.bson.types.ObjectId;
 
@@ -113,4 +115,18 @@ public class Filters {
 		return new Exists(field);
 	}
 
+	public static Set<String> collectFilterAttributes(Filter filter) {
+		Set<String> collectedAttributes = new HashSet<>();
+		collectFilterAttributesRecursively(filter, collectedAttributes);
+		return  collectedAttributes;
+	}
+
+	public static void collectFilterAttributesRecursively(Filter filter, Set<String> collectedAttributes) {
+		if (filter.getField() != null) {
+			collectedAttributes.add(filter.getField());
+		}
+		if (filter.getChildren() != null) {
+			filter.getChildren().forEach(c -> collectFilterAttributesRecursively(c, collectedAttributes));
+		}
+	}
 }

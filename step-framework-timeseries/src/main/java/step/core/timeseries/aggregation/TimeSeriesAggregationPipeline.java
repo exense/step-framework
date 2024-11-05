@@ -16,6 +16,8 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static step.core.collections.Filters.collectFilterAttributesRecursively;
+
 
 public class TimeSeriesAggregationPipeline {
 
@@ -47,16 +49,6 @@ public class TimeSeriesAggregationPipeline {
 
     public void setTtlEnabled(boolean ttlEnabled) {
         this.ttlEnabled = ttlEnabled;
-    }
-
-
-    private void collectFilterAttributesRecursively(Filter filter, Set<String> collectedAttributes) {
-        if (filter.getField() != null) {
-            collectedAttributes.add(filter.getField());
-        }
-        if (filter.getChildren() != null) {
-            filter.getChildren().forEach(c -> collectFilterAttributesRecursively(c, collectedAttributes));
-        }
     }
 
     private Set<String> collectAllUsedAttributes(TimeSeriesAggregationQuery query) {

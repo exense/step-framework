@@ -5,6 +5,7 @@ import step.core.collections.Filter;
 import step.framework.server.Session;
 import step.framework.server.tables.service.TableParameters;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -18,6 +19,7 @@ public class Table<T> {
 
     private final boolean filtered;
     private BiFunction<TableParameters, Session<?>, Filter> tableFiltersFactory;
+    private Function<ArrayList<Filter>, Filter> implicitTableFiltersFactory;
 
     private Integer maxFindDuration;
     private Integer countLimit;
@@ -52,6 +54,15 @@ public class Table<T> {
      */
     public Table<T> withTableFiltersFactory(Function<TableParameters, Filter> tableFiltersFactory) {
         this.tableFiltersFactory = (parameters, session) -> tableFiltersFactory.apply(parameters);
+        return this;
+    }
+
+    /**
+     * @param implicitTableFiltersFactory a factory for additional filters to be applied at each table request
+     * @return this instance
+     */
+    public Table<T> withImplicitTableFiltersFactory(Function<ArrayList<Filter>, Filter> implicitTableFiltersFactory) {
+        this.implicitTableFiltersFactory = implicitTableFiltersFactory;
         return this;
     }
 
@@ -164,4 +175,7 @@ public class Table<T> {
         return Optional.ofNullable(resultItemTransformer);
     }
 
+    public Optional<Function<ArrayList<Filter>, Filter>> getImplicitTableFiltersFactory() {
+        return Optional.ofNullable(implicitTableFiltersFactory);
+    }
 }
