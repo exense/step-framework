@@ -19,11 +19,12 @@ public class CacheControlFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        if (servletRequest instanceof Request) {
+        if (servletRequest instanceof Request && response instanceof HttpServletResponse) {
             Request request = (Request) servletRequest;
             HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-            // Check if the request is for the index HTML file which is also implicit for the root URI context (welcome file)
+            // Check if the request is for the index HTML file which is also implicit for the base URL (i.e. path in context "/")
+            // as it returns the welcome file (index.html) too
             if (request.getRequestURI().endsWith("index.html") || request.getPathInContext().equals("/")) {
                 // Set Cache-Control header to never cache HTML files
                 httpResponse.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
