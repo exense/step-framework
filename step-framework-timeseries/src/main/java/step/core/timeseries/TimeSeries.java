@@ -75,7 +75,7 @@ public class TimeSeries implements Closeable {
                         bucketStream.forEach(ingestionPipeline::ingestBucket);
                         ingestionPipeline.flush();
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     logger.error("Error while populating {} collection. Dropping the entire collection...", collectionName, e);
                     collection.getCollection().drop();
                 }
