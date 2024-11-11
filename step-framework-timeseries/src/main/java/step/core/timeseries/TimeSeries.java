@@ -15,6 +15,7 @@ import step.core.timeseries.query.TimeSeriesQuery;
 import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static step.core.timeseries.TimeSeriesConstants.TIMESTAMP_ATTRIBUTE;
@@ -54,11 +55,12 @@ public class TimeSeries implements Closeable {
      * If this fails by any reason, the entire collection is dropped.
      */
     public void ingestDataForEmptyCollections() {
+        logger.info("Configured collections: {}", handledCollections.stream().map(t -> t.getCollection().getName()).collect(Collectors.toList()));
         for (int i = 1; i < handledCollections.size(); i++) {
             TimeSeriesCollection collection = handledCollections.get(i);
             if (collection.isEmpty()) {
                 String collectionName = collection.getCollection().getName();
-                logger.debug("Populating time-series collection: " + collectionName);
+                logger.info("Populating empty time-series collection: " + collectionName);
                 TimeSeriesCollection previousCollection = handledCollections.get(i - 1);
                 TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
                         .setIgnoredAttributes(collection.getIgnoredAttributes())

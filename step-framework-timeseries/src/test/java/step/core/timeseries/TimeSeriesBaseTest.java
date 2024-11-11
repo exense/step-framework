@@ -22,7 +22,7 @@ public class TimeSeriesBaseTest {
     }
 
     protected TimeSeriesCollection getCollection(long resolution, Set<String> ignoredAttributes) {
-        InMemoryCollection<Bucket> col = new InMemoryCollection<>();
+        InMemoryCollection<Bucket> col = new InMemoryCollection<>("resolution_" + resolution);
         TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
                 .setResolution(resolution)
                 .setIgnoredAttributes(ignoredAttributes);

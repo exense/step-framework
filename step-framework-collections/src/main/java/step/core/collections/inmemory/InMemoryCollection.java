@@ -51,11 +51,20 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 		this(true);
 	}
 
+	public InMemoryCollection(String name) {
+		this(true, name);
+	}
+
 	public InMemoryCollection(boolean byPassCloning) {
+		this(byPassCloning, null);
+	}
+
+	public InMemoryCollection(boolean byPassCloning, String name) {
 		super();
 		this.entityClass = null;
 		this.entities = new ConcurrentHashMap<>();
 		this.byPassCloning = byPassCloning;
+		this.name = name;
 	}
 	
 	public InMemoryCollection(InMemoryCollectionFactory parentFactory, String name, Class<T> entityClass, Map<ObjectId, T> entities) {
