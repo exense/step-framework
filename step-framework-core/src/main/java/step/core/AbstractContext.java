@@ -113,7 +113,7 @@ public abstract class AbstractContext implements Closeable {
 		attributes.remove(key(class_));
 	}
 
-	public void remove(Object key) {
+	public void remove(String key) {
 		attributes.remove(key);
 	}
 
