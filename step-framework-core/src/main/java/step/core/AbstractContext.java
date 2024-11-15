@@ -69,7 +69,11 @@ public abstract class AbstractContext implements Closeable {
 			return (T) object;
 		}
 	}
-	
+
+	public Object computeIfAbsent(String key, Function<? super String, ?> mappingFunction) {
+		return attributes.computeIfAbsent(key, mappingFunction);
+	}
+
 	public <T> T computeIfAbsent(Class<T> class_, Function<Class<T>, T> mappingFunction) {
 		T value = get(class_);
 		if(value == null) {
@@ -103,6 +107,14 @@ public abstract class AbstractContext implements Closeable {
 		}
 		put(class_, value);
 		return value;
+	}
+
+	public void remove(Class<?> class_) {
+		attributes.remove(key(class_));
+	}
+
+	public void remove(Object key) {
+		attributes.remove(key);
 	}
 
 	@Override
