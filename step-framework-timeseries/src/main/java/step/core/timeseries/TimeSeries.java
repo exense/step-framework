@@ -56,9 +56,12 @@ public class TimeSeries implements Closeable {
      */
     public void ingestDataForEmptyCollections() {
         logger.info("Configured collections: {}", handledCollections.stream().map(t -> t.getCollection().getName()).collect(Collectors.toList()));
+        //This is run in as an async task; since data can be flushed in between, we need to get the list of empty collections before starting processing any of them
+        List<TimeSeriesCollection> emptyCollections = handledCollections.stream().filter(TimeSeriesCollection::isEmpty).collect(Collectors.toList());
+        logger.info("Empty collections detected: {}", emptyCollections.stream().map(t -> t.getCollection().getName()).collect(Collectors.toList()));
         for (int i = 1; i < handledCollections.size(); i++) {
             TimeSeriesCollection collection = handledCollections.get(i);
-            if (collection.isEmpty()) {
+            if (emptyCollections.contains(collection)) {
                 String collectionName = collection.getCollection().getName();
                 logger.info("Populating empty time-series collection: " + collectionName);
                 TimeSeriesCollection previousCollection = handledCollections.get(i - 1);
