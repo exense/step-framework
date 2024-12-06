@@ -26,12 +26,31 @@ import java.util.Date;
  *
  */
 public class AbstractTrackedObject extends AbstractOrganizableObject {
-	
+
+	private Date creationDate;
+	private String creationUser;
+
 	public Date lastModificationDate;
 	public String lastModificationUser;
-	
+
 	public AbstractTrackedObject() {
 		super();
+	}
+
+	public Date getCreationDate() {
+		return creationDate;
+	}
+
+	public void setCreationDate(Date creationDate) {
+		this.creationDate = creationDate;
+	}
+
+	public String getCreationUser() {
+		return creationUser;
+	}
+
+	public void setCreationUser(String creationUser) {
+		this.creationUser = creationUser;
 	}
 
 	public Date getLastModificationDate() {
@@ -49,4 +68,6 @@ public class AbstractTrackedObject extends AbstractOrganizableObject {
 	public void setLastModificationUser(String lastModificationUser) {
 		this.lastModificationUser = lastModificationUser;
 	}
+
+
 }
