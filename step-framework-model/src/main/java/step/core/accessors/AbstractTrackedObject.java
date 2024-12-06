@@ -30,8 +30,8 @@ public class AbstractTrackedObject extends AbstractOrganizableObject {
 	private Date creationDate;
 	private String creationUser;
 
-	public Date lastModificationDate;
-	public String lastModificationUser;
+	private Date lastModificationDate;
+	private String lastModificationUser;
 
 	public AbstractTrackedObject() {
 		super();
