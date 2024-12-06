@@ -43,7 +43,9 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <!-- internal dependencies -->
-        <exense-commons.version>2.0.9</exense-commons.version>
+        <!-- TODO: fix version -->
+        <exense-commons.version>2024.11.22-67408ec41462ce6e8a61e971</exense-commons.version>
+
         <dependencies.version>2024.9.26</dependencies.version>
 
         <!-- external dependencies -->
