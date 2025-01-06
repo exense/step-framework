@@ -1,6 +1,7 @@
 package step.core.timeseries.ingestion;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.collections.Collection;
@@ -24,6 +25,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesIngestionPipeline.class);
     private static final long FLUSH_OFFSET = 10000; // buckets created in the last FLUSH_OFFSET ms will not be flushed.
+    private static final BasicThreadFactory threadFactory = new BasicThreadFactory.Builder().namingPattern("timeseries-flush-%d").build();
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Collection<Bucket> collection;
@@ -39,7 +41,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         this.sourceResolution = settings.getResolution();
         long flushingPeriodMs = settings.getFlushingPeriodMs();
         if (flushingPeriodMs > 0) {
-            scheduler = Executors.newScheduledThreadPool(1);
+            scheduler = Executors.newScheduledThreadPool(1, threadFactory);
             scheduler.scheduleAtFixedRate(() -> flush(false), flushingPeriodMs, flushingPeriodMs, TimeUnit.MILLISECONDS);
         } else {
             scheduler = null;
