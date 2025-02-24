@@ -58,7 +58,9 @@ public class AsyncProcessorTest {
             if (queueSize >= nbObjects) {
                 assertTrue(duration < 10L); //queue size can accommodate all objects, enqueuing should be instantaneous
             } else {
-                assertTrue(duration > (10L * (nbObjects / queueSize)));
+                //Otherwise since we sleep for 10ms in the consumer the duration for enqueuing depends on
+                //the size
+                assertTrue(duration >= (10L * (nbObjects - queueSize)));
             }
 
             if (!testClose) {
