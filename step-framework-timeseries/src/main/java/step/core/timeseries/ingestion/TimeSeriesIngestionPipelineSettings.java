@@ -6,6 +6,7 @@ public class TimeSeriesIngestionPipelineSettings {
 
     private long resolution;
     private long flushingPeriodMs;
+    private int flushAsyncQueueSize;
     private Set<String> ignoredAttributes;
     private TimeSeriesIngestionPipeline nextPipeline; // optional
 
@@ -24,6 +25,15 @@ public class TimeSeriesIngestionPipelineSettings {
 
     public TimeSeriesIngestionPipelineSettings setFlushingPeriodMs(long flushingPeriodMs) {
         this.flushingPeriodMs = flushingPeriodMs;
+        return this;
+    }
+
+    public int getFlushAsyncQueueSize() {
+        return flushAsyncQueueSize;
+    }
+
+    public TimeSeriesIngestionPipelineSettings setFlushAsyncQueueSize(int flushAsyncQueueSize) {
+        this.flushAsyncQueueSize = flushAsyncQueueSize;
         return this;
     }
 

@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import step.core.async.AsyncProcessor;
 import step.core.collections.Collection;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
@@ -35,6 +36,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private final LongAdder flushCount = new LongAdder();
     private final Set<String> ignoredAttributes;
     private TimeSeriesIngestionPipeline nextPipeline;
+    private final AsyncProcessor<Bucket> asyncProcessor;
 
     public TimeSeriesIngestionPipeline(Collection<Bucket> collection, TimeSeriesIngestionPipelineSettings settings) {
         this.collection = collection;
@@ -48,6 +50,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         }
         this.ignoredAttributes = settings.getIgnoredAttributes();
         this.nextPipeline = settings.getNextPipeline();
+        this.asyncProcessor = new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), collection::save);
     }
 
     public long getResolution() {
@@ -114,7 +117,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
                     // This enables concurrent execution of flushing and ingestion
                     seriesQueue.remove(k).forEach((attributes, bucketBuilder) -> {
                         Bucket bucket = bucketBuilder.build();
-                        collection.save(bucket);
+                        asyncProcessor.enqueue(bucket);
                         if (nextPipeline != null) {
                             nextPipeline.ingestBucket(bucket);
                         }
@@ -145,6 +148,11 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             scheduler.shutdown();
         }
         flush();
+        try {
+            asyncProcessor.close();
+        } catch (Exception e) {
+            logger.error("Unable to gracefully stop the bucket asynchronous persistence.", e);
+        }
     }
 
     private void trace(String message) {
