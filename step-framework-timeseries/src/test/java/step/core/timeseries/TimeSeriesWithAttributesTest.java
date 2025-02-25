@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
 
     @Test
-    public void simpleQueryWithNoAttributesUsed() throws InterruptedException {
+    public void simpleQueryWithNoAttributesUsed() {
         TimeSeriesCollection collection = getCollection(1000, Set.of("a", "b", "c"));
         TimeSeries timeSeries = new TimeSeriesBuilder().registerCollection(collection).build();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
@@ -30,7 +30,6 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         randomBucket.setBegin(1);
         ingestionPipeline.ingestBucket(randomBucket);
         ingestionPipeline.flush();
-        Thread.sleep(1); //Give some time to the async persistence
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(0, 3000)
@@ -43,7 +42,7 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
     }
 
     @Test
-    public void simpleCollectionWithGroupingAttributes() throws InterruptedException {
+    public void simpleCollectionWithGroupingAttributes() {
         TimeSeriesCollection collection = getCollection(1000, Set.of("a", "b", "c"));
         TimeSeries timeSeries = new TimeSeriesBuilder().registerCollection(collection).build();
         TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline();
@@ -54,7 +53,7 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         randomBucket.getAttributes().put("z", "custom");
         ingestionPipeline.ingestBucket(randomBucket);
         ingestionPipeline.flush();
-        Thread.sleep(1); //Give some time to the async persistence
+
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(0, 3000)
                 .withGroupDimensions(Set.of("z"))
@@ -80,7 +79,7 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
     }
 
     @Test
-    public void simpleCollectionWithFilteringAndGroupingAttributes() throws InterruptedException {
+    public void simpleCollectionWithFilteringAndGroupingAttributes() {
         TimeSeriesCollection collection = getCollection(1000, Set.of("a", "b", "c"));
         TimeSeries timeSeries = new TimeSeriesBuilder().registerCollection(collection).build();
         TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline();
@@ -94,7 +93,6 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         randomBucket.getAttributes().put("z", "valueZ");
         ingestionPipeline.ingestBucket(randomBucket);
         ingestionPipeline.flush();
-        Thread.sleep(1); //Give some time to the async persistence
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(0, 3000)
@@ -137,11 +135,6 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
 
         timeSeries.getCollections().forEach(c -> {
             c.getIngestionPipeline().flush();
-            try {
-                Thread.sleep(1); // persistence is async
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
             Bucket foundBucket = c.getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList()).get(0);
             Assert.assertEquals(bucket.getCount(), foundBucket.getCount());
             c.getIgnoredAttributes().forEach(attr -> Assert.assertFalse(foundBucket.getAttributes().containsKey(attr)));

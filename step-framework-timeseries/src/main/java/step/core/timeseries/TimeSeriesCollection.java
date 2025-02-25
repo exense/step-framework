@@ -28,7 +28,6 @@ public class TimeSeriesCollection {
     public TimeSeriesCollection(Collection<Bucket> collection, long resolution) {
         this(collection, new TimeSeriesCollectionSettings()
                 .setResolution(resolution)
-                .setIngestionFlushAsyncQueueSize(5000)
         );
     }
 
@@ -36,7 +35,6 @@ public class TimeSeriesCollection {
         this(collection, new TimeSeriesCollectionSettings()
                 .setResolution(resolution)
                 .setIngestionFlushingPeriodMs(flushPeriod)
-                .setIngestionFlushAsyncQueueSize(5000)
         );
     }
 

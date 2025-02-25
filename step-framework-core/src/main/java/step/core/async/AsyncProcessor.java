@@ -10,6 +10,8 @@ import java.util.function.Consumer;
 public class AsyncProcessor<T> implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncProcessor.class);
+    // Default maximum queue size
+    private static final int maxQueueSize = 5000;
     // FIFO queue to store object with a configurable capacity
     private final BlockingQueue<T> queue;
     // Consumer of the queue objects
@@ -21,7 +23,7 @@ public class AsyncProcessor<T> implements AutoCloseable {
     private volatile boolean processing = false;
 
     public AsyncProcessor(int maxSize, Consumer<T> consumer) {
-        queue = new LinkedBlockingQueue<>(maxSize);
+        queue = new LinkedBlockingQueue<>((maxSize > 0) ? maxSize : maxQueueSize);
         this.consumer = consumer;
         // Start a background worker thread
         workerThread = new Thread(this::processQueue);

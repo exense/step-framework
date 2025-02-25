@@ -1,7 +1,6 @@
 package step.core.timeseries;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import step.core.collections.Filters;
 import step.core.timeseries.bucket.Bucket;
@@ -39,19 +38,18 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
                 getCollection(800),
                 getCollection(1600)
         );
-        int indexWithData;
         try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
             Bucket bucket = getRandomBucket();
-            indexWithData = 2;
+            int indexWithData = 2;
             collections.get(indexWithData).getCollection().save(bucket);
             timeSeries.ingestDataForEmptyCollections();
-        }
-        for (int i = 0; i < collections.size(); i++) {
-            long expectedData = 0;
-            if (i >= indexWithData) {
-                expectedData = 1;
+            for (int i = 0; i < collections.size(); i++) {
+                long expectedData = 0;
+                if (i >= indexWithData) {
+                    expectedData = 1;
+                }
+                Assert.assertEquals(expectedData, collections.get(i).getCollection().count(Filters.empty(), null));
             }
-            Assert.assertEquals(expectedData, collections.get(i).getCollection().count(Filters.empty(), null));
         }
     }
 
@@ -73,20 +71,18 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     }
 
     @Test
-    public void flushShouldNotPropagateTest() throws InterruptedException {
+    public void flushShouldNotPropagateTest() {
         TimeSeries timeSeries = getTimeSeriesWithResolutions(100, 200, 400, 800, 1600);
         Map<String, Object> attributes = Map.of("key", "value1");
         timeSeries.getIngestionPipeline().ingestPoint(attributes, 10, 10);
         timeSeries.getDefaultCollection().getIngestionPipeline().ingestPoint(attributes, 10, 10);
         assertAllCollectionsAreEmpty(timeSeries);
         timeSeries.getIngestionPipeline().flush();
-        Thread.sleep(10); //persistence is now asynchronous
         Assert.assertEquals(1, timeSeries.getCollections().get(0).getCollection().count(Filters.empty(), null));
         for (int i = 1; i < timeSeries.getCollections().size(); i++) { // skip first collection
             Assert.assertEquals(0, timeSeries.getCollections().get(i).getCollection().count(Filters.empty(), null));
         }
         timeSeries.getCollections().get(1).getIngestionPipeline().flush();
-        Thread.sleep(10); //persistence is now asynchronous
         Assert.assertEquals(1, timeSeries.getCollections().get(1).getCollection().count(Filters.empty(), null));
         for (int i = 2; i < timeSeries.getCollections().size(); i++) { // skip first collection
             Assert.assertEquals(0, timeSeries.getCollections().get(i).getCollection().count(Filters.empty(), null));
@@ -108,7 +104,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
         timeSeries.getCollections().forEach(c -> c.getIngestionPipeline().flush());
         timeSeries.getCollections().forEach(c -> Assert.assertEquals(1, c.getCollection().count(Filters.empty(), null)));
         for (int i = 2; i < timeSeries.getCollections().size(); i++) {
-            Bucket bucket = timeSeries.getCollections().get(i).getCollection().find(Filters.empty(), null, null, null, 0).findFirst().get();
+            Bucket bucket = timeSeries.getCollections().get(i).getCollection().find(Filters.empty(), null, null, null, 0).findFirst().orElseThrow();
             // make sure they are the second bucket only
             Assert.assertEquals(bucket.getCount(), b2.getCount());
         }
@@ -127,12 +123,13 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
                 getCollectionWithTTL(400, 1000),
                 getCollectionWithTTL(800, 1000)
         );
-        TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build();
-        Bucket b1 = getRandomBucket();
-        b1.setBegin(10); // ttl should not match it
-        timeSeries.getCollections().get(0).getCollection().save(b1);
-        timeSeries.ingestDataForEmptyCollections();
-        assertCollectionsAreEmpty(collections.subList(1, timeSeries.getCollections().size()));
+        try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
+            Bucket b1 = getRandomBucket();
+            b1.setBegin(10); // ttl should not match it
+            timeSeries.getCollections().get(0).getCollection().save(b1);
+            timeSeries.ingestDataForEmptyCollections();
+            assertCollectionsAreEmpty(collections.subList(1, timeSeries.getCollections().size()));
+        }
     }
 
     @Test
@@ -143,13 +140,14 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
                 getCollectionWithTTL(400, 2000),
                 getCollectionWithTTL(800, 500)
         );
-        TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build();
-        Bucket b1 = getRandomBucket();
-        b1.setBegin(System.currentTimeMillis() - 1000); // ttl should match it
-        timeSeries.getCollections().get(0).getCollection().save(b1);
-        timeSeries.ingestDataForEmptyCollections();
-        for (int i = 0; i < timeSeries.getCollections().size() - 1; i++) {
-            Assert.assertEquals(1, collections.get(i).getCollection().count(Filters.empty(), null));
+        try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
+            Bucket b1 = getRandomBucket();
+            b1.setBegin(System.currentTimeMillis() - 1000); // ttl should match it
+            timeSeries.getCollections().get(0).getCollection().save(b1);
+            timeSeries.ingestDataForEmptyCollections();
+            for (int i = 0; i < timeSeries.getCollections().size() - 1; i++) {
+                Assert.assertEquals(1, collections.get(i).getCollection().count(Filters.empty(), null));
+            }
         }
         Assert.assertEquals(0, collections.get(collections.size() - 1).getCollection().count(Filters.empty(), null));
     }
@@ -160,34 +158,29 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
                 getCollectionWithTTL(1000, 1000),
                 getCollectionWithTTL(2000, 1000)
         );
-        Bucket b2;
         try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
             long now = System.currentTimeMillis();
             Bucket b1 = getRandomBucket();
-            b2 = getRandomBucket();
+            Bucket b2 = getRandomBucket();
             b1.setBegin(now - 2000); // should not be ingested in the second collection
             b2.setBegin(now - 500);
             timeSeries.getDefaultCollection().getCollection().save(Arrays.asList(b1, b2));
             timeSeries.ingestDataForEmptyCollections();
+
+            List<Bucket> foundBuckets = collections.get(1).getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+            Assert.assertEquals(1, foundBuckets.size());
+            Bucket foundBucket = foundBuckets.get(0);
+            Assert.assertEquals(b2.getCount(), foundBucket.getCount());
         }
-        List<Bucket> foundBuckets = collections.get(1).getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
-        Assert.assertEquals(1, foundBuckets.size());
-        Bucket foundBucket = foundBuckets.get(0);
-        Assert.assertEquals(b2.getCount(), foundBucket.getCount());
     }
 
     @Test
     public void ingestionWithManyBucketsTest() {
-        long min;
-        long max;
-        long count;
-        long sum;
-        TimeSeriesCollection lastCollection;
         try (TimeSeries timeSeries = getTimeSeriesWithResolutions(1000, 5000, 30_000)) {
-            min = Long.MAX_VALUE;
-            max = 0;
-            count = 0;
-            sum = 0;
+            long min = Long.MAX_VALUE;
+            long max = 0;
+            long count = 0;
+            long sum = 0;
             for (int i = 0; i < 1000; i++) {
                 Bucket b = getRandomBucket();
                 count += b.getCount();
@@ -197,15 +190,16 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
                 timeSeries.getDefaultCollection().getCollection().save(b);
             }
             timeSeries.ingestDataForEmptyCollections();
-            lastCollection = timeSeries.getCollections().get(2);
+            TimeSeriesCollection lastCollection = timeSeries.getCollections().get(2);
+
+            List<Bucket> foundBuckets = lastCollection.getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+            Assert.assertEquals(1, foundBuckets.size());
+            Bucket foundBucket = foundBuckets.get(0);
+            Assert.assertEquals(count, foundBucket.getCount());
+            Assert.assertEquals(sum, foundBucket.getSum());
+            Assert.assertEquals(max, foundBucket.getMax());
+            Assert.assertEquals(min, foundBucket.getMin());
         }
-        List<Bucket> foundBuckets = lastCollection.getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
-        Assert.assertEquals(1, foundBuckets.size());
-        Bucket foundBucket = foundBuckets.get(0);
-        Assert.assertEquals(count, foundBucket.getCount());
-        Assert.assertEquals(sum, foundBucket.getSum());
-        Assert.assertEquals(max, foundBucket.getMax());
-        Assert.assertEquals(min, foundBucket.getMin());
     }
 
 
