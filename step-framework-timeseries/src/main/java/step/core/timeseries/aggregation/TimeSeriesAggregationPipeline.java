@@ -3,10 +3,7 @@ package step.core.timeseries.aggregation;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import step.core.collections.Collection;
-import step.core.collections.Filter;
 import step.core.timeseries.TimeSeriesCollection;
-import step.core.timeseries.TimeSeriesFilterBuilder;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
@@ -82,17 +79,14 @@ public class TimeSeriesAggregationPipeline {
         boolean fallbackToHigherResolutionWithValidTTL = idealResolution < idealAvailableCollection.getResolution();
         boolean ttlCovered = ttlEnabled ? collectionTtlCoverInterval(idealAvailableCollection, queryFrom, queryTo) : true;
 
-        Collection<Bucket> selectedCollection = idealAvailableCollection.getCollection();
         long sourceResolution = idealAvailableCollection.getResolution();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
 
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
-        Filter filter = TimeSeriesFilterBuilder.buildFilter(finalParams);
-
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
-        try (Stream<Bucket> stream = selectedCollection.findLazy(filter, null, null, null, 0)) {
+        try (Stream<Bucket> stream = idealAvailableCollection.queryTimeSeries(finalParams)) {
             stream.forEach(bucket -> {
                 bucketCount.increment();
                 BucketAttributes bucketAttributes = bucket.getAttributes() != null ? bucket.getAttributes() : new BucketAttributes();

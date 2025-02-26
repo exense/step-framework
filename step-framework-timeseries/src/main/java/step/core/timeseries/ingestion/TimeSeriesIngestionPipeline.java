@@ -5,11 +5,13 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.async.AsyncProcessor;
-import step.core.collections.Collection;
+import step.core.collections.inmemory.InMemoryCollection;
+import step.core.timeseries.TimeSeriesCollection;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -28,7 +30,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     private static final BasicThreadFactory threadFactory = new BasicThreadFactory.Builder().namingPattern("timeseries-flush-%d").build();
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private final Collection<Bucket> collection;
+    private final TimeSeriesCollection collection;
     private final long sourceResolution;
     private final ConcurrentHashMap<Long, Map<Map<String, Object>, BucketBuilder>> seriesQueue = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
@@ -36,8 +38,9 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     private final Set<String> ignoredAttributes;
     private TimeSeriesIngestionPipeline nextPipeline;
     private final AsyncProcessor<Bucket> asyncProcessor;
+    private long lastFlush = 0;
 
-    public TimeSeriesIngestionPipeline(Collection<Bucket> collection, TimeSeriesIngestionPipelineSettings settings) {
+    public TimeSeriesIngestionPipeline(TimeSeriesCollection collection, TimeSeriesIngestionPipelineSettings settings) {
         this.collection = collection;
         this.sourceResolution = settings.getResolution();
         long flushingPeriodMs = settings.getFlushingPeriodMs();
@@ -64,12 +67,14 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         lock.readLock().lock();
         try {
             long index = timestampToBucketTimestamp(bucket.getBegin(), sourceResolution);
+            BucketAttributes bucketAttributes = removeIgnoredAttributes(bucket.getAttributes());
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-            bucketsForTimestamp.computeIfAbsent(bucket.getAttributes(), k ->
-                            BucketBuilder
-                                    .create(index)
-                                    .withAttributes(removeIgnoredAttributes(bucket.getAttributes())))
+            bucketsForTimestamp.computeIfAbsent(bucketAttributes, k ->
+                            BucketBuilder.create(index).withAttributes(bucketAttributes))
                     .accumulate(bucket);
+            if (nextPipeline != null) {
+                nextPipeline.ingestBucket(bucket);
+            }
         } finally {
             lock.readLock().unlock();
         }
@@ -92,7 +97,12 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         try {
             long index = timestampToBucketTimestamp(timestamp, sourceResolution);
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-            bucketsForTimestamp.computeIfAbsent(attributes, k -> BucketBuilder.create(index).withAttributes(bucketAttributes)).ingest(value);
+            bucketsForTimestamp.computeIfAbsent(bucketAttributes, k ->
+                            BucketBuilder.create(index).withAttributes(bucketAttributes))
+                    .ingest(value);
+            if (nextPipeline != null) {
+                nextPipeline.ingestPoint(attributes, timestamp, value);
+            }
         } finally {
             lock.readLock().unlock();
         }
@@ -122,9 +132,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
                         } else {
                             asyncProcessor.enqueue(bucket);
                         }
-                        if (nextPipeline != null) {
-                            nextPipeline.ingestBucket(bucket);
-                        }
+                        lastFlush = System.currentTimeMillis();
                     });
                 }
             });
@@ -140,6 +148,21 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
 
     public long getFlushCount() {
         return flushCount.longValue();
+    }
+
+    public InMemoryCollection<Bucket> getCurrenStateToInMemoryCollection(long finalParamsTo) {
+        InMemoryCollection<Bucket> buckets = new InMemoryCollection<>();
+        if (finalParamsTo > lastFlush) {
+            lock.writeLock().lock();
+            try {
+                seriesQueue.values().stream().map(Map::values).flatMap(Collection::stream).map(BucketBuilder::build).forEach(buckets::save);
+            } catch (Throwable e) {
+                logger.error("Error while getting current pipeline data to inMemoryCollection", e);
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+        return buckets;
     }
 
     private static long timestampToBucketTimestamp(long timestamp, long resolution) {

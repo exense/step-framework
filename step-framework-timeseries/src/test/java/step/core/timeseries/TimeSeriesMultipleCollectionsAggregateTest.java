@@ -16,7 +16,7 @@ public class TimeSeriesMultipleCollectionsAggregateTest extends TimeSeriesBaseTe
         Bucket b1 = getRandomBucket();
         long now = System.currentTimeMillis();
         b1.setBegin(now);
-        timeSeries.getDefaultCollection().getCollection().save(b1);
+        timeSeries.getDefaultCollection().save(b1);
         timeSeries.ingestDataForEmptyCollections();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()

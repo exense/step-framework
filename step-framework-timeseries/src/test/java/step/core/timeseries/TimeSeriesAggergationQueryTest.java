@@ -2,7 +2,6 @@ package step.core.timeseries;
 
 import org.junit.Assert;
 import org.junit.Test;
-import step.core.collections.inmemory.InMemoryCollection;
 import step.core.ql.OQLFilterBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
@@ -10,10 +9,7 @@ import step.core.timeseries.aggregation.TimeSeriesAggregationQueryBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
-import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
-import java.util.Arrays;
-import java.util.Date;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -92,7 +88,7 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
         for (int i = 0; i < bucketsCount; i++) {
             Bucket bucket = new Bucket();
             bucket.setBegin(i * 1000); // one every second
-            timeSeries.getDefaultCollection().getCollection().save(bucket);
+            timeSeries.getDefaultCollection().save(bucket);
         }
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         String oql = "";
