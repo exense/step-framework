@@ -127,7 +127,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
                     // This enables concurrent execution of flushing and ingestion
                     seriesQueue.remove(k).forEach((attributes, bucketBuilder) -> {
                         Bucket bucket = bucketBuilder.build();
-                        if (forceFlush) {
+                        if (forceFlush || asyncProcessor == null) {
                             collection.save(bucket);
                         } else {
                             asyncProcessor.enqueue(bucket);

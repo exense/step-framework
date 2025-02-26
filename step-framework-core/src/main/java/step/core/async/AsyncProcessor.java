@@ -11,7 +11,7 @@ public class AsyncProcessor<T> implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncProcessor.class);
     // Default maximum queue size
-    private static final int maxQueueSize = 5000;
+    private static final int MAX_QUEUE_SIZE = 5000;
     // FIFO queue to store object with a configurable capacity
     private final BlockingQueue<T> queue;
     // Consumer of the queue objects
@@ -23,7 +23,8 @@ public class AsyncProcessor<T> implements AutoCloseable {
     private volatile boolean processing = false;
 
     public AsyncProcessor(int maxSize, Consumer<T> consumer) {
-        queue = new LinkedBlockingQueue<>((maxSize > 0) ? maxSize : maxQueueSize);
+        // Use default when maxSize is not set (only the case for JUnit tests)
+        queue = new LinkedBlockingQueue<>((maxSize > 0) ? maxSize : MAX_QUEUE_SIZE);
         this.consumer = consumer;
         // Start a background worker thread
         workerThread = new Thread(this::processQueue);
@@ -48,7 +49,7 @@ public class AsyncProcessor<T> implements AutoCloseable {
     private void processQueue() {
         while (running || !queue.isEmpty()) {
             try {
-                processing=false;
+                processing = false;
                 T object = queue.take(); // Retrieves and removes the head of the queue (blocking)
                 processing = true;
                 consumer.accept(object);
