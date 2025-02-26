@@ -120,32 +120,33 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
         TimeSeriesCollection collection1 = getCollection(1);
         TimeSeriesCollection collection10 = getCollection(10);
         TimeSeriesCollection collection100 = getCollection(100);
-        TimeSeries timeSeries = new TimeSeriesBuilder()
+        try (TimeSeries timeSeries = new TimeSeriesBuilder()
                 .registerCollection(collection1)
                 .registerCollection(collection10)
                 .registerCollection(collection100)
-                .build();
-        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
-            int nPoints = 10000;
-            Map<String, Object> attributes = Map.of("key", "value");
-            for (int i = 0; i < nPoints; i++) {
-                ingestionPipeline.ingestPoint(attributes, i, 10L);
+                .build()) {
+            try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
+                int nPoints = 10000;
+                Map<String, Object> attributes = Map.of("key", "value");
+                for (int i = 0; i < nPoints; i++) {
+                    ingestionPipeline.ingestPoint(attributes, i, 10L);
+                }
+                ingestionPipeline.flush();
+                assertEquals(nPoints, collection1.getCollection().count(Filters.empty(), null));
+
+                collection10.getIngestionPipeline().flush();
+                assertEquals(nPoints / 10, collection10.getCollection().count(Filters.empty(), null));
+
+                collection100.getIngestionPipeline().flush();
+                assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
+
+                collection100.getCollection().drop();
+                assertEquals(0, collection100.getCollection().count(Filters.empty(), null));
+                timeSeries.ingestDataForEmptyCollections();
+                assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
             }
-            ingestionPipeline.flush();
-            assertEquals(nPoints, collection1.getCollection().count(Filters.empty(), null));
-
-            collection10.getIngestionPipeline().flush();
-            assertEquals(nPoints / 10, collection10.getCollection().count(Filters.empty(), null));
-
-            collection100.getIngestionPipeline().flush();
-            assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
-
-            collection100.getCollection().drop();
-            assertEquals(0, collection100.getCollection().count(Filters.empty(), null));
-            timeSeries.ingestDataForEmptyCollections();
-            assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
+            timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder().build());
         }
-        timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder().build());
     }
 
     @Test

@@ -12,7 +12,6 @@ import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 
-import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -20,7 +19,7 @@ import java.util.stream.Stream;
 
 import static step.core.timeseries.TimeSeriesConstants.TIMESTAMP_ATTRIBUTE;
 
-public class TimeSeries implements Closeable {
+public class TimeSeries implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeries.class);
 
@@ -68,7 +67,8 @@ public class TimeSeries implements Closeable {
                 TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
                         .setIgnoredAttributes(collection.getIgnoredAttributes())
                         .setResolution(collection.getResolution())
-                        .setFlushingPeriodMs(TimeUnit.SECONDS.toMillis(30));
+                        .setFlushingPeriodMs(TimeUnit.SECONDS.toMillis(30))
+                        .setFlushAsyncQueueSize(5000);
                 try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection.getCollection(), ingestionSettings)) {
                     SearchOrder searchOrder = new SearchOrder(TIMESTAMP_ATTRIBUTE, 1);
                     Filter filter = collection.getTtl() > 0 ? Filters.gte("begin", System.currentTimeMillis() - collection.getTtl()): Filters.empty();

@@ -4,12 +4,12 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import step.core.async.AsyncProcessor;
 import step.core.collections.Collection;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
 
-import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class TimeSeriesIngestionPipeline implements Closeable {
+public class TimeSeriesIngestionPipeline implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesIngestionPipeline.class);
     private static final long FLUSH_OFFSET = 10000; // buckets created in the last FLUSH_OFFSET ms will not be flushed.
@@ -35,6 +35,7 @@ public class TimeSeriesIngestionPipeline implements Closeable {
     private final LongAdder flushCount = new LongAdder();
     private final Set<String> ignoredAttributes;
     private TimeSeriesIngestionPipeline nextPipeline;
+    private final AsyncProcessor<Bucket> asyncProcessor;
 
     public TimeSeriesIngestionPipeline(Collection<Bucket> collection, TimeSeriesIngestionPipelineSettings settings) {
         this.collection = collection;
@@ -48,6 +49,8 @@ public class TimeSeriesIngestionPipeline implements Closeable {
         }
         this.ignoredAttributes = settings.getIgnoredAttributes();
         this.nextPipeline = settings.getNextPipeline();
+        //collection is null when overridden in TimeSeriesExecutionPlugin, in such case async processor is not required
+        this.asyncProcessor =  (collection != null)  ? new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), collection::save) : null;
     }
 
     public long getResolution() {
@@ -114,7 +117,11 @@ public class TimeSeriesIngestionPipeline implements Closeable {
                     // This enables concurrent execution of flushing and ingestion
                     seriesQueue.remove(k).forEach((attributes, bucketBuilder) -> {
                         Bucket bucket = bucketBuilder.build();
-                        collection.save(bucket);
+                        if (forceFlush || asyncProcessor == null) {
+                            collection.save(bucket);
+                        } else {
+                            asyncProcessor.enqueue(bucket);
+                        }
                         if (nextPipeline != null) {
                             nextPipeline.ingestBucket(bucket);
                         }
@@ -145,6 +152,13 @@ public class TimeSeriesIngestionPipeline implements Closeable {
             scheduler.shutdown();
         }
         flush();
+        if (asyncProcessor != null) {
+            try {
+                asyncProcessor.close();
+            } catch (Exception e) {
+                logger.error("Unable to gracefully stop the bucket asynchronous persistence.", e);
+            }
+        }
     }
 
     private void trace(String message) {

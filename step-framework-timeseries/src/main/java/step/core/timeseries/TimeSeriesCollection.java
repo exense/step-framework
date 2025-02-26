@@ -50,6 +50,7 @@ public class TimeSeriesCollection {
         TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
                 .setResolution(settings.getResolution())
                 .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
+                .setFlushAsyncQueueSize(settings.getIngestionFlushAsyncQueueSize())
                 .setIgnoredAttributes(settings.getIgnoredAttributes());
         this.ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings);
         this.ignoredAttributes = settings.getIgnoredAttributes();
