@@ -72,11 +72,7 @@ public class TimeSeries implements AutoCloseable {
                 try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings)) {
                     SearchOrder searchOrder = new SearchOrder(TIMESTAMP_ATTRIBUTE, 1);
                     Filter filter = collection.getTtl() > 0 ? Filters.gte("begin", System.currentTimeMillis() - collection.getTtl()): Filters.empty();
-
-                    try (Stream<Bucket> bucketStream = previousCollection
-
-                            .findLazy(filter, searchOrder, null, null, 0)) {
-
+                    try (Stream<Bucket> bucketStream = previousCollection.findLazy(filter, searchOrder)) {
                         bucketStream.forEach(ingestionPipeline::ingestBucket);
                         ingestionPipeline.flush();
                     }

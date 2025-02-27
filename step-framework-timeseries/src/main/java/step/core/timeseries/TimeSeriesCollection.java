@@ -11,14 +11,12 @@ import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public class TimeSeriesCollection extends AbstractCollection<Bucket> implements Collection<Bucket> {
+public class TimeSeriesCollection {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesCollection.class);
 
@@ -59,18 +57,29 @@ public class TimeSeriesCollection extends AbstractCollection<Bucket> implements 
         this.ignoredAttributes = settings.getIgnoredAttributes();
     }
 
-    public boolean isEmpty() {
+    /**
+     * This method check if the collection isEmpty in the backend database.
+     * Currently used to detect if the collection needs to be rebuilds based on higher resolution collection
+     * @return true if empty
+     */
+    protected boolean isEmpty() {
         return mainCollection.estimatedCount() == 0;
     }
 
-    public Stream<Bucket> queryTimeSeries(TimeSeriesProcessedParams finalParams) {
-        InMemoryCollection<Bucket> inMemoryCollection = ingestionPipeline.getCurrenStateToInMemoryCollection(finalParams.getTo());
-        Filter filter = TimeSeriesFilterBuilder.buildFilter(finalParams);
+    /**
+     * This is the one used by the aggregation pipeline querying both the data from the ingestion pipeline (i.e. not yet flushed)
+     * and the data already persisted
+     * @param queryParameters the query parameters
+     * @return a stream of buckets matching the query parameters
+     */
+    public Stream<Bucket> queryTimeSeries(TimeSeriesProcessedParams queryParameters) {
+        InMemoryCollection<Bucket> inMemoryCollection = ingestionPipeline.getCurrenStateToInMemoryCollection(queryParameters.getTo());
+        Filter filter = TimeSeriesFilterBuilder.buildFilter(queryParameters);
         return Stream.concat(inMemoryCollection.findLazy(filter, null, null, null, 0),
                 mainCollection.findLazy(filter, null, null, null, 0));
     }
 
-    public void performHousekeeping() {
+    protected void performHousekeeping() {
         if (ttl > 0) {
             long cleanupRangeStart = 0;
             long cleanupRangeEnd = System.currentTimeMillis() - ttl;
@@ -81,7 +90,7 @@ public class TimeSeriesCollection extends AbstractCollection<Bucket> implements 
         }
     }
 
-    public void removeData(TimeSeriesQuery query) {
+    protected void removeData(TimeSeriesQuery query) {
         Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
         this.mainCollection.remove(filter);
     }
@@ -90,7 +99,7 @@ public class TimeSeriesCollection extends AbstractCollection<Bucket> implements 
         return ttl;
     }
 
-    public void setTtl(long ttlInMs) {
+    protected void setTtl(long ttlInMs) {
         validateTtl(ttlInMs);
         this.ttl = ttlInMs;
     }
@@ -101,7 +110,7 @@ public class TimeSeriesCollection extends AbstractCollection<Bucket> implements 
         }
     }
 
-    public void createIndexes(Set<IndexField> indexFields) {
+    protected void createIndexes(Set<IndexField> indexFields) {
         mainCollection.createOrUpdateIndex(TimeSeriesConstants.TIMESTAMP_ATTRIBUTE);
         Set<IndexField> renamedFieldIndexes = indexFields.stream().map(i -> new IndexField("attributes." + i.fieldName,
                 i.order, i.fieldClass)).collect(Collectors.toSet());
@@ -120,100 +129,49 @@ public class TimeSeriesCollection extends AbstractCollection<Bucket> implements 
         return ignoredAttributes;
     }
 
-    @Override
     public String getName() {
         return mainCollection.getName();
     }
 
-    @Override
-    public long count(Filter filter, Integer limit) {
+    /**
+     * Only used by Junit to check persisted bucket count
+     * @param filter query filter
+     * @param limit maximum results fetched and returned (0 unlimited)
+     * @return the count of matching object or the provided limit and if more objects matched
+     */
+    protected long count(Filter filter, Integer limit) {
         return mainCollection.count(filter, limit);
     }
 
-    @Override
-    public long estimatedCount() {
-        return mainCollection.estimatedCount();
-    }
-
-    @Override
-    public Stream<Bucket> find(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
+    /**
+     * Only used by Junit to check persisted data
+     * @param filter the filter of the query
+     * @return a stream of matching buckets
+     */
+    protected Stream<Bucket> find(Filter filter) {
         //SearchOrder only support concatenation of inMemory and DB data if the field is the time.
-        return mainCollection.find(filter, order, skip, limit, maxTime);
+        return mainCollection.find(filter, null, null, null, 0);
     }
 
-    @Override
-    public Stream<Bucket> findLazy(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
-        //aggregation pipeline is using the queryTimeSeries function directly, here we directly query the main collection
-        return mainCollection.findLazy(filter, order, skip, limit, maxTime);
+    /**
+     *
+     * @param filter the filter of the query
+     * @param order the order of the query
+     * @return a stream of matching buckets sorted by the provided order parameter
+     */
+    protected Stream<Bucket> findLazy(Filter filter, SearchOrder order) {
+        return mainCollection.findLazy(filter, order, null, null, 0);
     }
 
-    @Override
-    public Stream<Bucket> findReduced(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime, List<String> reduceFields) {
-        return mainCollection.findReduced(filter, order, skip, limit, maxTime, reduceFields);
-    }
-
-    @Override
-    public List<String> distinct(String columnName, Filter filter) {
-        return mainCollection.distinct(columnName, filter);
-    }
-
-    @Override
-    public void remove(Filter filter) {
-        mainCollection.remove(filter);
-    }
-
-    @Override
     public Bucket save(Bucket entity) {
         return mainCollection.save(entity);
     }
 
-    @Override
     public void save(Iterable<Bucket> entities) {
         mainCollection.save(entities);
     }
 
-    @Override
-    public void createOrUpdateIndex(String field) {
-        mainCollection.createOrUpdateIndex(field);
-    }
-
-    @Override
-    public void createOrUpdateIndex(IndexField indexField) {
-        mainCollection.createOrUpdateIndex(indexField);
-    }
-
-    @Override
-    public void createOrUpdateIndex(String field, Order order) {
-        mainCollection.createOrUpdateIndex(field, order);
-    }
-
-    @Override
-    public void createOrUpdateCompoundIndex(String... fields) {
-        mainCollection.createOrUpdateCompoundIndex(fields);
-    }
-
-    @Override
-    public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
-        mainCollection.createOrUpdateCompoundIndex(fields);
-    }
-
-    @Override
-    public void rename(String newName) {
-        mainCollection.rename(newName);
-    }
-
-    @Override
-    public void drop() {
+    protected void drop() {
         mainCollection.drop();
-    }
-
-    @Override
-    public Class<Bucket> getEntityClass() {
-        return mainCollection.getEntityClass();
-    }
-
-    @Override
-    public void dropIndex(String indexName) {
-        mainCollection.dropIndex(indexName);
     }
 }

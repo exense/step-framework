@@ -104,7 +104,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
         timeSeries.getCollections().forEach(c -> c.getIngestionPipeline().flush());
         timeSeries.getCollections().forEach(c -> Assert.assertEquals(1, c.count(Filters.empty(), null)));
         for (int i = 2; i < timeSeries.getCollections().size(); i++) {
-            Bucket bucket = timeSeries.getCollections().get(i).find(Filters.empty(), null, null, null, 0).findFirst().orElseThrow();
+            Bucket bucket = timeSeries.getCollections().get(i).find(Filters.empty()).findFirst().orElseThrow();
             // make sure they are the second bucket only
             Assert.assertEquals(bucket.getCount(), b2.getCount());
         }
@@ -167,7 +167,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
             timeSeries.getDefaultCollection().save(Arrays.asList(b1, b2));
             timeSeries.ingestDataForEmptyCollections();
 
-            List<Bucket> foundBuckets = collections.get(1).find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+            List<Bucket> foundBuckets = collections.get(1).find(Filters.empty()).collect(Collectors.toList());
             Assert.assertEquals(1, foundBuckets.size());
             Bucket foundBucket = foundBuckets.get(0);
             Assert.assertEquals(b2.getCount(), foundBucket.getCount());
@@ -192,7 +192,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
             timeSeries.ingestDataForEmptyCollections();
             TimeSeriesCollection lastCollection = timeSeries.getCollections().get(2);
 
-            List<Bucket> foundBuckets = lastCollection.find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+            List<Bucket> foundBuckets = lastCollection.find(Filters.empty()).collect(Collectors.toList());
             Assert.assertEquals(1, foundBuckets.size());
             Bucket foundBucket = foundBuckets.get(0);
             Assert.assertEquals(count, foundBucket.getCount());

@@ -153,13 +153,13 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     public InMemoryCollection<Bucket> getCurrenStateToInMemoryCollection(long finalParamsTo) {
         InMemoryCollection<Bucket> buckets = new InMemoryCollection<>();
         if (finalParamsTo > lastFlush) {
-            lock.writeLock().lock();
+            lock.readLock().lock();
             try {
                 seriesQueue.values().stream().map(Map::values).flatMap(Collection::stream).map(BucketBuilder::build).forEach(buckets::save);
             } catch (Throwable e) {
                 logger.error("Error while getting current pipeline data to inMemoryCollection", e);
             } finally {
-                lock.writeLock().unlock();
+                lock.readLock().unlock();
             }
         }
         return buckets;
