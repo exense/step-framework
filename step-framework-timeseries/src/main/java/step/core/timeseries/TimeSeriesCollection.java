@@ -99,7 +99,7 @@ public class TimeSeriesCollection {
         return ttl;
     }
 
-    protected void setTtl(long ttlInMs) {
+    public void setTtl(long ttlInMs) {
         validateTtl(ttlInMs);
         this.ttl = ttlInMs;
     }
