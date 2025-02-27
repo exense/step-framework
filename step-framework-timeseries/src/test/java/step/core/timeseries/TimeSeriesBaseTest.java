@@ -47,7 +47,7 @@ public class TimeSeriesBaseTest {
     }
 
     protected void assertCollectionIsEmpty(TimeSeriesCollection c) {
-        Assert.assertEquals(0, c.getCollection().count(Filters.empty(), null));
+        Assert.assertEquals(0, c.count(Filters.empty(), null));
     }
 
     protected void assertCollectionsAreEmpty(Collection<TimeSeriesCollection> collections) {

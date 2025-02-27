@@ -73,7 +73,7 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         Assert.assertEquals(1, response.getFirstSeries().size());
         buckets = response.getSeries().get(Map.of());
         Assert.assertNotNull(buckets);
-        Bucket bucket = collection.getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList()).get(0);
+        Bucket bucket = collection.find(Filters.empty()).collect(Collectors.toList()).get(0);
         Assert.assertNull(bucket.getAttributes().get("a"));
         Assert.assertNotNull(bucket.getAttributes().get("z"));
     }
@@ -135,7 +135,7 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
 
         timeSeries.getCollections().forEach(c -> {
             c.getIngestionPipeline().flush();
-            Bucket foundBucket = c.getCollection().find(Filters.empty(), null, null, null, 0).collect(Collectors.toList()).get(0);
+            Bucket foundBucket = c.find(Filters.empty()).collect(Collectors.toList()).get(0);
             Assert.assertEquals(bucket.getCount(), foundBucket.getCount());
             c.getIgnoredAttributes().forEach(attr -> Assert.assertFalse(foundBucket.getAttributes().containsKey(attr)));
             Assert.assertEquals(bucket.getAttributes().size() - c.getIgnoredAttributes().size(), foundBucket.getAttributes().size());

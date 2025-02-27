@@ -49,7 +49,7 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
             entity.setMin(-i - 1);
             entity.setMax(i + 1);
             entity.setAttributes(new BucketAttributes(Map.of()));
-            timeSeries.getDefaultCollection().getCollection().save(entity);
+            timeSeries.getDefaultCollection().save(entity);
         }
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
@@ -132,18 +132,18 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
                     ingestionPipeline.ingestPoint(attributes, i, 10L);
                 }
                 ingestionPipeline.flush();
-                assertEquals(nPoints, collection1.getCollection().count(Filters.empty(), null));
+                assertEquals(nPoints, collection1.count(Filters.empty(), null));
 
                 collection10.getIngestionPipeline().flush();
-                assertEquals(nPoints / 10, collection10.getCollection().count(Filters.empty(), null));
+                assertEquals(nPoints / 10, collection10.count(Filters.empty(), null));
 
                 collection100.getIngestionPipeline().flush();
-                assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
+                assertEquals(nPoints / 100, collection100.count(Filters.empty(), null));
 
-                collection100.getCollection().drop();
-                assertEquals(0, collection100.getCollection().count(Filters.empty(), null));
+                collection100.drop();
+                assertEquals(0, collection100.count(Filters.empty(), null));
                 timeSeries.ingestDataForEmptyCollections();
-                assertEquals(nPoints / 100, collection100.getCollection().count(Filters.empty(), null));
+                assertEquals(nPoints / 100, collection100.count(Filters.empty(), null));
             }
             timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder().build());
         }
@@ -581,6 +581,29 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
                 .build();
         TimeSeriesAggregationResponse response = pipeline.collect(query);
         assertEquals(1, response.getSeries().size());
+    }
+
+    @Test
+    public void aggregationOnNonFlushDataTest() {
+        InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
+        TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, 1);
+        TimeSeries timeSeries = new TimeSeries(Arrays.asList(collection));
+
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "FAILED"), 2L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "FAILED"), 2L, 10L);
+
+            TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
+            TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
+                    .range(0, 3)
+                    .withGroupDimensions(Set.of("status"))
+                    .withFilter(OQLFilterBuilder.getFilter("attributes.name = t1 and attributes.status = FAILED"))
+                    .build();
+            TimeSeriesAggregationResponse response = pipeline.collect(query);
+            assertEquals(1, response.getSeries().size());
+        }
     }
 
     @Test
