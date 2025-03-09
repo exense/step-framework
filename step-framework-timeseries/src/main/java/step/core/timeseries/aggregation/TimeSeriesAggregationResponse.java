@@ -5,6 +5,7 @@ import step.core.timeseries.bucket.BucketAttributes;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TimeSeriesAggregationResponse {
 
@@ -22,6 +23,8 @@ public class TimeSeriesAggregationResponse {
      */
     private final long collectionResolution;
 
+    private final Set<String> collectionIgnoredAttributes;
+
     /**
      * Set to true when data for the ideal resolution was not found, and a higher resolution was used instead.
      */
@@ -32,10 +35,11 @@ public class TimeSeriesAggregationResponse {
      */
     private final boolean ttlCovered;
 
-    TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long start, long end, long resolution, long collectionResolution, boolean higherResolutionUsed, boolean ttlCovered) {
+    TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long start, long end, long resolution, long collectionResolution, Set<String> collectionIgnoredAttributes, boolean higherResolutionUsed, boolean ttlCovered) {
         this.series = series;
         this.resolution = resolution;
         this.collectionResolution = collectionResolution;
+        this.collectionIgnoredAttributes = collectionIgnoredAttributes;
         this.higherResolutionUsed = higherResolutionUsed;
         this.start = start;
         this.end = end;
@@ -68,6 +72,10 @@ public class TimeSeriesAggregationResponse {
 
     public long getCollectionResolution() {
         return collectionResolution;
+    }
+
+    public Set<String> getCollectionIgnoredAttributes() {
+        return collectionIgnoredAttributes;
     }
 
     public boolean isTtlCovered() {
