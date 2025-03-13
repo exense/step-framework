@@ -3,8 +3,10 @@ package step.core.timeseries.aggregation;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class TimeSeriesAggregationResponseBuilder {
 
@@ -13,6 +15,7 @@ public class TimeSeriesAggregationResponseBuilder {
     private Map<BucketAttributes, Map<Long, Bucket>> series;
     private long resolution;
     private long collectionResolution;
+    private Set<String> collectionIgnoredAttributes;
     private boolean higherResolutionUsed;
     private boolean ttlCovered;
 
@@ -75,9 +78,18 @@ public class TimeSeriesAggregationResponseBuilder {
         return this;
     }
 
+    public Set<String> getCollectionIgnoredAttributes() {
+        return collectionIgnoredAttributes;
+    }
+
+    public TimeSeriesAggregationResponseBuilder setCollectionIgnoredAttributes(Set<String> collectionIgnoredAttributes) {
+        this.collectionIgnoredAttributes = collectionIgnoredAttributes;
+        return this;
+    }
+
     public TimeSeriesAggregationResponse build() {
         Objects.requireNonNull(start);
         Objects.requireNonNull(end);
-        return new TimeSeriesAggregationResponse(series, start, end, resolution, collectionResolution, higherResolutionUsed, ttlCovered);
+        return new TimeSeriesAggregationResponse(series, start, end, resolution, collectionResolution, collectionIgnoredAttributes, higherResolutionUsed, ttlCovered);
     }
 }

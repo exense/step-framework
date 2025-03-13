@@ -118,6 +118,7 @@ public class TimeSeriesAggregationPipeline {
                 .setEnd(finalParams.getTo())
                 .setResolution(finalParams.getResolution())
                 .setCollectionResolution(idealAvailableCollection.getResolution())
+                .setCollectionIgnoredAttributes(idealAvailableCollection.getIgnoredAttributes())
                 .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
                 .setTtlCovered(ttlCovered)
                 .build();
