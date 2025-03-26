@@ -120,6 +120,14 @@ public class TimeSeries implements AutoCloseable {
     }
 
     /**
+     * Create compound index using the given fields
+     * @param indexFields the set of fields to use for creating a compound index
+     */
+    public void createCompoundIndex(LinkedHashSet<IndexField> indexFields) {
+        this.handledCollections.forEach(c -> c.createCompoundIndex(indexFields));
+    }
+
+    /**
      * Perform standard housekeeping based on internal TTL settings
      */
     public void performHousekeeping() {
