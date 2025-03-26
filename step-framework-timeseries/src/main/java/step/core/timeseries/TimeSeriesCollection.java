@@ -11,6 +11,7 @@ import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -110,11 +111,23 @@ public class TimeSeriesCollection {
         }
     }
 
+    /**
+     * Creates separate indexes on the given attributes.
+     * @param indexFields attribute names to be indexed (one index per attribute)
+     */
     protected void createIndexes(Set<IndexField> indexFields) {
         mainCollection.createOrUpdateIndex(TimeSeriesConstants.TIMESTAMP_ATTRIBUTE);
         Set<IndexField> renamedFieldIndexes = indexFields.stream().map(i -> new IndexField("attributes." + i.fieldName,
                 i.order, i.fieldClass)).collect(Collectors.toSet());
         renamedFieldIndexes.forEach(mainCollection::createOrUpdateIndex);
+    }
+
+    /**
+     * Creates a compound index on the underlying raw collection.
+     * @param indexFields fields to create a compound index on
+     */
+    public void createCompoundIndex(LinkedHashSet<IndexField> indexFields) {
+        mainCollection.createOrUpdateCompoundIndex(indexFields);
     }
 
     public TimeSeriesIngestionPipeline getIngestionPipeline() {
