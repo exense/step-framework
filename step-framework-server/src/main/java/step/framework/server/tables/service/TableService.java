@@ -92,7 +92,7 @@ public class TableService {
 
     private <T> Stream<T> _request(Collection<T> collection, Table<T> table, Filter filter, TableRequest request, Session<?> session) {
         // Get the search order
-        SearchOrder searchOrder = getSearchOrder(request);
+        SearchOrder searchOrder = getSearchOrder(request, table);
 
         // Perform the search
         Stream<T> result = collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration));
@@ -240,13 +240,16 @@ public class TableService {
         }
     }
 
-    private SearchOrder getSearchOrder(TableRequest request) {
-        SearchOrder searchOrder;
+    private <T>  SearchOrder getSearchOrder(TableRequest request, Table<T> table) {
+        SearchOrder searchOrder = null;
         Sort sort = request.getSort();
         if (sort != null) {
-            searchOrder = new SearchOrder(sort.getField(), sort.getDirection().getValue());
-        } else {
-            searchOrder = null;
+            if (table.getDerivedTableSortingFactory() != null) {
+                searchOrder = table.getDerivedTableSortingFactory().apply(sort);
+            }
+            if (searchOrder == null) {
+                searchOrder = new SearchOrder(sort.getField(), sort.getDirection().getValue());
+            }
         }
         return searchOrder;
     }

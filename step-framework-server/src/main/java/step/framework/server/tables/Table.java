@@ -2,7 +2,9 @@ package step.framework.server.tables;
 
 import step.core.collections.Collection;
 import step.core.collections.Filter;
+import step.core.collections.SearchOrder;
 import step.framework.server.Session;
+import step.framework.server.tables.service.Sort;
 import step.framework.server.tables.service.TableParameters;
 
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ public class Table<T> {
     private final boolean filtered;
     private BiFunction<TableParameters, Session<?>, Filter> tableFiltersFactory;
     private Function<List<Filter>, Filter> derivedTableFiltersFactory;
+    private Function<Sort, SearchOrder> derivedTableSortingFactory;
 
     private Integer maxFindDuration;
     private Integer countLimit;
@@ -54,6 +57,15 @@ public class Table<T> {
      */
     public Table<T> withTableFiltersFactory(Function<TableParameters, Filter> tableFiltersFactory) {
         this.tableFiltersFactory = (parameters, session) -> tableFiltersFactory.apply(parameters);
+        return this;
+    }
+
+    /**
+     * @param derivedTableFiltersFactory a factory for additional filters derived from provided filters to be applied at each table request
+     * @return this instance
+     */
+    public Table<T> withDerivedTableSortingFactory(Function<Sort, SearchOrder> derivedTableSortingFactory) {
+        this.derivedTableSortingFactory = derivedTableSortingFactory;
         return this;
     }
 
@@ -177,5 +189,9 @@ public class Table<T> {
 
     public Optional<Function<List<Filter>, Filter>> getDerivedTableFiltersFactory() {
         return Optional.ofNullable(derivedTableFiltersFactory);
+    }
+
+    public Function<Sort, SearchOrder> getDerivedTableSortingFactory() {
+        return derivedTableSortingFactory;
     }
 }

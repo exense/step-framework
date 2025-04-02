@@ -140,9 +140,9 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 				collection.find(query).projection(Projections.include(reduceFields)).maxTime(maxTime, TimeUnit.SECONDS).batchSize(mongoClientSession.getBatchSize()) :
 				collection.find(query).maxTime(maxTime, TimeUnit.SECONDS).batchSize(mongoClientSession.getBatchSize());
 
-		if (order != null) {
-			String attributeName = fixAttributeName(order.getAttributeName());
-			Document sortDoc = new Document(attributeName, order.getOrder());
+		if (order != null && !order.getFieldsSearchOder().isEmpty()) {
+			Map<String, Object> mapOfFieldsOrder = order.getFieldsSearchOder().stream().collect(Collectors.toMap(e -> e.attributeName, e -> e.order));
+			Document sortDoc = new Document(mapOfFieldsOrder);
 			find.sort(sortDoc);
 		}
 		if(skip!=null) {
