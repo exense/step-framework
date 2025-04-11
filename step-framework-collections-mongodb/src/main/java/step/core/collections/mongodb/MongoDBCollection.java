@@ -142,7 +142,7 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 
 		if (order != null && !order.getFieldsSearchOder().isEmpty()) {
 			Document sortDoc = new Document();
-			order.getFieldsSearchOder().forEach(o -> sortDoc.put(o.attributeName, o.order));
+			order.getFieldsSearchOder().forEach(o -> sortDoc.put(fixAttributeName(o.attributeName), o.order));
 			find.sort(sortDoc);
 		}
 		if(skip!=null) {
