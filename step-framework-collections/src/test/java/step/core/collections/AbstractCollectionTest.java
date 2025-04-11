@@ -331,6 +331,84 @@ public abstract class AbstractCollectionTest {
 	}
 
 	@Test
+	public void testFindSearchOrdersFilters() {
+		Collection<Bean> collection = collectionFactory.getCollection("beans", Bean.class);
+		collection.remove(Filters.empty());
+
+		Bean bean4 = new Bean();
+		bean4.setProperty1("bean4");
+		bean4.addAttribute("MyAtt1", "CCC");
+		bean4.addAttribute("MyAtt2", "AAA");
+		collection.save(bean4);
+
+		Bean bean2 = new Bean();
+		bean2.setProperty1("bean2");
+		bean2.addAttribute("MyAtt1", "AAA");
+		bean2.addAttribute("MyAtt2", "CCC");
+		collection.save(bean2);
+
+		Bean bean3 = new Bean();
+		bean3.setProperty1("bean3");
+		bean3.addAttribute("MyAtt1", "BBB");
+		bean3.addAttribute("MyAtt2", "DDD");
+		collection.save(bean3);
+
+		Bean bean1 = new Bean();
+		bean1.setProperty1("bean1");
+		bean1.addAttribute("MyAtt1", "AAA");
+		bean1.addAttribute("MyAtt2", "BBB");
+		collection.save(bean1);
+
+		// No sort
+		List<Bean> result = collection.find(Filters.empty(),null, null, null, 0).collect(Collectors.toList());
+		assertEquals("bean4", result.get(0).getProperty1());
+		assertEquals("bean2", result.get(1).getProperty1());
+		assertEquals("bean3", result.get(2).getProperty1());
+		assertEquals("bean1", result.get(3).getProperty1());
+
+		// Simple sort on one attributes.MyAtt1
+		result = collection.find(Filters.empty(),new SearchOrder("attributes.MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals("bean2", result.get(0).getProperty1());
+		assertEquals("bean1", result.get(1).getProperty1());
+		assertEquals("bean3", result.get(2).getProperty1());
+		assertEquals("bean4", result.get(3).getProperty1());
+
+		// Simple sort on one attributes.MyAtt2
+		result = collection.find(Filters.empty(),new SearchOrder("attributes.MyAtt2", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals("bean4", result.get(0).getProperty1());
+		assertEquals("bean1", result.get(1).getProperty1());
+		assertEquals("bean2", result.get(2).getProperty1());
+		assertEquals("bean3", result.get(3).getProperty1());
+
+		// Combined sort on one attributes.MyAtt1 and attributes.MyAtt2
+		SearchOrder searchOrder = new SearchOrder(List.of(new SearchOrder.FieldSearchOrder("attributes.MyAtt1", 1),
+				new SearchOrder.FieldSearchOrder("attributes.MyAtt2", 1)));
+		result = collection.find(Filters.empty(), searchOrder, null, null, 0).collect(Collectors.toList());
+		assertEquals("bean1", result.get(0).getProperty1());
+		assertEquals("bean2", result.get(1).getProperty1());
+		assertEquals("bean3", result.get(2).getProperty1());
+		assertEquals("bean4", result.get(3).getProperty1());
+
+		// Combined sort on one attributes.MyAtt2 and attributes.MyAtt1
+		searchOrder = new SearchOrder(List.of(new SearchOrder.FieldSearchOrder("attributes.MyAtt2", 1),
+				new SearchOrder.FieldSearchOrder("attributes.MyAtt1", 1)));
+		result = collection.find(Filters.empty(), searchOrder, null, null, 0).collect(Collectors.toList());
+		assertEquals("bean4", result.get(0).getProperty1());
+		assertEquals("bean1", result.get(1).getProperty1());
+		assertEquals("bean2", result.get(2).getProperty1());
+		assertEquals("bean3", result.get(3).getProperty1());
+
+		// Combined sort on one attributes.MyAtt1 and attributes.MyAtt2 desc
+		searchOrder = new SearchOrder(List.of(new SearchOrder.FieldSearchOrder("attributes.MyAtt1", 1),
+				new SearchOrder.FieldSearchOrder("attributes.MyAtt2", -1)));
+		result = collection.find(Filters.empty(), searchOrder, null, null, 0).collect(Collectors.toList());
+		assertEquals("bean2", result.get(0).getProperty1());
+		assertEquals("bean1", result.get(1).getProperty1());
+		assertEquals("bean3", result.get(2).getProperty1());
+		assertEquals("bean4", result.get(3).getProperty1());
+	}
+
+	@Test
 	public void testFindComplexRegexFilters() {
 		Collection<Bean> collection = collectionFactory.getCollection("beans", Bean.class);
 		collection.remove(Filters.empty());
@@ -370,7 +448,6 @@ public abstract class AbstractCollectionTest {
 		result = collection.find(Filters.regex("property1", "^((?!;three=).)*$", true), null, null, null, 0).collect(Collectors.toList());
 		assertEquals(1, result.size());
 		assertEquals(bean3.getId(), result.get(0).getId());
-
 	}
 
 	@Test
