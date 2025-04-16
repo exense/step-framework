@@ -448,6 +448,7 @@ public abstract class AbstractCollectionTest {
 		result = collection.find(Filters.regex("property1", "^((?!;three=).)*$", true), null, null, null, 0).collect(Collectors.toList());
 		assertEquals(1, result.size());
 		assertEquals(bean3.getId(), result.get(0).getId());
+
 	}
 
 	@Test
