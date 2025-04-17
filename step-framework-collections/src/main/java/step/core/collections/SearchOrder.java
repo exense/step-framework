@@ -18,35 +18,32 @@
  ******************************************************************************/
 package step.core.collections;
 
+import java.util.List;
+
 public class SearchOrder {
 
-	private String attributeName;
-	
-	private int order;
+	public final List<FieldSearchOrder> fieldsSearchOrder;
 
-	public SearchOrder(){
-		super();
+	public static class FieldSearchOrder {
+		public final String attributeName;
+
+		public final int order;
+
+		public FieldSearchOrder(String attributeName, int order) {
+			this.attributeName = attributeName;
+			this.order = order;
+		}
 	}
 	
 	public SearchOrder(String attributeName, int order) {
-		super();
-		this.attributeName = attributeName;
-		this.order = order;
+		fieldsSearchOrder = List.of(new FieldSearchOrder(attributeName, order));
 	}
 
-	public String getAttributeName() {
-		return attributeName;
+	public SearchOrder(List<FieldSearchOrder> fieldsSearchOrder) {
+		this.fieldsSearchOrder = fieldsSearchOrder;
 	}
 
-	public void setAttributeName(String attributeName) {
-		this.attributeName = attributeName;
-	}
-
-	public int getOrder() {
-		return order;
-	}
-
-	public void setOrder(int order) {
-		this.order = order;
+	public List<FieldSearchOrder> getFieldsSearchOrder() {
+		return fieldsSearchOrder;
 	}
 }
