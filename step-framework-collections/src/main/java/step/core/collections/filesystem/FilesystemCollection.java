@@ -114,8 +114,8 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
 				return getId(o1).compareTo(getId(o2));
 			}
 		});
-		if(order != null && !order.getFieldsSearchOder().isEmpty()) {
-			PojoUtils.SearchOrderComparator<Object> objectSearchOrderComparator = new PojoUtils.SearchOrderComparator<>(order.getFieldsSearchOder());
+		if(order != null && !order.getFieldsSearchOrder().isEmpty()) {
+			PojoUtils.SearchOrderComparator<Object> objectSearchOrderComparator = new PojoUtils.SearchOrderComparator<>(order.getFieldsSearchOrder());
 			stream = stream.sorted(objectSearchOrderComparator);
 		}
 		if(skip != null) {

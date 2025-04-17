@@ -46,15 +46,13 @@ public class PojoUtils {
         }
 
         private String extractValueAsString(T o, String attributeName) {
-            String value = "";
             try {
-                value = getProperty(o, attributeName).toString();
+                return getProperty(o, attributeName).toString();
             } catch (NoSuchMethodException e1) {
-                //keep default value of
+                return "";
             } catch (IllegalAccessException | InvocationTargetException e1) {
                 throw new RuntimeException(e1);
             }
-            return value;
         }
 
         @Override

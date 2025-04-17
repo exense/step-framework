@@ -22,7 +22,7 @@ import java.util.List;
 
 public class SearchOrder {
 
-	public final List<FieldSearchOrder> fieldsSearchOder;
+	public final List<FieldSearchOrder> fieldsSearchOrder;
 
 	public static class FieldSearchOrder {
 		public final String attributeName;
@@ -36,15 +36,14 @@ public class SearchOrder {
 	}
 	
 	public SearchOrder(String attributeName, int order) {
-		fieldsSearchOder = List.of(new FieldSearchOrder(attributeName, order));
+		fieldsSearchOrder = List.of(new FieldSearchOrder(attributeName, order));
 	}
 
-	public SearchOrder(List<FieldSearchOrder> fieldsSearchOder) {
-		this.fieldsSearchOder = fieldsSearchOder;
+	public SearchOrder(List<FieldSearchOrder> fieldsSearchOrder) {
+		this.fieldsSearchOrder = fieldsSearchOrder;
 	}
 
-	public List<FieldSearchOrder> getFieldsSearchOder() {
-		return fieldsSearchOder;
+	public List<FieldSearchOrder> getFieldsSearchOrder() {
+		return fieldsSearchOrder;
 	}
-
 }

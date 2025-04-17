@@ -25,7 +25,7 @@ public class TableRequestSortDeserializer extends JsonDeserializer {
             // Case: single sort object
             Sort singleSort = mapper.treeToValue(node, Sort.class);
             result.add(singleSort);
-        } else if (!node.isNull()) {
+        } else {
             throw new JsonMappingException(jsonParser, "Expected object or array for 'sort' field");
         }
 
