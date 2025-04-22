@@ -21,6 +21,7 @@ package step.core.collections;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SearchOrder {
@@ -44,7 +45,7 @@ public class SearchOrder {
 
 	@JsonCreator
 	public SearchOrder(@JsonProperty("fieldsSearchOrder") List<FieldSearchOrder> fieldsSearchOrder) {
-		this.fieldsSearchOrder = fieldsSearchOrder;
+		this.fieldsSearchOrder = (fieldsSearchOrder != null) ? fieldsSearchOrder : new ArrayList<>();
 	}
 
 	public List<FieldSearchOrder> getFieldsSearchOrder() {
