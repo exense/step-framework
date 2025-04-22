@@ -33,7 +33,8 @@ public class SearchOrder {
 
 		public final int order;
 
-		public FieldSearchOrder(String attributeName, int order) {
+		@JsonCreator
+		public FieldSearchOrder(@JsonProperty("attributeName") String attributeName, @JsonProperty("order") int order) {
 			this.attributeName = attributeName;
 			this.order = order;
 		}
