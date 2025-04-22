@@ -18,6 +18,9 @@
  ******************************************************************************/
 package step.core.collections;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 public class SearchOrder {
@@ -39,7 +42,8 @@ public class SearchOrder {
 		fieldsSearchOrder = List.of(new FieldSearchOrder(attributeName, order));
 	}
 
-	public SearchOrder(List<FieldSearchOrder> fieldsSearchOrder) {
+	@JsonCreator
+	public SearchOrder(@JsonProperty("fieldsSearchOrder") List<FieldSearchOrder> fieldsSearchOrder) {
 		this.fieldsSearchOrder = fieldsSearchOrder;
 	}
 
