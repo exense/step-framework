@@ -18,6 +18,10 @@
  ******************************************************************************/
 package step.core.collections;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class SearchOrder {
@@ -29,7 +33,8 @@ public class SearchOrder {
 
 		public final int order;
 
-		public FieldSearchOrder(String attributeName, int order) {
+		@JsonCreator
+		public FieldSearchOrder(@JsonProperty("attributeName") String attributeName, @JsonProperty("order") int order) {
 			this.attributeName = attributeName;
 			this.order = order;
 		}
@@ -39,8 +44,9 @@ public class SearchOrder {
 		fieldsSearchOrder = List.of(new FieldSearchOrder(attributeName, order));
 	}
 
-	public SearchOrder(List<FieldSearchOrder> fieldsSearchOrder) {
-		this.fieldsSearchOrder = fieldsSearchOrder;
+	@JsonCreator
+	public SearchOrder(@JsonProperty("fieldsSearchOrder") List<FieldSearchOrder> fieldsSearchOrder) {
+		this.fieldsSearchOrder = (fieldsSearchOrder != null) ? fieldsSearchOrder : new ArrayList<>();
 	}
 
 	public List<FieldSearchOrder> getFieldsSearchOrder() {
