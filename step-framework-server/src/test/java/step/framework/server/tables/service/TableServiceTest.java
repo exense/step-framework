@@ -124,7 +124,7 @@ public class TableServiceTest {
         Sort sort = new Sort();
         sort.setField("property1");
         sort.setDirection(SortDirection.DESCENDING);
-        request.setSort(sort);
+        request.setSort(List.of(sort));
         response = tableService.request(SIMPLE_TABLE, request, null);
         assertEquals(List.of(bean3, bean2, bean1), response.getData());
 
@@ -262,8 +262,12 @@ public class TableServiceTest {
         writer.writeValueAsString(tableRequest);
 
         tableRequest = reader.readValue("{\"sort\":{\"field\":\"field1\", \"direction\":\"ASCENDING\"}}", TableRequest.class);
-        assertEquals("field1", tableRequest.getSort().getField());
-        assertEquals(SortDirection.ASCENDING, tableRequest.getSort().getDirection());
+        assertEquals("field1", tableRequest.getSort().get(0).getField());
+        assertEquals(SortDirection.ASCENDING, tableRequest.getSort().get(0).getDirection());
+
+        tableRequest = reader.readValue("{\"sort\":[{\"field\":\"field1\", \"direction\":\"ASCENDING\"}]}", TableRequest.class);
+        assertEquals("field1", tableRequest.getSort().get(0).getField());
+        assertEquals(SortDirection.ASCENDING, tableRequest.getSort().get(0).getDirection());
 
         writer.writeValueAsString(tableRequest);
 

@@ -110,12 +110,9 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
 	@Override
 	public Stream<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
 		Stream<T> stream = filteredStream(filter);
-		if(order != null) {
-			Comparator<T> comparing = (Comparator<T>) PojoUtils.comparator(order.getAttributeName());
-			if(order.getOrder()<0) {
-				comparing = comparing.reversed();
-			}
-			stream = stream.sorted(comparing);
+		if(order != null && !order.getFieldsSearchOrder().isEmpty()) {
+			PojoUtils.SearchOrderComparator<Object> objectSearchOrderComparator = new PojoUtils.SearchOrderComparator<>(order.getFieldsSearchOrder());
+			stream = stream.sorted(objectSearchOrderComparator);
 		}
 		if(skip != null) {
 			stream = stream.skip(skip);

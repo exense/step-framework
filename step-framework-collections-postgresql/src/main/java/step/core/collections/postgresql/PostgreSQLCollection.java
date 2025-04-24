@@ -167,9 +167,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	private String buildQuery(Filter filter, SearchOrder order, Integer skip, Integer limit) {
 		StringBuffer query = new StringBuffer();
 		query.append("SELECT * FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
-		if (order != null) {
-			String sortOrder = (order.getOrder() > 0 ) ? " ASC" : " DESC";
-			query.append(" ORDER BY ").append(PostgreSQLFilterFactory.formatField(order.getAttributeName(),Object.class)).append(sortOrder);
+		if (order != null && !order.getFieldsSearchOrder().isEmpty()) {
+			query.append(" ORDER BY ");
+			query.append(order.getFieldsSearchOrder().stream()
+					.map(o -> PostgreSQLFilterFactory.formatField(o.attributeName,Object.class) + (o.order >= 0 ? " ASC" : " DESC"))
+					.collect(Collectors.joining(", ")));
 		}
 		if (skip != null) {
 			query.append(" OFFSET ").append(skip);

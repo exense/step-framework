@@ -1,11 +1,15 @@
 package step.framework.server.tables.service;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import java.util.List;
+
 public class TableRequest extends TableQueryRequest {
 
     private Integer skip;
     private Integer limit;
 
-    private Sort sort;
+    private List<Sort> sort;
     private boolean performEnrichment = true;
     private boolean calculateCounts = true;
 
@@ -25,11 +29,12 @@ public class TableRequest extends TableQueryRequest {
         this.limit = limit;
     }
 
-    public Sort getSort() {
+    public List<Sort> getSort() {
         return sort;
     }
 
-    public void setSort(Sort sort) {
+    @JsonDeserialize(using = TableRequestSortDeserializer.class)
+    public void setSort(List<Sort> sort) {
         this.sort = sort;
     }
 

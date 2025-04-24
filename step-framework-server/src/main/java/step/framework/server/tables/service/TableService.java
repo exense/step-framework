@@ -240,13 +240,11 @@ public class TableService {
         }
     }
 
-    private SearchOrder getSearchOrder(TableRequest request) {
-        SearchOrder searchOrder;
-        Sort sort = request.getSort();
-        if (sort != null) {
-            searchOrder = new SearchOrder(sort.getField(), sort.getDirection().getValue());
-        } else {
-            searchOrder = null;
+    private <T>  SearchOrder getSearchOrder(TableRequest request) {
+        SearchOrder searchOrder = null;
+        List<Sort> sort = request.getSort();
+        if (sort != null && !sort.isEmpty()) {
+            searchOrder = new SearchOrder(sort.stream().map(s -> new SearchOrder.FieldSearchOrder(s.getField(), s.getDirection().getValue())).collect(Collectors.toList()));
         }
         return searchOrder;
     }

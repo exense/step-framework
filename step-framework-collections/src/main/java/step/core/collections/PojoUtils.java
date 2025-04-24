@@ -2,6 +2,7 @@ package step.core.collections;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.beanutils.BeanUtilsBean;
@@ -36,17 +37,43 @@ public class PojoUtils {
         return bean == null ? null : bean.getClass().getField(propertyName).get(bean);
     }
 
-    public static Comparator<Object> comparator(String propertyName) {
-        Comparator<Object> comparing = Comparator.comparing(e->{
+    public static class SearchOrderComparator<T> implements Comparator<T> {
+
+        List<SearchOrder.FieldSearchOrder> fieldsSearchOrder;
+
+        public SearchOrderComparator(List<SearchOrder.FieldSearchOrder> fieldsSearchOrder) {
+            this.fieldsSearchOrder = fieldsSearchOrder;
+        }
+
+        private String extractValueAsString(T o, String attributeName) {
             try {
-                return getProperty(e, propertyName).toString();
+                return getProperty(o, attributeName).toString();
             } catch (NoSuchMethodException e1) {
                 return "";
             } catch (IllegalAccessException | InvocationTargetException e1) {
                 throw new RuntimeException(e1);
             }
-        });
-        return comparing;
+        }
+
+        @Override
+        public int compare(T o1, T o2) {
+            try {
+                for (SearchOrder.FieldSearchOrder fieldSearchOrder : fieldsSearchOrder) {
+                    String attributeName = fieldSearchOrder.attributeName;
+                    String value1 = extractValueAsString(o1, attributeName);
+                    String value2 = extractValueAsString(o2, attributeName);
+
+                    int comparison = value1.compareTo(value2);
+
+                    if (comparison != 0) {
+                        return fieldSearchOrder.order >= 0 ? comparison : -comparison;
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Sorting error: " + e.getMessage(), e);
+            }
+            return 0;
+        }
     }
 
     static {
