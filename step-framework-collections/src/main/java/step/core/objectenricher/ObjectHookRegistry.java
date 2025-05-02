@@ -49,6 +49,15 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 	}
 
 	/**
+	 * @param context
+	 * @return the composed {@link ObjectOverlapper} based on all the registered hooks
+	 */
+	public ObjectOverlapper getObjectOverlapper(AbstractContext context) {
+		return ObjectOverlapperComposer
+				.compose(stream().map(hook -> hook.getObjectOverlapper(context)).collect(Collectors.toList()));
+	}
+
+	/**
 	 * Rebuilds an {@link AbstractContext} based on an object that has been
 	 * previously enriched with the composed {@link ObjectEnricher} of this registry
 	 * 

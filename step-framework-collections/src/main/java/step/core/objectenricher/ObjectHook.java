@@ -31,6 +31,10 @@ public interface ObjectHook {
 	
 	ObjectEnricher getObjectEnricher(AbstractContext context);
 
+	default ObjectOverlapper getObjectOverlapper(AbstractContext context) {
+		return null;
+	}
+
 	/**
 	 * Rebuilds an {@link AbstractContext} based on an object that has been
 	 * previously enriched with an {@link ObjectEnricher} provided by this class
