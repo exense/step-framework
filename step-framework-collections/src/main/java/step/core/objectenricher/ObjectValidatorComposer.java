@@ -21,32 +21,17 @@ package step.core.objectenricher;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class ObjectOverlapperComposer {
+public class ObjectValidatorComposer {
 
-    public static ObjectOverlapper compose(List<ObjectOverlapper> list) {
-        return new ObjectOverlapper() {
-
-            @Override
-            public void onBeforeSave(EnricheableObject obj) {
-                nonNullList(list).forEach(overlapper -> overlapper.onBeforeSave(obj));
-            }
+    public static ObjectValidator compose(List<ObjectValidator> list) {
+        return new ObjectValidator() {
 
             @Override
-            public <T extends EnricheableObject> List<T> overlapObjects(List<T> objects) {
-                if (objects == null) {
-                    return null;
-                }
-                List<T> result = new ArrayList<>(objects);
-                Iterator<ObjectOverlapper> iterator = nonNullList(list).iterator();
-                while (iterator.hasNext()) {
-                    ObjectOverlapper next = iterator.next();
-                    result = next.overlapObjects(result);
-                }
-                return result;
+            public void validateOnSave(EnricheableObject obj) {
+                nonNullList(list).forEach(overlapper -> overlapper.validateOnSave(obj));
             }
 
-
-            private Stream<ObjectOverlapper> nonNullList(List<ObjectOverlapper> list) {
+            private Stream<ObjectValidator> nonNullList(List<ObjectValidator> list) {
                 return list.stream().filter(Objects::nonNull);
             }
         };

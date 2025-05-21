@@ -31,7 +31,7 @@ public interface ObjectHook {
 	
 	ObjectEnricher getObjectEnricher(AbstractContext context);
 
-	default ObjectOverlapper getObjectOverlapper(AbstractContext context) {
+	default ObjectValidator getObjectValidator(AbstractContext context) {
 		return null;
 	}
 

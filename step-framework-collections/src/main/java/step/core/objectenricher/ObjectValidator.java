@@ -20,12 +20,8 @@
  */
 package step.core.objectenricher;
 
-import java.util.List;
+public interface ObjectValidator {
 
-public interface ObjectOverlapper {
-
-    void onBeforeSave(EnricheableObject obj);
-
-    <T extends EnricheableObject> List<T> overlapObjects(List<T> objects);
+    void validateOnSave(EnricheableObject obj);
 
 }
