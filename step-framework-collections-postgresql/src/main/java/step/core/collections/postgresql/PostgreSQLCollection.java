@@ -30,9 +30,7 @@ import step.core.collections.AbstractCollection;
 import step.core.collections.Collection;
 
 import java.beans.PropertyDescriptor;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
+import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -394,34 +392,58 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	}
 
 	protected Class<?> getFieldClass(Class<?> clazz, String _field) {
-		String field = _field.equals("_id") ? "id" : _field;
-		if (field.equals("_class")) {
+		String fieldName = _field.equals("_id") ? "id" : _field;
+		if (fieldName.equals("_class")) {
 			return String.class;
 		}
+		//Try with getters
 		for (PropertyDescriptor propertyDescriptor: PropertyUtils.getPropertyDescriptors(clazz)) {
-			if (propertyDescriptor.getName().equals(field)) {
+			if (propertyDescriptor.getName().equals(fieldName)) {
 				Type genericReturnType = propertyDescriptor.getReadMethod().getGenericReturnType();
-				if (genericReturnType instanceof ParameterizedType) {
-					//Special case for Map we want to return the value class
-					if (Map.class.isAssignableFrom(propertyDescriptor.getReadMethod().getReturnType()) &&
-							((ParameterizedType) genericReturnType).getActualTypeArguments().length == 2) {
-						//Directly return the class of the map values
-						return (Class<?>) ((ParameterizedType) genericReturnType).getActualTypeArguments()[1];
-					} else {
-						throw new UnsupportedOperationException("Unable to retrieve type of ParameterizedType field '" + field + "' for class '" + clazz.getSimpleName());
-					}
-				} else if (genericReturnType instanceof TypeVariable) {
-					return (Class<?>) Arrays.stream(((TypeVariable<?>) genericReturnType).getBounds()).findFirst()
-							.orElseThrow(() -> new RuntimeException("Reflection failed for clazz '" + clazz + "' and field '" + field + "'" ));
-				} else {
-					Class<?> fieldClass = (Class<?>) genericReturnType;
-					return (fieldClass.isEnum()) ? String.class: fieldClass;
-				}
+				return getFieldClassForActualField(clazz, fieldName, genericReturnType);
 			}
 		}
-		//current property was not found, this happens for Maps
+		//try with public fields
+		for (Field field : clazz.getDeclaredFields()) {
+			if (Modifier.isPublic(field.getModifiers()) && fieldName.equals(field.getName())) {
+				Type genericType = field.getGenericType();
+				return getFieldClassForActualField(clazz, fieldName, genericType);
+			}
+		}
+		//current property was not found, this happens for nested fields in Maps
 		return clazz;
     }
+
+	protected Class<?> getFieldClassForActualField(Class<?> clazz, String fieldName, Type genericType) {
+		if (genericType instanceof ParameterizedType) {
+			ParameterizedType pt = (ParameterizedType) genericType;
+			Class<?> rawType = (Class<?>) pt.getRawType();
+
+			if (Map.class.isAssignableFrom(rawType) && pt.getActualTypeArguments().length == 2) {
+				// Get the value type of the Map
+				Type valueType = pt.getActualTypeArguments()[1];
+				if (valueType instanceof Class<?>) {
+					return (Class<?>) valueType;
+				} else if (valueType instanceof ParameterizedType) {
+					return (Class<?>) ((ParameterizedType) valueType).getRawType();
+				} else {
+					throw new UnsupportedOperationException("Unable to retrieve type of ParameterizedType field '" + fieldName + "' for class '" + clazz.getSimpleName());
+				}
+			} else {
+				throw new UnsupportedOperationException("Unable to retrieve type of ParameterizedType field '" +
+						fieldName + "' for class '" + clazz.getSimpleName() + "'");
+			}
+		} else if (genericType instanceof TypeVariable) {
+			// Handle generic type variables (e.g., T)
+			return (Class<?>) Arrays.stream(((TypeVariable<?>) genericType).getBounds()).findFirst()
+					.orElseThrow(() -> new RuntimeException("Reflection failed for clazz '" + clazz + "' and field '" + fieldName + "'" ));
+		} else if (genericType instanceof Class<?>) {
+			Class<?> fieldClass = (Class<?>) genericType;
+			return (fieldClass.isEnum()) ? String.class : fieldClass;
+		} else {
+			throw new UnsupportedOperationException("Unsupported generic type: " + genericType.getTypeName());
+		}
+	}
 
 	@Override
 	public void rename(String newName) {
