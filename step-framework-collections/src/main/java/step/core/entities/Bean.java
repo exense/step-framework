@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 @JsonTypeInfo(use=Id.CLASS,property="_class")
 public class Bean extends AbstractOrganizableObject {
 
+    public final String publicFinalField = "test";
     private String property1;
     private Long longProperty;
     private boolean booleanProperty;

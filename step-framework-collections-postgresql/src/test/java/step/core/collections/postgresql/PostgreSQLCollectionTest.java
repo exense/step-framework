@@ -116,6 +116,7 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 
 		Assert.assertEquals(String.class,beanCollection.getFieldClass("attributes.property1"));
 
+		Assert.assertEquals(String.class,beanCollection.getFieldClass("publicFinalField"));
 	}
 
 	@Test
