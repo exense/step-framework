@@ -404,7 +404,8 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 			}
 		}
 		//try with public fields
-		for (Field field : clazz.getDeclaredFields()) {
+		for (Field field : clazz.getFields()) {
+			//getFields only return public fields, but the check is cheap, so keeping it for safety and clarity
 			if (Modifier.isPublic(field.getModifiers()) && fieldName.equals(field.getName())) {
 				Type genericType = field.getGenericType();
 				return getFieldClassForActualField(clazz, fieldName, genericType);
@@ -435,8 +436,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 			}
 		} else if (genericType instanceof TypeVariable) {
 			// Handle generic type variables (e.g., T)
-			return (Class<?>) Arrays.stream(((TypeVariable<?>) genericType).getBounds()).findFirst()
-					.orElseThrow(() -> new RuntimeException("Reflection failed for clazz '" + clazz + "' and field '" + fieldName + "'" ));
+			Type[] bounds = ((TypeVariable<?>) genericType).getBounds();
+			if (bounds.length == 0) {
+				throw  new RuntimeException("Reflection failed for clazz '" + clazz + "' and field '" + fieldName + "'" );
+			}
+			return (Class<?>) bounds[0];
 		} else if (genericType instanceof Class<?>) {
 			Class<?> fieldClass = (Class<?>) genericType;
 			return (fieldClass.isEnum()) ? String.class : fieldClass;
