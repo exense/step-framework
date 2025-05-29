@@ -19,13 +19,10 @@
 package step.core.objectenricher;
 
 import step.core.AbstractContext;
-import step.core.collections.Filter;
 import step.core.collections.PojoFilter;
-import step.core.collections.PojoFilters;
 import step.core.ql.OQLFilterBuilder;
 
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ObjectHookRegistry extends ArrayList<ObjectHook> {
@@ -46,6 +43,15 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 	public ObjectEnricher getObjectEnricher(AbstractContext context) {
 		return ObjectEnricherComposer
 				.compose(stream().map(hook -> hook.getObjectEnricher(context)).collect(Collectors.toList()));
+	}
+
+	/**
+	 * @param context
+	 * @return the composed {@link ObjectValidator} based on all the registered hooks
+	 */
+	public ObjectValidator getObjectValidator(AbstractContext context) {
+		return ObjectValidatorComposer
+				.compose(stream().map(hook -> hook.getObjectValidator(context)).collect(Collectors.toList()));
 	}
 
 	/**
