@@ -46,7 +46,7 @@
         <!-- internal dependencies -->
         <exense-commons.version>2025.4.24-6809db5012b6ec36ea8bdd94</exense-commons.version>
 
-        <dependencies.version>2025.3.14</dependencies.version>
+        <dependencies.version>2025.6.2-683db20f335ed956c40e5a5f</dependencies.version>
 
         <!-- external dependencies -->
         <dep.jaxb.version>2.3.1</dep.jaxb.version>
