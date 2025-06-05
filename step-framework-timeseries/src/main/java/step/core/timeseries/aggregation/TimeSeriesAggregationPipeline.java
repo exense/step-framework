@@ -65,6 +65,9 @@ public class TimeSeriesAggregationPipeline {
     public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
         validateQuery(query);
         Set<String> usedAttributes = collectAllUsedAttributes(query).stream().map(a -> a.replace("attributes.", "")).collect(Collectors.toSet());
+        if (query.getCollectAttributeKeys() != null) {
+            usedAttributes.addAll(query.getCollectAttributeKeys());
+        }
         long queryFrom = query.getFrom() != null ? query.getFrom() : 0;
         long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         long idealResolution = 0;
