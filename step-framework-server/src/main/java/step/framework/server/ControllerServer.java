@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -436,6 +438,14 @@ public class ControllerServer {
 			if (!add) {
 				logger.warn("The web application resource path already exist and will be loaded only once: " + webAppRoot);
 			}
+		}
+
+		@Override
+		public void registerWebsocketEndpoint(ServerEndpointConfig serverEndpointConfig) {
+			JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
+				logger.info("Registering websocket endpoint:" + serverEndpointConfig);
+				container.addEndpoint(serverEndpointConfig);
+			});
 		}
 	}
 }
