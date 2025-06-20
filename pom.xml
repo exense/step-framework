@@ -44,7 +44,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <!-- internal dependencies -->
-        <exense-commons.version>2025.6.18-6852bf706249f636f0d77244</exense-commons.version>
+        <exense-commons.version>2.0.11</exense-commons.version>
 
         <dependencies.version>2025.3.14</dependencies.version>
 
