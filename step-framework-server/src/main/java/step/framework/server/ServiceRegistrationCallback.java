@@ -18,6 +18,7 @@
  ******************************************************************************/
 package step.framework.server;
 
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -43,4 +44,11 @@ public interface ServiceRegistrationCallback {
 	public void registerPackage(Package aPackage);
 
 	public void registerWebAppRoot(String webAppRoot);
+
+	// For now, we only need the possibility to register ServerEndpointConfig instances.
+	// The Jetty Websocket implementation also supports annotated Server Endpoint classes,
+	// which are even simpler to write (but only support a no-args constructor, which was not enough for our uses).
+	// If we want to support these, another registerWebsocketEndpoint(Class<?> annotatedServerEndpointClass) can
+	// be introduced in the future.
+	void registerWebsocketEndpoint(ServerEndpointConfig serverEndpointConfig);
 }
