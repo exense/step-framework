@@ -23,9 +23,14 @@ import step.core.collections.PojoFilter;
 import step.core.ql.OQLFilterBuilder;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class ObjectHookRegistry extends ArrayList<ObjectHook> {
+
+	private final Map<String, Object> validatorConfiguration = new ConcurrentHashMap<>();
 
 	/**
 	 * @param context
@@ -51,7 +56,11 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 	 */
 	public ObjectValidator getObjectValidator(AbstractContext context) {
 		return ObjectValidatorComposer
-				.compose(stream().map(hook -> hook.getObjectValidator(context)).collect(Collectors.toList()));
+				.compose(stream().map(hook -> hook.getObjectValidator(context, Collections.unmodifiableMap(this.validatorConfiguration))).collect(Collectors.toList()));
+	}
+
+	public Map<String, Object> getValidatorConfiguration(){
+		return this.validatorConfiguration;
 	}
 
 	/**

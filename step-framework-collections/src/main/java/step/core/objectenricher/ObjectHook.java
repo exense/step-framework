@@ -20,6 +20,8 @@ package step.core.objectenricher;
 
 import step.core.AbstractContext;
 
+import java.util.Map;
+
 /**
  * An {@link ObjectHook} is a factory for
  * {@link ObjectFilter} and {@link ObjectEnricher}
@@ -31,7 +33,7 @@ public interface ObjectHook {
 	
 	ObjectEnricher getObjectEnricher(AbstractContext context);
 
-	default ObjectValidator getObjectValidator(AbstractContext context) {
+	default ObjectValidator getObjectValidator(AbstractContext context, Map<String, Object> config) {
 		return null;
 	}
 
