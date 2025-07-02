@@ -443,7 +443,7 @@ public class ControllerServer {
 		@Override
 		public void registerWebsocketEndpoint(ServerEndpointConfig serverEndpointConfig) {
 			JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
-				logger.info("Registering websocket endpoint:" + serverEndpointConfig);
+				logger.info("Registering websocket endpoint:" + serverEndpointConfig.getPath());
 				container.addEndpoint(serverEndpointConfig);
 			});
 		}
