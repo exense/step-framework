@@ -45,7 +45,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         <!-- internal dependencies -->
         <dependencies.version>2025.6.25</dependencies.version>
-        <exense-commons.version>2025.6.25-685c19d064523b01b0babff2</exense-commons.version>
+        <exense-commons.version>2.0.13</exense-commons.version>
 
         <!-- external dependencies -->
         <dep.jaxb.version>2.3.1</dep.jaxb.version>
@@ -469,6 +469,26 @@
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+
+                    <!-- Disable old maven-deploy plugin -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+
+                    <!-- Publish directly to central instead -->
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.8.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>sonatype</publishingServerId>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
