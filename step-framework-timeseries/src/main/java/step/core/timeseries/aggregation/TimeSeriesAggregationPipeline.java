@@ -217,7 +217,7 @@ public class TimeSeriesAggregationPipeline {
             }
             if (responseMaxIntervals > 0 && query.getBucketsResolution() != null && (query.getTo() - query.getFrom()) / query.getBucketsResolution() > responseMaxIntervals) {
                 String formattedResolution = TimeSeriesUtils.formatMilliseconds(query.getBucketsResolution());
-                throw new IllegalArgumentException(String.format("The requested time resolution of %s is too small for the selected time range and would exceed the maximum number of buckets (4000). Please choose a higher time resolution or a shorter time range.", formattedResolution));
+                throw new IllegalArgumentException(String.format("The requested time resolution of %s is too small for the selected time range and would exceed the maximum number of buckets (%d). Please choose a higher time resolution or a shorter time range.", formattedResolution, responseMaxIntervals));
             }
         }
 
