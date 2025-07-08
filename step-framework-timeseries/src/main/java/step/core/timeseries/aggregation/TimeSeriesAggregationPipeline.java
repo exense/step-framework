@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.timeseries.TimeSeriesCollection;
+import step.core.timeseries.TimeSeriesUtils;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
@@ -215,7 +216,8 @@ public class TimeSeriesAggregationPipeline {
                 throw new IllegalArgumentException("Invalid requested range: 'from' timestamp is greater than 'to' timestamp.");
             }
             if (responseMaxIntervals > 0 && query.getBucketsResolution() != null && (query.getTo() - query.getFrom()) / query.getBucketsResolution() > responseMaxIntervals) {
-                throw new IllegalArgumentException("Requested resolution of " + query.getBucketsResolution() + " ms exceeds the maximum response intervals: " + responseMaxIntervals);
+                String formattedResolution = TimeSeriesUtils.formatMilliseconds(query.getBucketsResolution());
+                throw new IllegalArgumentException(String.format("The requested time resolution of %s is too small for the selected time range and would exceed the maximum number of buckets (%d). Please choose a higher time resolution or a shorter time range.", formattedResolution, responseMaxIntervals));
             }
         }
 
