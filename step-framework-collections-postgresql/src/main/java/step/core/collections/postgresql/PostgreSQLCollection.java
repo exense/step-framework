@@ -21,6 +21,7 @@ package step.core.collections.postgresql;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.pool.HikariProxyStatement;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+@SuppressWarnings({"SqlSourceToSinkFlow", "SqlNoDataSourceInspection"})
 public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Collection<T> {
 
 	private static Pattern p = Pattern.compile("([^.]+)");
@@ -79,7 +81,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	private synchronized void createTableIfRequired() throws SQLException {
 		try (Connection connection = ds.getConnection()) {
 			if (!tableExists(connection)) {
-				try (Statement statement = connection.createStatement();) {
+				try (Statement statement = connection.createStatement()) {
 					statement.executeUpdate("CREATE TABLE " + collectionNameStr + " (" +
 							"id text GENERATED ALWAYS AS  (object ->> 'id') STORED, " +
 							"object jsonb NOT NULL,"+
@@ -119,47 +121,42 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
 	@Override
 	public long estimatedCount() {
-		String query = "SELECT reltuples AS estimate FROM pg_class WHERE relname = '" + collectionName + "'" ;
+		String query = "SELECT reltuples AS estimate FROM pg_class WHERE relname = ?";
 		try {
 			try (Connection connection = ds.getConnection();
-				 PreparedStatement preparedStatement = connection.prepareStatement(query);
-				 ResultSet resultSet = preparedStatement.executeQuery()) {
-				if (resultSet.next()) {
-					return resultSet.getInt(1);
-				} else {
-					throw new RuntimeException("Unable to estimate the count for collection: " + collectionName + " , query: " + query);
+				 PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+				preparedStatement.setString(1, collectionName);
+				try (ResultSet resultSet = preparedStatement.executeQuery()) {
+					if (resultSet.next()) {
+						return resultSet.getInt(1);
+					} else {
+						throw new RuntimeException("Unable to estimate the count for collection: " + collectionName + " , query: " + query);
+					}
 				}
 			}
 		} catch (SQLException e) {
-			throw new RuntimeException("Query execution failed: " + query,e);
+			throw new RuntimeException("Query execution failed: " + query, e);
 		}
 	}
 
 	@Override
 	public Stream<T> find(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
 		String query = buildQuery(filter, order, skip, limit);
-		try (Connection connection = ds.getConnection();
-			 Statement statement = connection.createStatement()){
-			if (maxTime > 0) {
-				statement.setQueryTimeout(maxTime);
+		List<String> resultList = new ArrayList<>();
+		try (StreamingQuery sq = new StreamingQuery(ds, query, maxTime)) {
+			while (sq.resultSet.next()) {
+				resultList.add(sq.resultSet.getString(2));
 			}
-			 try (ResultSet resultSet = statement.executeQuery(query)) {
-				 List<String> resultList = new ArrayList<>();
-				 while (resultSet.next()) {
-					 resultList.add(resultSet.getString(2));
-				 }
-
-				 return resultList.stream().map(s-> {
-					 try {
-						 return objectMapper.readValue(s, entityClass);
-					 } catch (JsonProcessingException e) {
-						 throw new RuntimeException(e);
-					 }
-				 });
-			 }
 		} catch (SQLException e) {
-			throw new RuntimeException("Query execution failed: " + query,e);
+			throw new RuntimeException("Query execution failed: " + query, e);
 		}
+		return resultList.stream().map(s -> {
+			try {
+				return objectMapper.readValue(s, entityClass);
+			} catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
+		});
 	}
 
 	private String buildQuery(Filter filter, SearchOrder order, Integer skip, Integer limit) {
@@ -186,58 +183,33 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	@Override
 	public Stream<T> findLazy(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime) {
 		String query = buildQuery(filter, order, skip, limit);
-		AtomicReference<Connection> connection = new AtomicReference<>();
-		AtomicReference<Statement> statement = new AtomicReference<>();
-		AtomicReference<ResultSet> resultSet = new AtomicReference<>();
+		AtomicReference<StreamingQuery> queryRef = new AtomicReference<>();
 		try {
-			connection.set(ds.getConnection());
-			statement.set(connection.get().createStatement());
-			if (maxTime > 0) {
-				statement.get().setQueryTimeout(maxTime);
-			}
-			resultSet.set(statement.get().executeQuery(query));
-
-			Stream<T> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(new ResultSetIterator(resultSet.get()),
+			queryRef.set(new StreamingQuery(ds, query));
+			return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new ResultSetIterator(queryRef.get().resultSet),
 							Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED), false)
-					.map(s-> {
+					.map(s -> {
 						try {
 							return objectMapper.readValue(s, entityClass);
 						} catch (JsonProcessingException e) {
 							throw new RuntimeException(e);
 						}
-					});
-			stream.onClose(() -> safeClose(connection.get(), statement.get(), resultSet.get()));
-			return stream;
+					}).onClose(() -> safeClose(queryRef.get()));
 		} catch (SQLException e) {
-			safeClose(connection.get(), statement.get(), resultSet.get());
-			throw new RuntimeException("Query execution failed: " + query,e);
+			safeClose(queryRef.get());
+			throw new RuntimeException("Query execution failed: " + query, e);
 		}
 	}
 
-	private void safeClose(Connection connection, Statement statement, ResultSet resultSet) {
-		if (resultSet != null) {
-			try {
-				resultSet.close();
-			} catch (SQLException e) {
-				logger.error("Unable to close resultSet" ,e);
+	private void safeClose(StreamingQuery streamingQuery) {
+		try {
+			if (streamingQuery != null) {
+				streamingQuery.close();
 			}
-		}
-		if (statement!= null) {
-			try {
-				statement.close();
-			} catch (SQLException e) {
-				logger.error("Unable to close statement" ,e);
-			}
-		}
-		if (connection != null) {
-			try {
-				connection.close();
-			} catch (SQLException e) {
-				logger.error("Unable to close connection" ,e);
-			}
+		} catch (Exception e) {
+			logger.error("Exception while closing {}", streamingQuery.getClass().getSimpleName(), e);
 		}
 	}
-
 
 	@Override
 	public Stream<T> findReduced(Filter filter, SearchOrder order, Integer skip, Integer limit, int maxTime, List<String> reduceFields) {
@@ -250,12 +222,10 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		Class fieldClass = getFieldClass(columnName);
 		StringBuffer query = new StringBuffer();
 		query.append("SELECT DISTINCT(").append(PostgreSQLFilterFactory.formatField(columnName,fieldClass)).append(") FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
-		try (Connection connection = ds.getConnection();
-			 Statement statement = connection.createStatement();
-			 ResultSet resultSet = statement.executeQuery(query.toString())){
+		try (StreamingQuery sq = new StreamingQuery(ds, query.toString())){
 			List<String> resultList = new ArrayList<>();
-			while (resultSet.next()) {
-				resultList.add(resultSet.getString(1));
+			while (sq.resultSet.next()) {
+				resultList.add(sq.resultSet.getString(1));
 			}
 			return resultList;
 		} catch (SQLException e) {
