@@ -24,6 +24,7 @@ import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import step.core.accessors.AbstractOrganizableObject;
 import step.core.collections.AbstractCollectionTest;
 import step.core.collections.Collection;
 import step.core.collections.Filters;
@@ -166,7 +167,7 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 		assertEquals("object->'test'->>'nested'",test);
 	}
 
-	private static class MyReport {
+	private static class MyReport extends AbstractOrganizableObject {
 		protected String executionID;
 	}
 
@@ -232,6 +233,40 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 		d = System.currentTimeMillis() - d;
 		System.err.println(all.get() + ", duration " + d + "ms");
 		assertEquals(1000000, all.get());
+	}
+
+	@Test
+	public void testMixingTableCases() throws Exception {
+		Collection<MyReport> lc = collectionFactory.getCollection("myreport", MyReport.class);
+		Collection<MyReport> mc = collectionFactory.getCollection("myReport", MyReport.class);
+		Collection<MyReport> uc = collectionFactory.getCollection("MYREPORT", MyReport.class);
+		List<Collection<MyReport>> all = List.of(lc, mc, uc);
+		// drop and recreate collections in case they existed before
+		all.forEach(Collection::drop);
+		lc = collectionFactory.getCollection("myreport", MyReport.class);
+		mc = collectionFactory.getCollection("myReport", MyReport.class);
+		uc = collectionFactory.getCollection("MYREPORT", MyReport.class);
+
+		lc.save(new MyReport());
+		mc.save(List.of(new MyReport(), new MyReport()));
+		uc.save(List.of(new MyReport(), new MyReport(), new MyReport()));
+		assertEquals(1, lc.count(Filters.empty(), null));
+		assertEquals(2, mc.count(Filters.empty(), null));
+		assertEquals(3, uc.count(Filters.empty(), null));
+
+		// no statistics yet
+		all.forEach(c -> assertEquals(-1, c.estimatedCount()));
+
+		HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
+		Connection conn = ds.getConnection();
+		conn.createStatement().execute("ANALYZE myreport");
+		conn.createStatement().execute("ANALYZE \"myReport\"");
+		conn.createStatement().execute("ANALYZE \"MYREPORT\"");
+
+		assertEquals(1, lc.estimatedCount());
+		assertEquals(2, mc.estimatedCount());
+		assertEquals(3, uc.estimatedCount());
+
 	}
 
 }
