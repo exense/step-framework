@@ -18,6 +18,7 @@
  ******************************************************************************/
 package step.core.collections.postgresql;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.bson.types.ObjectId;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -29,11 +30,20 @@ import step.core.collections.Filters;
 import step.core.entities.Bean;
 
 import java.lang.reflect.InvocationTargetException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatField;
 import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatFieldForValueAsText;
 
@@ -155,4 +165,73 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 		test = formatFieldForValueAsText("test.nested");
 		assertEquals("object->'test'->>'nested'",test);
 	}
+
+	private static class MyReport {
+		protected String executionID;
+	}
+
+	// SED-4114 - Before the fix, this would have caused an OOM.
+	@Ignore // Run this manually. Plus (this is important!!!) run it with -Xmx50M.
+	@SuppressWarnings("SqlNoDataSourceInspection")
+	@Test
+	public void testLargeDataSet() throws Exception {
+		// This test might take multiple minutes.
+		HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
+		Connection connection = ds.getConnection();
+		assertTrue(connection.getAutoCommit());
+
+		String tablename = "oomtest";
+		Function<String, Integer> execUpdate = (sql) -> {
+			try (Statement stmt = connection.createStatement()) {
+				System.out.println(sql);
+				//noinspection SqlSourceToSinkFlow // IntelliJ, shut up!
+				return stmt.executeUpdate(sql);
+			} catch (SQLException e) {
+				throw new RuntimeException(e);
+			}
+		};
+
+		Callable<Long> count = () -> {
+			try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery("select count(*) from " + tablename)) {
+				return rs.next() ? rs.getLong(1) : 0;
+			} catch (SQLException e) {
+				throw new RuntimeException(e);
+			}
+		};
+
+		try {
+			count.call();
+		} catch (Exception e) {
+			// Assuming table doesn't exist
+			assertEquals(0, execUpdate.apply("DROP TABLE IF EXISTS " + tablename).intValue());
+			assertEquals(0, execUpdate.apply("CREATE TABLE " + tablename + "(id text, object jsonb)").intValue());
+			assertEquals(0, count.call().longValue());
+
+			// populate data
+			// 2. JSON payload (escaped and quoted)
+			String json = "{\"id\": \"68820f2ef74c111105c56454\", \"name\": \"NOP\", \"path\": \"68820f2ef74c111105c56454\", \"error\": null, \"_class\": \"step.artefacts.reports.TestCaseReportNode\", \"orphan\": false, \"status\": \"PASSED\", \"duration\": 597, \"parentID\": \"68820f2ef74c111105c563f5\", \"artefactID\": \"6881fd2f40bd6c67ea0d970b\", \"attachments\": [], \"executionID\": \"68820f2ef74c111105c563f5\", \"artefactHash\": \"F31CCC37FEFC08542360607EA9795DCB\", \"customFields\": null, \"parentSource\": \"MAIN\", \"executionTime\": 1753354030955, \"customAttributes\": {\"TestCase\": \"6881fd2f40bd6c67ea0d970b\"}, \"resolvedArtefact\": {\"id\": \"6881fd2f40bd6c67ea0d970b\", \"after\": null, \"_class\": \"TestCase\", \"before\": null, \"children\": null, \"skipNode\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}, \"attributes\": {\"name\": \"NOP\"}, \"attachments\": null, \"description\": null, \"dynamicName\": {\"value\": \"\", \"dynamic\": false, \"expression\": \"\", \"expressionType\": null}, \"customFields\": null, \"workArtefact\": false, \"instrumentNode\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}, \"useDynamicName\": false, \"customAttributes\": null, \"continueParentNodeExecutionOnError\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}}, \"contributingError\": null}";
+
+			// 3. Build the SQL query string
+			String insertSql =
+					"INSERT INTO " + tablename + " (id, object) " +
+							"SELECT '68820f2ef74c111105c56454', '" + json.replace("'", "''") + "'::jsonb " +
+							"FROM generate_series(1, 1000000);";
+
+			// 4. Execute bulk insert, this should take about a minute
+			assertEquals(1000000, execUpdate.apply(insertSql).intValue());
+		}
+		assertEquals(1000000, count.call().longValue());
+
+		// OK, now onto the actual test
+		AtomicInteger all = new AtomicInteger(0);
+		Collection<MyReport> coll = collectionFactory.getCollection(tablename, MyReport.class);
+		long d = System.currentTimeMillis();
+		try (Stream<MyReport> s = coll.findLazy(Filters.empty(), null, null, null, 0)) {
+			s.forEach(o -> all.incrementAndGet());
+		}
+		d = System.currentTimeMillis() - d;
+		System.err.println(all.get() + ", duration " + d + "ms");
+		assertEquals(1000000, all.get());
+	}
+
 }
