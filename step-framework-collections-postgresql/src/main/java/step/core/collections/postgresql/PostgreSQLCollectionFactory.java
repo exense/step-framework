@@ -28,10 +28,7 @@ import step.core.collections.CollectionFactory;
 import step.core.collections.EntityVersion;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Properties;
 
 public class PostgreSQLCollectionFactory implements CollectionFactory {
@@ -70,7 +67,7 @@ public class PostgreSQLCollectionFactory implements CollectionFactory {
 		ds.close();
 	}
 
-	private HikariDataSource createConnectionPool(Properties properties) {
+	static HikariDataSource createConnectionPool(Properties properties) {
 		HikariConfig config = new HikariConfig();
 		String jdbcUrl = properties.getProperty("jdbcUrl");
 		config.setJdbcUrl(jdbcUrl);
@@ -83,6 +80,9 @@ public class PostgreSQLCollectionFactory implements CollectionFactory {
 		config.addDataSourceProperty( "cachePrepStmts" , "true" );
 		config.addDataSourceProperty( "prepStmtCacheSize" , "250" );
 		config.addDataSourceProperty( "prepStmtCacheSqlLimit" , "2048" );
+		// Just to make the default explicit: every connection acquired from the data source will initially have auto-commit on.
+		// (this is also the case if the connection is re-used: it will be reset with auto-commit on before being returned)
+		config.setAutoCommit( true );
 		HikariDataSource hikariDataSource = null;
 		try {
 			hikariDataSource = new HikariDataSource(config);
@@ -101,7 +101,7 @@ public class PostgreSQLCollectionFactory implements CollectionFactory {
 		return hikariDataSource;
 	}
 
-	private void createDatabase(Properties properties, String jdbcUrl) throws SQLException {
+	private static void createDatabase(Properties properties, String jdbcUrl) throws SQLException {
 		int lastSlash = jdbcUrl.lastIndexOf("/");
 		String serverUrl = jdbcUrl.substring(0,lastSlash+1);
 		String dbName = jdbcUrl.replace(serverUrl,"").replaceFirst("\\?.*","");
