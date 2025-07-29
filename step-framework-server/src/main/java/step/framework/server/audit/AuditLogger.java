@@ -52,11 +52,11 @@ public class AuditLogger {
     //called by session invalidation (no request context)
     public static void logSessionInvalidation(HttpSession httpSession) {
         Session session = AbstractServices.getSession(httpSession);
-        if (session != null && session.getUser() != null && session.getUser().getSessionUsername() != null) {
+        if (session != null && session.getUser() != null && session.getUser().getUsername() != null) {
             AuditMessage msg = new AuditMessage();
             msg.req = "Session invalidation";
             msg.sesId = httpSession.getId();
-            msg.user = session.getUser().getSessionUsername();
+            msg.user = session.getUser().getUsername();
             auditLogger.info(msg.toLogString());
         }
     }
@@ -78,7 +78,7 @@ public class AuditLogger {
         }
         String user;
         try {
-            user = AbstractServices.getSession(req.getSession()).getUser().getSessionUsername();
+            user = AbstractServices.getSession(req.getSession()).getUser().getUsername();
         } catch (Exception e) {
             user = "unknown";
         }

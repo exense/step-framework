@@ -17,8 +17,8 @@ package step.core.authentication;
 
 import step.core.auth.AbstractCredentials;
 
-public interface Authenticator<C extends AbstractCredentials> {
-	public AuthenticationResults authenticate(C credentials);
+public interface Authenticator<T extends AbstractCredentials> {
+	public AuthenticationResults authenticate(T credentials);
 
 	public String resetPassword(String userId);
 

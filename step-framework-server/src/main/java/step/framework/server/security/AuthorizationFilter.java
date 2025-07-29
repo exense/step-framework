@@ -113,7 +113,7 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
 
 	private String username(Session<?> session) {
 		return (session != null && session.getUser() != null) ?
-				session.getUser().getSessionUsername():
+				session.getUser().getUsername():
 				null;
 	}
 
