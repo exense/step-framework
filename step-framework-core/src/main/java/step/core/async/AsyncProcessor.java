@@ -57,7 +57,7 @@ public class AsyncProcessor<T> implements AutoCloseable {
                 Thread.currentThread().interrupt(); // Restore interrupted status
                 break;
             } catch (Throwable e){
-                logger.error("An exception occurred during the asynchronous processing an element of the queue.", e);
+                logger.error("An exception occurred while asynchronously processing an element of the queue.", e);
             }
         }
     }

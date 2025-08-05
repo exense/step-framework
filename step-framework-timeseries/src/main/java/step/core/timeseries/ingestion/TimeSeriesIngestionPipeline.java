@@ -53,13 +53,13 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         this.ignoredAttributes = settings.getIgnoredAttributes();
         this.nextPipeline = settings.getNextPipeline();
         //collection is null when overridden in TimeSeriesExecutionPlugin, in such case async processor is not required
-        this.asyncProcessor =  (collection != null)  ? new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), entity -> {
+        this.asyncProcessor =  (collection == null)  ? null : new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), entity -> {
             try {
                 collection.save(entity);
             } catch (Throwable e) {
                 logger.error("Unable to save bucket with attribute {}", entity.getAttributes());
             }
-        }) : null;
+        });
     }
 
     public long getResolution() {
