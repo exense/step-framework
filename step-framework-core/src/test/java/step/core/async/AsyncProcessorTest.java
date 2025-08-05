@@ -43,6 +43,9 @@ public class AsyncProcessorTest {
                 try {
                     Thread.sleep(10);
                     processed.add(myObject);
+                    if (myObject.value.equals("Object " + 10)) {
+                        throw new RuntimeException("test"); //Force an exception to make sure the processing thread keep running and processing next events
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
