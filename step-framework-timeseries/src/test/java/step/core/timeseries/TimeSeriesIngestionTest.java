@@ -221,6 +221,8 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
             Bucket b = getCurrentUniqueRandomBucket();
             timeSeries.getIngestionPipeline().ingestBucket(b);
             timeSeries.getIngestionPipeline().flush(false); // simulate flush async job, now we have over the queue size
+            //Still give some time for the async processor to process all events
+            Thread.sleep(200);
             collect = timeSeries.getDefaultCollection().find(Filters.empty()).collect(Collectors.toList());
             Assert.assertEquals(1000, collect.size());
         }
