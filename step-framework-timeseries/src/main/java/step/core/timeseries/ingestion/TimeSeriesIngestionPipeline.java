@@ -39,6 +39,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     private TimeSeriesIngestionPipeline nextPipeline;
     private final AsyncProcessor<Bucket> asyncProcessor;
     private long lastFlush = 0;
+    private final int queueMaxSize;
 
     public TimeSeriesIngestionPipeline(TimeSeriesCollection collection, TimeSeriesIngestionPipelineSettings settings) {
         this.collection = collection;
@@ -53,7 +54,8 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         this.ignoredAttributes = settings.getIgnoredAttributes();
         this.nextPipeline = settings.getNextPipeline();
         //collection is null when overridden in TimeSeriesExecutionPlugin, in such case async processor is not required
-        this.asyncProcessor =  (collection == null)  ? null : new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), entity -> {
+        this.queueMaxSize = settings.getFlushAsyncQueueSize();
+        this.asyncProcessor =  (collection == null)  ? null : new AsyncProcessor<>(queueMaxSize, entity -> {
             try {
                 collection.save(entity);
             } catch (Throwable e) {
@@ -116,19 +118,26 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
 
     /**
      * Flush will be triggered only on the specified ingestion. Other pipelines in the chain will not be flushed.
+     * This method forces the flush independently of the resolution or max queue size, it should be called for instance
+     * once an execution completed.
      */
     public void flush() {
         flush(true);
     }
 
-    private void flush(boolean forceFlush) {
+    /**
+     *  Flush is performed only for the current ingestion pipeline (not the nested ones)
+     *  It's usually only called directly by the schedule jobs flushing the time series on regular basis, it is also directly called for some Junit tests (located in different package)
+     * @param forceFlush if false, the flush is only performed is the time interval is complete (i.e. bigger than the resolution) or if the queue size limit is reached
+     */
+    public void flush(boolean forceFlush) {
         lock.writeLock().lock();
         try {
             trace("Flushing");
             long now = System.currentTimeMillis();
 
             seriesQueue.forEach((k, v) -> {
-                if (forceFlush || k + sourceResolution < now - FLUSH_OFFSET) {
+                if (forceFlush || ((k + sourceResolution) < (now - FLUSH_OFFSET)) || seriesQueue.get(k).size() >= queueMaxSize) {
                     // Remove the entry from the map and iterate over it afterwards
                     // This enables concurrent execution of flushing and ingestion
                     seriesQueue.remove(k).forEach((attributes, bucketBuilder) -> {
