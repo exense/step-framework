@@ -61,6 +61,21 @@
 			<artifactId>jetty-webapp</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.eclipse.jetty.websocket</groupId>
+			<artifactId>websocket-jetty-server</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.jetty.websocket</groupId>
+			<artifactId>websocket-core-server</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.jetty.websocket</groupId>
+			<artifactId>websocket-jakarta-server</artifactId>
+		</dependency>
+
 		<!-- Required if CORS is enabled. -->
 		<dependency>
 			<groupId>jakarta.xml.bind</groupId>
