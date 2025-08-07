@@ -39,7 +39,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     private TimeSeriesIngestionPipeline nextPipeline;
     private final AsyncProcessor<Bucket> asyncProcessor;
     private long lastFlush = 0;
-    private final int queueMaxSize;
+    private final int seriesQueueSizeflushThreshold;
 
     public TimeSeriesIngestionPipeline(TimeSeriesCollection collection, TimeSeriesIngestionPipelineSettings settings) {
         this.collection = collection;
@@ -54,8 +54,8 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         this.ignoredAttributes = settings.getIgnoredAttributes();
         this.nextPipeline = settings.getNextPipeline();
         //collection is null when overridden in TimeSeriesExecutionPlugin, in such case async processor is not required
-        this.queueMaxSize = settings.getFlushAsyncQueueSize();
-        this.asyncProcessor =  (collection == null)  ? null : new AsyncProcessor<>(queueMaxSize, entity -> {
+        this.seriesQueueSizeflushThreshold = settings.getFlushSeriesQueueSizeThreshold();
+        this.asyncProcessor =  (collection == null)  ? null : new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), entity -> {
             try {
                 collection.save(entity);
             } catch (Throwable e) {
@@ -137,7 +137,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
             long now = System.currentTimeMillis();
 
             seriesQueue.forEach((k, v) -> {
-                if (forceFlush || ((k + sourceResolution) < (now - FLUSH_OFFSET)) || seriesQueue.get(k).size() >= queueMaxSize) {
+                if (forceFlush || ((k + sourceResolution) < (now - FLUSH_OFFSET)) || seriesQueue.get(k).size() >= seriesQueueSizeflushThreshold) {
                     // Remove the entry from the map and iterate over it afterwards
                     // This enables concurrent execution of flushing and ingestion
                     seriesQueue.remove(k).forEach((attributes, bucketBuilder) -> {
