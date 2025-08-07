@@ -6,7 +6,7 @@ public class TimeSeriesIngestionPipelineSettings {
 
     private long resolution;
     private long flushingPeriodMs;
-    private int flushSeriesQueueSizeThreshold;
+    private int flushSeriesQueueSize;
     private int flushAsyncQueueSize;
     private Set<String> ignoredAttributes;
     private TimeSeriesIngestionPipeline nextPipeline; // optional
@@ -29,12 +29,12 @@ public class TimeSeriesIngestionPipelineSettings {
         return this;
     }
 
-    public int getFlushSeriesQueueSizeThreshold() {
-        return flushSeriesQueueSizeThreshold;
+    public int getFlushSeriesQueueSize() {
+        return flushSeriesQueueSize;
     }
 
-    public TimeSeriesIngestionPipelineSettings setFlushSeriesQueueSizeThreshold(int flushSeriesQueueSizeThreshold) {
-        this.flushSeriesQueueSizeThreshold = flushSeriesQueueSizeThreshold;
+    public TimeSeriesIngestionPipelineSettings setFlushSeriesQueueSize(int flushSeriesQueueSize) {
+        this.flushSeriesQueueSize = flushSeriesQueueSize;
         return this;
     }
 

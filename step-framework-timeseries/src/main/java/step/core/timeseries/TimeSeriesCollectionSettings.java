@@ -8,7 +8,7 @@ public class TimeSeriesCollectionSettings {
     private long ttl;
     private long ingestionFlushingPeriodMs;
     private int ingestionFlushAsyncQueueSize;
-    private int ingestionFlushSeriesQueueSizeThreshold;
+    private int ingestionFlushSeriesQueueSize;
     private Set<String> ignoredAttributes;
 
     public long getResolution() {
@@ -38,12 +38,12 @@ public class TimeSeriesCollectionSettings {
         return this;
     }
 
-    public int getIngestionFlushSeriesQueueSizeThreshold() {
-        return ingestionFlushSeriesQueueSizeThreshold;
+    public int getIngestionFlushSeriesQueueSize() {
+        return ingestionFlushSeriesQueueSize;
     }
 
-    public TimeSeriesCollectionSettings setIngestionFlushSeriesQueueSizeThreshold(int ingestionFlushSeriesQueueSizeThreshold) {
-        this.ingestionFlushSeriesQueueSizeThreshold = ingestionFlushSeriesQueueSizeThreshold;
+    public TimeSeriesCollectionSettings setIngestionFlushSeriesQueueSize(int ingestionFlushSeriesQueueSize) {
+        this.ingestionFlushSeriesQueueSize = ingestionFlushSeriesQueueSize;
         return this;
     }
 

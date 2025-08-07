@@ -206,7 +206,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     public void ingestionExceedingQueueSizeTest() throws InterruptedException {
         TimeSeriesCollectionSettings timeSeriesCollectionSettings = new TimeSeriesCollectionSettings();
         timeSeriesCollectionSettings.setIngestionFlushAsyncQueueSize(500);
-        timeSeriesCollectionSettings.setIngestionFlushSeriesQueueSizeThreshold(1000);
+        timeSeriesCollectionSettings.setIngestionFlushSeriesQueueSize(1000);
         timeSeriesCollectionSettings.setIngestionFlushingPeriodMs(0); //flush is called directly in the test
         timeSeriesCollectionSettings.setResolution(30_000);
         try (TimeSeries timeSeries = getTimeSeriesWithSettings(timeSeriesCollectionSettings)) {
