@@ -202,6 +202,31 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
         }
     }
 
-
+    @Test
+    public void ingestionExceedingQueueSizeTest() throws InterruptedException {
+        TimeSeriesCollectionSettings timeSeriesCollectionSettings = new TimeSeriesCollectionSettings();
+        timeSeriesCollectionSettings.setIngestionFlushAsyncQueueSize(500);
+        timeSeriesCollectionSettings.setIngestionFlushSeriesQueueSize(1000);
+        timeSeriesCollectionSettings.setIngestionFlushingPeriodMs(0); //flush is called directly in the test
+        timeSeriesCollectionSettings.setResolution(30_000);
+        try (TimeSeries timeSeries = getTimeSeriesWithSettings(timeSeriesCollectionSettings)) {
+            List<Bucket> collect = timeSeries.getDefaultCollection().find(Filters.empty()).collect(Collectors.toList());
+            Assert.assertEquals(0, collect.size());
+            for (int i = 0; i < 999; i++) {
+                Bucket b = getCurrentUniqueRandomBucket();
+                timeSeries.getIngestionPipeline().ingestBucket(b);
+            }
+            timeSeries.getIngestionPipeline().flush(false); // simulate flush async job, resolution not reached and queue size not reached
+            collect = timeSeries.getDefaultCollection().find(Filters.empty()).collect(Collectors.toList());
+            Assert.assertEquals(0, collect.size());
+            Bucket b = getCurrentUniqueRandomBucket();
+            timeSeries.getIngestionPipeline().ingestBucket(b);
+            timeSeries.getIngestionPipeline().flush(false); // simulate flush async job, now we have over the queue size
+            //Still give some time for the async processor to process all events
+            Thread.sleep(200);
+            collect = timeSeries.getDefaultCollection().find(Filters.empty()).collect(Collectors.toList());
+            Assert.assertEquals(1000, collect.size());
+        }
+    }
 
 }
