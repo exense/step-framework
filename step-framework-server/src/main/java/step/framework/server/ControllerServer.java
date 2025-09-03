@@ -66,6 +66,8 @@ import jakarta.servlet.http.HttpSessionListener;
 
 public class ControllerServer {
 
+	public static final String UI_CONTEXT_ROOT_CFG_KEY = "ui.context.root";
+	public static final String UI_CONTEXT_ROOT_DEFAULT_VALUE = "/";
 	private final String contextRoot;
 	private final boolean defaultServlet;
 	private Configuration configuration;
@@ -116,7 +118,7 @@ public class ControllerServer {
 		this.configuration = configuration;
 		this.port = configuration.getPropertyAsInteger("port", 8080);
 		this.defaultServlet = configuration.getPropertyAsBoolean("ui.defaultServlet",true);
-		this.contextRoot = configuration.getProperty("ui.context.root","/");
+		this.contextRoot = configuration.getProperty(UI_CONTEXT_ROOT_CFG_KEY, UI_CONTEXT_ROOT_DEFAULT_VALUE);
 		this.webAppRoots = new HashSet<>();
 		this.webAppRoots.add(configuration.getProperty("ui.resource.root","dist/step-app"));
 	}
