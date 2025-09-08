@@ -50,4 +50,31 @@ public interface ObjectHook {
 	 *         doesn't belong to any context
 	 */
 	boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object);
+	
+	/**
+	 * Performs detailed access control check and returns violation details if access is denied.
+	 * 
+	 * @param context the context to check access against
+	 * @param object the object to check access for
+	 * @return ObjectAccessViolation if access is denied, null if access is allowed
+	 */
+	default ObjectAccessViolation checkObjectAccess(AbstractContext context, EnricheableObject object) {
+		if (!isObjectAcceptableInContext(context, object)) {
+			return new ObjectAccessViolation(
+				getHookIdentifier(),
+					"ACCESS_DENIED",
+				"Access denied for this object"
+			);
+		}
+		return null;
+	}
+	
+	/**
+	 * Provides a unique identifier for this hook, used in error reporting.
+	 * 
+	 * @return unique identifier for this hook
+	 */
+	default String getHookIdentifier() {
+		return getClass().getSimpleName();
+	}
 }

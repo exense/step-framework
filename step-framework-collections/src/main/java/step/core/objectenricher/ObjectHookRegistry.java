@@ -19,14 +19,12 @@
 package step.core.objectenricher;
 
 import step.core.AbstractContext;
-import step.core.collections.Filter;
 import step.core.collections.PojoFilter;
-import step.core.collections.PojoFilters;
 import step.core.ql.OQLFilterBuilder;
 
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.List;
 
 public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 
@@ -81,6 +79,26 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 		String oqlFilter = objectFilter.getOQLFilter();
 		PojoFilter<Object> pojoFilter = OQLFilterBuilder.getPojoFilter(oqlFilter);
 		return pojoFilter::test;
+	}
+
+	/**
+	 * Performs detailed access control checks across all registered hooks.
+	 * 
+	 * @param context the context to check access against
+	 * @param object the object to check access for
+	 * @return ObjectAccessException with all violations if any hook denies access, null if access is allowed
+	 */
+	public ObjectAccessException checkObjectAccess(AbstractContext context, EnricheableObject object) {
+		List<ObjectAccessViolation> violations = new ArrayList<>();
+		
+		for (ObjectHook hook : this) {
+			ObjectAccessViolation violation = hook.checkObjectAccess(context, object);
+			if (violation != null) {
+				violations.add(violation);
+			}
+		}
+		
+		return violations.isEmpty() ? null : new ObjectAccessException(violations);
 	}
 
 }
