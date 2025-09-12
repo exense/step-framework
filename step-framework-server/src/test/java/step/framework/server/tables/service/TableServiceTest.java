@@ -25,6 +25,7 @@ import step.framework.server.tables.service.bulk.TableBulkOperationTargetType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
@@ -440,8 +441,8 @@ public class TableServiceTest {
             }
 
             @Override
-            public boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object) {
-                return false;
+            public Optional<ObjectAccessViolation> isObjectEditableInContext(AbstractContext context, EnricheableObject object) {
+                return Optional.of(new ObjectAccessViolation(getHookIdentifier(), "Access denied", "Access denied for test"));
             }
         });
         return objectHookRegistry;
