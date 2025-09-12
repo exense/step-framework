@@ -20,6 +20,8 @@ package step.core.objectenricher;
 
 import step.core.AbstractContext;
 
+import java.util.Optional;
+
 /**
  * An {@link ObjectHook} is a factory for
  * {@link ObjectFilter} and {@link ObjectEnricher}
@@ -42,15 +44,16 @@ public interface ObjectHook {
 	void rebuildContext(AbstractContext context, EnricheableObject object) throws Exception;
 	
 	/**
-	 * Check if the provided object is acceptable in the provided context
-	 * 
-	 * @param context
-	 * @param object
-	 * @return true if the provided object belongs to the provided context or
-	 *         doesn't belong to any context
+	 * Check if the provided object is editable in the provided context
+	 *
+	 * @param context the context to check access against
+	 * @param object the object to check access for
+	 * @return ObjectAccessViolation if access is denied, null if access is allowed
 	 */
-	boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object);
-	
+	default Optional<ObjectAccessViolation> isObjectEditableInContext(AbstractContext context, EnricheableObject object){
+		return Optional.empty();
+	}
+
 	/**
 	 * Performs detailed access control check and returns violation details if access is denied.
 	 * 
@@ -58,15 +61,8 @@ public interface ObjectHook {
 	 * @param object the object to check access for
 	 * @return ObjectAccessViolation if access is denied, null if access is allowed
 	 */
-	default ObjectAccessViolation checkObjectAccess(AbstractContext context, EnricheableObject object) {
-		if (!isObjectAcceptableInContext(context, object)) {
-			return new ObjectAccessViolation(
-				getHookIdentifier(),
-					"ACCESS_DENIED",
-				"Access denied for this object"
-			);
-		}
-		return null;
+	default Optional<ObjectAccessViolation> isObjectReadableInContext(AbstractContext context, EnricheableObject object) {
+		return Optional.empty();
 	}
 	
 	/**

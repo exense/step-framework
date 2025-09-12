@@ -4,6 +4,7 @@ import org.junit.Test;
 import step.core.AbstractContext;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.List;
 
@@ -27,55 +28,61 @@ public class ObjectHookRegistryTest {
         objectHookRegistry.rebuildContext(context, null);
         assertEquals("val1", context.get("att1"));
 
-        assertTrue(objectHookRegistry.isObjectAcceptableInContext(null, null));
+        Optional<ObjectAccessException> objectEditableInContext = objectHookRegistry.isObjectEditableInContext(null, null);
+        assertTrue(objectEditableInContext.isEmpty());
+
+        Optional<ObjectAccessException> objectReadableInContext = objectHookRegistry.isObjectReadableInContext(null, null);
+        assertTrue(objectReadableInContext.isEmpty());
 
        assertTrue(objectHookRegistry.getObjectPredicate(null).test(t));
     }
 
     @Test
-    public void testCheckObjectAccessNoViolations() {
-        ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
-        objectHookRegistry.add(new MyObjectHook());
-        
-        TestEnricheableObject object = new TestEnricheableObject();
-        ObjectAccessException exception = objectHookRegistry.checkObjectAccess(null, object);
-        
-        assertNull("No violations should return null", exception);
-    }
-
-    @Test
-    public void testCheckObjectAccessSingleViolation() {
+    public void testIsObjectAccessibleInContextSingleViolation() {
         ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
         objectHookRegistry.add(new RestrictiveObjectHook("TenantHook", "WRONG_TENANT", "Object belongs to different tenant"));
         
         TestEnricheableObject object = new TestEnricheableObject();
-        ObjectAccessException exception = objectHookRegistry.checkObjectAccess(null, object);
-        
-        assertNotNull("Should return exception with violations", exception);
-        assertEquals("Should have single violation", 1, exception.getViolations().size());
-        
-        ObjectAccessViolation violation = exception.getViolations().get(0);
+        Optional<ObjectAccessException> optionalViolations = objectHookRegistry.isObjectReadableInContext(null, object);
+        assertViolations(optionalViolations);
+        optionalViolations = objectHookRegistry.isObjectEditableInContext(null, object);
+        assertViolations(optionalViolations);
+    }
+
+    private static void assertViolations(Optional<ObjectAccessException> optionalViolations) {
+        assertTrue("Should return exception with violations", optionalViolations.isPresent());
+        ObjectAccessException objectAccessException = optionalViolations.get();
+        assertEquals("Should have single violation", 1, objectAccessException.getViolations().size());
+
+        ObjectAccessViolation violation = objectAccessException.getViolations().get(0);
         assertEquals("TenantHook", violation.hookId);
         assertEquals("WRONG_TENANT", violation.errorCode);
         assertEquals("Object belongs to different tenant", violation.message);
-        
-        assertEquals("Object belongs to different tenant", exception.getMessage());
+
+        assertEquals("Object belongs to different tenant", objectAccessException.getMessage());
     }
 
     @Test
-    public void testCheckObjectAccessMultipleViolations() {
+    public void testIsObjectAccessibleInContextMultipleViolations() {
         ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
         objectHookRegistry.add(new RestrictiveObjectHook("TenantHook", "WRONG_TENANT", "Object belongs to different tenant"));
         objectHookRegistry.add(new RestrictiveObjectHook("PermissionHook", "INSUFFICIENT_PERMISSIONS", "User lacks required permissions"));
         
         TestEnricheableObject object = new TestEnricheableObject();
-        ObjectAccessException exception = objectHookRegistry.checkObjectAccess(null, object);
-        
-        assertNotNull("Should return exception with violations", exception);
+        Optional<ObjectAccessException> optionalViolations = objectHookRegistry.isObjectReadableInContext(null, object);
+        assertMultipleViolations(optionalViolations);
+
+        optionalViolations = objectHookRegistry.isObjectEditableInContext(null, object);
+        assertMultipleViolations(optionalViolations);
+    }
+
+    private static void assertMultipleViolations(Optional<ObjectAccessException> optionalViolations) {
+        assertTrue("Should return exception with violations", optionalViolations.isPresent());
+        ObjectAccessException exception = optionalViolations.get();
         assertEquals("Should have two violations", 2, exception.getViolations().size());
-        
+
         assertEquals("Access denied by 2 access control rule(s)", exception.getMessage());
-        
+
         List<ObjectAccessViolation> violations = exception.getViolations();
         assertEquals("TenantHook", violations.get(0).hookId);
         assertEquals("WRONG_TENANT", violations.get(0).errorCode);
@@ -84,16 +91,23 @@ public class ObjectHookRegistryTest {
     }
 
     @Test
-    public void testCheckObjectAccessWithDetails() {
+    public void testIsObjectAccessibleInContextWithDetails() {
         ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
         objectHookRegistry.add(new DetailedRestrictiveObjectHook());
         
         TestEnricheableObject object = new TestEnricheableObject();
-        ObjectAccessException exception = objectHookRegistry.checkObjectAccess(null, object);
-        
-        assertNotNull("Should return exception with violations", exception);
+        Optional<ObjectAccessException> optionalViolations = objectHookRegistry.isObjectReadableInContext(null, object);
+        assertViolationWithDetails(optionalViolations);
+
+        optionalViolations = objectHookRegistry.isObjectEditableInContext(null, object);
+        assertViolationWithDetails(optionalViolations);
+    }
+
+    private static void assertViolationWithDetails(Optional<ObjectAccessException> optionalViolations) {
+        assertTrue("Should return exception with violations", optionalViolations.isPresent());
+        ObjectAccessException exception = optionalViolations.get();
         assertEquals("Should have single violation", 1, exception.getViolations().size());
-        
+
         ObjectAccessViolation violation = exception.getViolations().get(0);
         assertEquals("DetailedHook", violation.hookId);
         assertEquals("CUSTOM_ERROR", violation.errorCode);
@@ -130,11 +144,6 @@ public class ObjectHookRegistryTest {
             if (context != null) {
                 context.put("att1", "val1");
             }
-        }
-
-        @Override
-        public boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object) {
-            return true;
         }
     }
 
@@ -175,8 +184,8 @@ public class ObjectHookRegistryTest {
         }
 
         @Override
-        public boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object) {
-            return false;
+        public Optional<ObjectAccessViolation> isObjectEditableInContext(AbstractContext context, EnricheableObject object) {
+            return Optional.of(new ObjectAccessViolation(hookId, errorCode, message));
         }
 
         @Override
@@ -185,8 +194,8 @@ public class ObjectHookRegistryTest {
         }
 
         @Override
-        public ObjectAccessViolation checkObjectAccess(AbstractContext context, EnricheableObject object) {
-            return new ObjectAccessViolation(hookId, errorCode, message);
+        public Optional<ObjectAccessViolation> isObjectReadableInContext(AbstractContext context, EnricheableObject object) {
+            return Optional.of(new ObjectAccessViolation(hookId, errorCode, message));
         }
     }
 
@@ -217,8 +226,16 @@ public class ObjectHookRegistryTest {
         }
 
         @Override
-        public boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object) {
-            return false;
+        public Optional<ObjectAccessViolation> isObjectEditableInContext(AbstractContext context, EnricheableObject object) {
+            return getObjectAccessViolation();
+        }
+
+        private static Optional<ObjectAccessViolation> getObjectAccessViolation() {
+            Map<String, Object> details = Map.of(
+                    "key1", "value1",
+                    "key2", "value2"
+            );
+            return Optional.of(new CustomObjectAccessViolation("DetailedHook", "CUSTOM_ERROR", "Custom error with details", details));
         }
 
         @Override
@@ -227,12 +244,8 @@ public class ObjectHookRegistryTest {
         }
 
         @Override
-        public ObjectAccessViolation checkObjectAccess(AbstractContext context, EnricheableObject object) {
-            Map<String, Object> details = Map.of(
-                "key1", "value1",
-                "key2", "value2"
-            );
-            return new CustomObjectAccessViolation("DetailedHook", "CUSTOM_ERROR", "Custom error with details", details);
+        public Optional<ObjectAccessViolation> isObjectReadableInContext(AbstractContext context, EnricheableObject object) {
+            return getObjectAccessViolation();
         }
 
         private static class CustomObjectAccessViolation extends ObjectAccessViolation {
