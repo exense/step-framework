@@ -20,18 +20,35 @@ package step.framework.server.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import step.core.accessors.AbstractOrganizableObject;
+import step.core.accessors.AbstractUser;
 import step.framework.server.AbstractServices;
 import step.framework.server.Session;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Objects;
+import java.util.Optional;
 
 public class AuditLogger {
+    public static final String CONF_LOG_ENTITY_MODIFICATIONS = "auditLog.logEntityModifications";
+
     private static final Logger auditLogger = LoggerFactory.getLogger("AuditLogger");
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static boolean entityModificationsLoggingEnabled = false;
+
+    public static boolean isEntityModificationsLoggingEnabled() {
+        return entityModificationsLoggingEnabled;
+    }
+
+    public static void setEntityModificationsLoggingEnabled(boolean enabled) {
+        entityModificationsLoggingEnabled = enabled;
+    }
+
 
     public static void trace(HttpServletRequest req, int status) {
         if (auditLogger.isTraceEnabled()) {
@@ -172,7 +189,55 @@ public class AuditLogger {
         }
     }
 
+    private static class EntityModificationLogMessage {
+        // keep the field naming consistent with the other messages
+        public String sesId;
+        public String user;
+        public String operation;
+        public String type;
+        public String name;
+        public String id;
+        public String projectId;
+
+        @Override
+        public String toString() {
+            try {
+                return objectMapper.writeValueAsString(this);
+            } catch (JsonProcessingException e) {
+                return "Unexpected error serializing " + this;
+            }
+        }
+    }
 
 
+    public static void logEntityModification(HttpSession httpSession, String operation, String entityTypeName, AbstractOrganizableObject entity) {
+        if (entity != null) {
+            modify(httpSession, operation, entityTypeName, Optional.ofNullable(entity.getId()).map(ObjectId::toString).orElse(null),
+                    entity.getAttribute(AbstractOrganizableObject.NAME), entity.getAttribute("project"));
+        }
+    }
+
+    public static void logEntityModification(HttpSession httpSession, String operation, String entityTypeName, String entityId, String entityName, String projectId) {
+        modify(httpSession, operation, entityTypeName, entityId, entityName, projectId);
+    }
+
+    // This method is named "modify" because that's what will appear in the logs if configured to use the separate audit log file:
+    // {"timestamp":"2025-10-15 15:06:52,709","method":"modify","msg":{...}}
+    private static void modify(HttpSession httpSession, String operation, String entityTypeName, String entityId, String entityName, String projectId) {
+        if (!isEntityModificationsLoggingEnabled()) {
+            // We check (possibly again) if logging is enabled at all in case the caller didn't do it -- this adds no measurable overhead
+            return;
+        }
+        EntityModificationLogMessage msg = new EntityModificationLogMessage();
+        // all the following code is guaranteed to never produce NPE
+        msg.user = Optional.ofNullable(httpSession).map(AbstractServices::getSession).map(Session::getUser).map(AbstractUser::getSessionUsername).orElse(null);
+        msg.sesId = Optional.ofNullable(httpSession).map(HttpSession::getId).orElse(null);
+        msg.operation = operation;
+        msg.type = entityTypeName;
+        msg.name = entityName;
+        msg.id = entityId;
+        msg.projectId = projectId;
+        auditLogger.info(msg.toString());
+    }
 
 }
