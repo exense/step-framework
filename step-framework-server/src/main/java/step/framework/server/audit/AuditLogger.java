@@ -204,7 +204,8 @@ public class AuditLogger {
             try {
                 return objectMapper.writeValueAsString(this);
             } catch (JsonProcessingException e) {
-                return "Unexpected error serializing " + this;
+                // format mimics the "default" toString()
+                return "Unexpected error serializing " + getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(this));
             }
         }
     }
