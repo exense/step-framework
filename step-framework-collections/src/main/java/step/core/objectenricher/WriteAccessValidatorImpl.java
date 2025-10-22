@@ -26,13 +26,13 @@ public class WriteAccessValidatorImpl<U extends AbstractUser> implements WriteAc
 
     @Override
     public Optional<ObjectAccessException> validateByContext(EnricheableObject entity) {
-        Objects.requireNonNull(entity, "entity cannot be null");
+        Objects.requireNonNull(user, "entity cannot be null");
         return objectHookRegistry.isObjectEditableInContext(context, entity);
     }
 
     @Override
     public Optional<ObjectAccessException> validateByUser(EnricheableObject entity) {
-        Objects.requireNonNull(entity, "entity cannot be null");
+        Objects.requireNonNull(user, "entity cannot be null");
         return objectHookRegistry.isObjectEditableByUser(user, entity);
     }
 }
