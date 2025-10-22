@@ -1,14 +1,23 @@
 package step.core.objectenricher;
 
+import step.core.AbstractContext;
+
 import java.util.Optional;
 
-public interface WriteAccessValidator {
+/**
+ * This class is meant to be used to delegate write access validation to managers, it is constructed passing the context from the service being called
+ * it validate method will return an optional ObjectAccessException
+ */
+public class WriteAccessValidator {
+    private final ObjectHookRegistry objectHookRegistry;
+    private final AbstractContext context;
 
-    default  Optional<ObjectAccessException> validateByContext(EnricheableObject entity) {
-        return Optional.empty();
+    public WriteAccessValidator(ObjectHookRegistry objectHookRegistry, AbstractContext context) {
+        this.objectHookRegistry = objectHookRegistry;
+        this.context = context;
     }
 
-    default Optional<ObjectAccessException> validateByUser(EnricheableObject entity) {
-        return Optional.empty();
+    public Optional<ObjectAccessException> validate(EnricheableObject entity) {
+        return objectHookRegistry.isObjectEditableInContext(context, entity);
     }
 }

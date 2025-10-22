@@ -19,7 +19,6 @@
 package step.core.objectenricher;
 
 import step.core.AbstractContext;
-import step.core.accessors.AbstractUser;
 
 import java.util.Optional;
 
@@ -28,7 +27,7 @@ import java.util.Optional;
  * {@link ObjectFilter} and {@link ObjectEnricher}
  *
  */
-public interface ObjectHook<U extends AbstractUser> {
+public interface ObjectHook {
 
 	ObjectFilter getObjectFilter(AbstractContext context);
 	
@@ -73,9 +72,5 @@ public interface ObjectHook<U extends AbstractUser> {
 	 */
 	default String getHookIdentifier() {
 		return getClass().getSimpleName();
-	}
-
-	default Optional<ObjectAccessViolation> isObjectEditableByUser(U user, EnricheableObject object) {
-		return Optional.empty();
 	}
 }

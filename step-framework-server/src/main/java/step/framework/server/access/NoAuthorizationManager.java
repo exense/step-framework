@@ -2,7 +2,6 @@ package step.framework.server.access;
 
 import step.core.access.Role;
 import step.core.access.RoleResolver;
-import step.core.objectenricher.EnricheableObject;
 import step.framework.server.Session;
 
 public class NoAuthorizationManager implements AuthorizationManager {
@@ -26,12 +25,7 @@ public class NoAuthorizationManager implements AuthorizationManager {
 		return true;
 	}
 
-    @Override
-    public boolean checkRightInRoleForEntity(String role, String rightSuffix, EnricheableObject object) {
-        return true;
-    }
-
-    @Override
+	@Override
 	public Role getRoleInContext(Session session) {
 		Role role = new Role();
 		role.addAttribute("name","admin");
