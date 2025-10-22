@@ -19,6 +19,7 @@
 package step.core.objectenricher;
 
 import step.core.AbstractContext;
+import step.core.accessors.AbstractUser;
 import step.core.collections.PojoFilter;
 import step.core.ql.OQLFilterBuilder;
 
@@ -27,7 +28,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.List;
 
-public class ObjectHookRegistry extends ArrayList<ObjectHook> {
+public class ObjectHookRegistry<U extends AbstractUser> extends ArrayList<ObjectHook<U>> {
 
 	/**
 	 * @param context
@@ -86,6 +87,22 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 	public Optional<ObjectAccessException> isObjectReadableInContext(AbstractContext context, EnricheableObject object) {
 		return isObjectAccessibleInContext(context, object, ObjectHook::isObjectReadableInContext);
 	}
+
+    /**
+     * Performs detailed read access control checks across all registered hooks.
+     *
+     * @param user the context to check access against
+     * @param object the object to check access for
+     * @return ObjectAccessException with all violations if any hook denies access, null if access is allowed
+     */
+    public Optional<ObjectAccessException> isObjectEditableByUser(U user, EnricheableObject object) {
+        List<ObjectAccessViolation> violations = new ArrayList<>();
+        for (ObjectHook<U> hook : this) {
+            Optional<ObjectAccessViolation> violation = hook.isObjectEditableByUser(user, object);
+            violation.ifPresent(violations::add);
+        }
+        return violations.isEmpty() ? Optional.empty() : Optional.of(new ObjectAccessException(violations));
+    }
 
 	// Define TriFunction since it's not available in Java 11
 	@FunctionalInterface

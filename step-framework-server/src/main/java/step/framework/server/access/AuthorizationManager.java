@@ -21,6 +21,7 @@ package step.framework.server.access;
 import step.core.access.Role;
 import step.core.access.RoleResolver;
 import step.core.accessors.AbstractUser;
+import step.core.objectenricher.EnricheableObject;
 import step.framework.server.Session;
 
 public interface AuthorizationManager<U extends AbstractUser, S extends Session<U>>  {
@@ -39,6 +40,8 @@ public interface AuthorizationManager<U extends AbstractUser, S extends Session<
 	}
 
 	boolean checkRightInRole(String role, String right);
+
+    boolean checkRightInRoleForEntity(String role, String rightSuffix, EnricheableObject object);
 
 	Role getRoleInContext(S session);
 

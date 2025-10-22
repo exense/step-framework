@@ -2,6 +2,7 @@ package step.core.objectenricher;
 
 import org.junit.Test;
 import step.core.AbstractContext;
+import step.core.accessors.AbstractUser;
 
 import java.util.Map;
 import java.util.Optional;
@@ -14,7 +15,7 @@ public class ObjectHookRegistryTest {
 
     @Test
     public void test() throws Exception {
-        ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
+        ObjectHookRegistry<TestUser> objectHookRegistry = new ObjectHookRegistry<>();
         objectHookRegistry.add(new MyObjectHook());
         ObjectFilter objectFilter = objectHookRegistry.getObjectFilter(null);
         String oqlFilter = objectFilter.getOQLFilter();
@@ -35,6 +36,16 @@ public class ObjectHookRegistryTest {
         assertTrue(objectReadableInContext.isEmpty());
 
        assertTrue(objectHookRegistry.getObjectPredicate(null).test(t));
+
+        TestUser testUser = new TestUser("testUser");
+        TestEnricheableObject object = new TestEnricheableObject();
+        object.addAttribute("user", "dummy");
+        Optional<ObjectAccessException> violations = objectHookRegistry.isObjectEditableByUser(testUser, object);
+        assertTrue(violations.isPresent());
+        assertEquals("The user testUser has no access to provided entity", violations.get().getMessage());
+        object.addAttribute("user", "testUser");
+        violations = objectHookRegistry.isObjectEditableByUser(testUser, object);
+        assertTrue(violations.isEmpty());
     }
 
     @Test
@@ -145,6 +156,15 @@ public class ObjectHookRegistryTest {
                 context.put("att1", "val1");
             }
         }
+
+        @Override
+        public Optional<ObjectAccessViolation> isObjectEditableByUser(AbstractUser user, EnricheableObject object) {
+            if (object != null && object.getAttribute("user").equals(user.getSessionUsername())) {
+                return Optional.empty();
+            } else {
+                return Optional.of(new ObjectAccessViolation("MyObjectHook", "user access denied to entity", "The user " + user.getSessionUsername() + " has no access to provided entity"));
+            }
+        }
     }
 
     private static class RestrictiveObjectHook implements ObjectHook {
@@ -195,6 +215,11 @@ public class ObjectHookRegistryTest {
 
         @Override
         public Optional<ObjectAccessViolation> isObjectReadableInContext(AbstractContext context, EnricheableObject object) {
+            return Optional.of(new ObjectAccessViolation(hookId, errorCode, message));
+        }
+
+        @Override
+        public Optional<ObjectAccessViolation> isObjectEditableByUser(AbstractUser user, EnricheableObject object) {
             return Optional.of(new ObjectAccessViolation(hookId, errorCode, message));
         }
     }
@@ -248,12 +273,30 @@ public class ObjectHookRegistryTest {
             return getObjectAccessViolation();
         }
 
+        @Override
+        public Optional<ObjectAccessViolation> isObjectEditableByUser(AbstractUser user, EnricheableObject object) {
+            return getObjectAccessViolation();
+        }
+
         private static class CustomObjectAccessViolation extends ObjectAccessViolation {
             public final Map<String, Object> details;
             public CustomObjectAccessViolation(String detailedHook, String customError, String customErrorWithDetails, Map<String, Object> details) {
                 super(detailedHook, customError, customErrorWithDetails);
                 this.details = details;
             }
+        }
+    }
+
+    public static class TestUser extends AbstractUser {
+        private final String name;
+
+        public TestUser(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getSessionUsername() {
+            return name;
         }
     }
 }
