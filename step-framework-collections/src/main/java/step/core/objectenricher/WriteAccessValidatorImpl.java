@@ -13,7 +13,7 @@ import java.util.Optional;
 public class WriteAccessValidatorImpl<U extends AbstractUser> implements WriteAccessValidator {
     private final ObjectHookRegistry<U> objectHookRegistry;
     private final AbstractContext context;
-    private final U user;
+    public final U user;
 
     public WriteAccessValidatorImpl(ObjectHookRegistry<U> objectHookRegistry, AbstractContext context, U user) {
         Objects.requireNonNull(objectHookRegistry, "objectHookRegistry cannot be null");
