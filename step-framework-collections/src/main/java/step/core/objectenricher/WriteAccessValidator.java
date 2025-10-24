@@ -6,6 +6,8 @@ package step.core.objectenricher;
  */
 public interface WriteAccessValidator {
 
+    public static final WriteAccessValidator NO_CHECKS_VALIDATOR = new WriteAccessValidator(){};
+
     default public void validate(EnricheableObject entity) throws ObjectAccessException {
 
     }
