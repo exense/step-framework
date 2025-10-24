@@ -267,6 +267,9 @@ public class ControllerServer {
 	}
 
 	private void initController() throws Exception {
+
+		AuditLogger.setEntityModificationsLoggingEnabled(configuration.getPropertyAsBoolean(AuditLogger.CONF_LOG_ENTITY_MODIFICATIONS, false));
+
 		ResourceConfig resourceConfig = new ResourceConfig();
 		resourceConfig.addProperties(Map.of("produces", Arrays.asList("application/json")));
 		resourceConfig.addProperties(Map.of("consumes", Arrays.asList("application/json")));
