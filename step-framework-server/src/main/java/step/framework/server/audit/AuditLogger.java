@@ -31,9 +31,7 @@ import step.core.objectenricher.ObjectEnricher;
 import step.framework.server.AbstractServices;
 import step.framework.server.Session;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public class AuditLogger {
     public static final String CONF_LOG_ENTITY_MODIFICATIONS = "auditLog.logEntityModifications";
@@ -213,11 +211,20 @@ public class AuditLogger {
 
 
     public static void logEntityModification(Session<? extends AbstractUser> userSession, String operation, String entityTypeName, AbstractOrganizableObject entity, ObjectEnricher objectEnricher) {
+        logEntityModification(userSession, operation, entityTypeName, entity, objectEnricher, null);
+    }
+
+    public static void logEntityModification(Session<? extends AbstractUser> userSession, String operation, String entityTypeName, AbstractOrganizableObject entity, ObjectEnricher objectEnricher, Map<String, String> moreAttributes) {
         if (entity != null) {
+            LinkedHashMap<String, String> attributes = new LinkedHashMap<>();
+            Optional.ofNullable(objectEnricher).map(ObjectEnricher::getAdditionalAttributes).ifPresent(attributes::putAll);
+            Optional.ofNullable(moreAttributes).ifPresent(attributes::putAll);
+
             modify(userSession, operation, entityTypeName,
                     Optional.ofNullable(entity.getId()).map(ObjectId::toString).orElse(null),
                     entity.getAttribute(AbstractOrganizableObject.NAME),
-                    Optional.ofNullable(objectEnricher).map(ObjectEnricher::getAdditionalAttributes).orElse(null));
+                    attributes
+            );
         }
     }
 
@@ -239,7 +246,7 @@ public class AuditLogger {
         msg.type = entityTypeName;
         msg.name = entityName;
         msg.id = entityId;
-        msg.attributes = attributes;
+        msg.attributes = (attributes != null && attributes.isEmpty()) ? null : attributes; // omit null or empty attributes
         auditLogger.info(msg.toString());
     }
 
