@@ -1,5 +1,7 @@
 package step.framework.server.tables.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.Collection;
 import step.core.collections.Filter;
@@ -30,6 +32,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TableService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TableService.class);
 
     private final TableRegistry tableRegistry;
     private final ObjectHookRegistry objectHookRegistry;
@@ -148,6 +152,7 @@ public class TableService {
                 LongAdder warningCount = warnings.computeIfAbsent(e.getMessage(), a -> new LongAdder());
                 warningCount.increment();
             } catch (Exception e) {
+                logger.error("One bulk operation for the collection {} failed", table.getCollection().getName(), e);
                 LongAdder errorCount = errors.computeIfAbsent(e.getMessage(), a -> new LongAdder());
                 errorCount.increment();
             }
