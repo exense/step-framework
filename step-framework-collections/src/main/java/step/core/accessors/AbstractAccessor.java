@@ -42,6 +42,7 @@ import static step.core.collections.EntityVersion.VERSION_CUSTOM_FIELD;
 
 public class AbstractAccessor<T extends AbstractIdentifiableObject> implements Accessor<T> {
 
+	public static final String ATTRIBUTES_FIELD_NAME = "attributes";
 	protected final Collection<T> collectionDriver;
 	private final static String ENTITY_ID_FIELD = "entity._id";
 
@@ -89,12 +90,12 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
 
 	@Override
 	public T findByAttributes(Map<String, String> attributes) {
-		return findByKeyAttributes("attributes", attributes);
+		return findByKeyAttributes(ATTRIBUTES_FIELD_NAME, attributes);
 	}
 
 	@Override
 	public Spliterator<T> findManyByAttributes(Map<String, String> attributes) {
-		return findByAttributesStream("attributes", attributes).spliterator();
+		return findByAttributesStream(ATTRIBUTES_FIELD_NAME, attributes).spliterator();
 	}
 
 	@Override
