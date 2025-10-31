@@ -185,7 +185,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		String query = buildQuery(filter, order, skip, limit);
 		AtomicReference<StreamingQuery> queryRef = new AtomicReference<>();
 		try {
-			queryRef.set(new StreamingQuery(ds, query));
+			queryRef.set(new StreamingQuery(ds, query, maxTime));
 			return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new ResultSetIterator(queryRef.get().resultSet),
 							Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED), false)
 					.map(s -> {
