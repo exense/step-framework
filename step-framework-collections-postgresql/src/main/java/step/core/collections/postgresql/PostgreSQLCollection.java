@@ -456,4 +456,10 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 	private String filterToWhereClause(Filter filter) {
 		return new PostgreSQLFilterFactory().buildFilter(filter);
 	}
+
+	public static boolean isTimeoutException(SQLException e) {
+		// This is the "official" Postgres-specific error/state code for "query_canceled" (which is
+		// what timeouts result in), see https://www.postgresql.org/docs/current/errcodes-appendix.html
+		return e != null && "57014".equals(e.getSQLState());
+	}
 }

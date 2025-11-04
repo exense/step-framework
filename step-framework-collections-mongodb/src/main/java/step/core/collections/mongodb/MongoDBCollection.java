@@ -155,7 +155,12 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 		try {
 			iterator = find.iterator();
 		} catch (MongoExecutionTimeoutException e) {
-			logger.error("Query execution exceeded timeout of " + maxTime + " " + TimeUnit.SECONDS);
+			// We check if debugging is enabled, but still use the error loglevel. This is on purpose.
+			if (logger.isDebugEnabled()) {
+				logger.error("MongoDB query timed out after {} seconds: {}", maxTime, query);
+			} else {
+				logger.error("MongoDB query timed out after {} seconds. To see the full query, enable debug logging for step.core.collections.mongodb.MongoDBCollection", maxTime);
+			}
 			throw e;
 		}
 		

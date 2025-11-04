@@ -1,11 +1,15 @@
 package step.core.collections.postgresql;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class StreamingQuery implements AutoCloseable {
+    private static final Logger logger = LoggerFactory.getLogger(StreamingQuery.class);
     private static final int FETCH_SIZE = 1000;
     private final Connection connection;
     private final PreparedStatement statement;
@@ -40,6 +44,14 @@ public class StreamingQuery implements AutoCloseable {
             } catch (Exception ex) {
                 // if the closing throws something too, add that to the existing exception
                 sqlEx.addSuppressed(ex);
+            }
+            if (PostgreSQLCollection.isTimeoutException(sqlEx)) {
+                // We check if debugging is enabled, but still use the error loglevel. This is on purpose.
+                if (logger.isDebugEnabled()) {
+                    logger.error("SQL query timed out after {} seconds: {}", timeoutSeconds, sql);
+                } else {
+                    logger.error("SQL query timed out after {} seconds. To see the full query, enable debug logging for step.core.collections.postgresql.StreamingQuery", timeoutSeconds);
+                }
             }
             throw sqlEx;
         }
