@@ -269,4 +269,20 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 
 	}
 
+	@Test
+	public void testTimeout() throws Exception {
+		// This simulates the same condition as the production code might run into when queries take too long,
+		// but here we're using an explicit query that will force a timeout.
+		try (
+				HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
+				StreamingQuery sq = new StreamingQuery(ds, "SELECT pg_sleep(3)", 1);
+		) {
+			Assert.fail("This should never be reached " + sq);
+		} catch (SQLException e) {
+			assertTrue(PostgreSQLCollection.isTimeoutException(e));
+			// Check the logs manually; depending on the log level, it should log either something like "timed out,
+			// enable logging to see full query", or "timed out" plus the actual query.
+		}
+	}
+
 }

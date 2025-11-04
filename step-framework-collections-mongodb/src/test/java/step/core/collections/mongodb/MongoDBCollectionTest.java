@@ -3,18 +3,22 @@ package step.core.collections.mongodb;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.mongodb.MongoExecutionTimeoutException;
+import org.bson.conversions.Bson;
+import org.junit.Assert;
 import org.junit.Test;
 
+import org.mongojack.JacksonMongoCollection;
 import step.core.accessors.AbstractIdentifiableObject;
-import step.core.collections.AbstractCollectionTest;
-import step.core.collections.Collection;
-import step.core.collections.Document;
-import step.core.collections.Filters;
-import step.core.collections.SearchOrder;
+import step.core.collections.*;
 import step.core.entities.Bean;
 
 public class MongoDBCollectionTest extends AbstractCollectionTest {
@@ -74,6 +78,28 @@ public class MongoDBCollectionTest extends AbstractCollectionTest {
 		
 		documents.remove(Filters.empty());
 		assertEquals(0, documents.find(Filters.empty(), null, null, null, 0).collect(Collectors.toList()).size());
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	@Test
+	public void testTimeout() throws Exception {
+		// This simulates the same condition as the production code might run into when queries take too long,
+		// but here we're using an explicit query that will force a timeout. We can't really run the production
+		// code with a custom query without major hackery, so we just simulate something very close to it.
+		// I know it's ugly, but it's the best I could come up with.
+		Collection<Document> collection = collectionFactory.getCollection("beans", Document.class);
+		Field f = collection.getClass().getDeclaredField("collection");
+		f.setAccessible(true);
+		JacksonMongoCollection<org.bson.Document> mc = (JacksonMongoCollection) f.get(collection);
+		Bson query = new org.bson.Document("$where", "sleep(3000) || true");
+		try {
+			mc.find(query).maxTime(1, TimeUnit.SECONDS).into(new ArrayList<>());
+			Assert.fail("This should never be reached");
+		} catch (MongoExecutionTimeoutException e) {
+			// This is the same format that detailed log messages use (in prod):
+			String msg = String.format("MongoDB query timed out after %d seconds: %s", 1, query);
+			assertEquals("MongoDB query timed out after 1 seconds: Document{{$where=sleep(3000) || true}}", msg);
+		}
 	}
 
 }
