@@ -93,17 +93,21 @@ public class AuditLogger {
         } catch (Exception e) {
             source = "unknown";
         }
+        Optional<HttpSession> maybeHttpSession = Optional.ofNullable(req.getSession(false));
         String user;
         try {
-            user = AbstractServices.getSession(req.getSession()).getUser().getSessionUsername();
+            user = maybeHttpSession.map(AbstractServices::getSession).map(Session::getUser).map(AbstractUser::getSessionUsername).orElse(null);
         } catch (Exception e) {
+            // shouldn't happen
             user = "unknown";
         }
         AuditMessage msg = new AuditMessage();
-        msg.req = req.getMethod() + " " + req.getRequestURI(); 
-        msg.sesId = req.getSession().getId();
+        msg.req = req.getMethod() + " " + req.getRequestURI();
+        maybeHttpSession.ifPresent(s -> msg.sesId = s.getId()); // otherwise will use default "-"
         msg.src = source;
-        msg.user = user;
+        if (user != null) { // otherwise will stay at default "-"
+            msg.user = user;
+        }
         msg.agent = req.getHeader("User-Agent");
         msg.sc = status;
 

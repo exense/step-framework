@@ -345,7 +345,11 @@ public class ControllerServer {
 		servletContextHandler.setSessionHandler(s);
 		servletContextHandler.addEventListener(new HttpSessionListener() {
 			@Override
-			public void sessionCreated(HttpSessionEvent httpSessionEvent) {}
+			public void sessionCreated(HttpSessionEvent httpSessionEvent) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("New HTTP session created {}", httpSessionEvent.getSession().getId());
+				}
+			}
 			@Override
 			public void sessionDestroyed(HttpSessionEvent httpSessionEvent) {
 				AuditLogger.logSessionInvalidation(httpSessionEvent.getSession());

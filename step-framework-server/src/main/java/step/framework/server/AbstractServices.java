@@ -49,8 +49,33 @@ public abstract class AbstractServices<U extends AbstractUser> {
 		this.httpServletRequest = httpServletRequest;
 	}
 
+	/**
+	 * Get the HTTP session, a session is created automatically if none exists
+	 * @return the HTTP session
+	 */
 	public HttpSession getHttpSession() {
 		return httpServletRequest.getSession();
+	}
+
+	/**
+	 * Get the HTTP session if it exists
+	 * @return the HTTP session if it exists or null
+	 */
+	private HttpSession getHttpSessionIfExists() {
+		return httpServletRequest.getSession(false);
+	}
+
+	/**
+	 * Get the Step session if it exists without implicitly creating an HTTP session when none exists
+	 * @return the session or null if it doesn't exist
+	 */
+	protected Session<U> getSessionIfExists() {
+		HttpSession httpSession = getHttpSessionIfExists();
+		if (httpSession != null) {
+			return (Session) httpSession.getAttribute(SESSION);
+		} else {
+			return null;
+		}
 	}
 
 	protected Session<U> getSession() {
