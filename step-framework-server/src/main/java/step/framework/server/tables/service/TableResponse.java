@@ -7,6 +7,7 @@ public class TableResponse<T> {
     private long recordsTotal;
     private long recordsFiltered;
     private List<T> data;
+    public boolean hasNext;
 
     public long getRecordsTotal() {
         return recordsTotal;

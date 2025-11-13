@@ -69,10 +69,32 @@ public class TableService {
         // Create result list
         List<T> result = table.getResultListFactory().orElse(ArrayList::new).get();
 
+        // If a limit is specified, fetch one extra element to determine whether more data exists beyond the requested range
+        Integer newLimit;
+        Integer requestedLimit = request.getLimit();
+        if (requestedLimit != null) {
+            newLimit = requestedLimit + 1;
+        } else {
+            newLimit = null;
+        }
+
+        // Get the search order
+        SearchOrder searchOrder = getSearchOrder(request);
+
         // Perform the search
         Collection<T> collection = table.getCollection();
-        try (Stream<T> tStream = _request(collection, table, filter, request, session)) {
+        try (Stream<T> tStream = _request(collection, table, filter, request.getSkip(), newLimit, searchOrder, request.isPerformEnrichment(), session)) {
             tStream.forEachOrdered(result::add);
+        }
+
+        // Determine whether more data exists beyond the requested range
+        // i.e. if the same request for the next range [skip + limit, limit] would return something
+        boolean hasNext;
+        if (newLimit != null && result.size() == newLimit) {
+            result.remove(result.size() - 1);
+            hasNext = true;
+        } else {
+            hasNext = false;
         }
 
         // Calculate counts
@@ -91,21 +113,19 @@ public class TableService {
         response.setRecordsFiltered(count);
         response.setRecordsTotal(estimatedTotalCount);
         response.setData(result);
+        response.hasNext = hasNext;
         return response;
     }
 
-    private <T> Stream<T> _request(Collection<T> collection, Table<T> table, Filter filter, TableRequest request, Session<?> session) {
-        // Get the search order
-        SearchOrder searchOrder = getSearchOrder(request);
-
+    private <T> Stream<T> _request(Collection<T> collection, Table<T> table, Filter filter, Integer skip, Integer limit, SearchOrder searchOrder, boolean performEnrichment, Session<?> session) {
         // Perform the search
-        Stream<T> result = collection.findLazy(filter, searchOrder, request.getSkip(), request.getLimit(), table.getMaxFindDuration().orElse(defaultMaxFindDuration));
+        Stream<T> result = collection.findLazy(filter, searchOrder, skip, limit, table.getMaxFindDuration().orElse(defaultMaxFindDuration));
         Optional<BiFunction<T, Session<?>, T>> transformer = table.getResultItemTransformer();
         if (transformer.isPresent()) {
             result = result.map(item -> transformer.get().apply(item, session));
         }
 
-        if (request.isPerformEnrichment()) {
+        if (performEnrichment) {
             Optional<BiFunction<T, Session<?>, T>> enricher = table.getResultItemEnricher();
             if (enricher.isPresent()) {
                 result = result.map(item -> enricher.get().apply(item, session));
@@ -120,9 +140,13 @@ public class TableService {
         assertSessionHasRequiredAccessRight(table, session);
 
         Collection<T> collection = table.getCollection();
+
         // Create the filter
         final Filter filter = createFilter(request, session, table);
-        return _request(collection, table, filter, request, session);
+
+        // Get the search order
+        SearchOrder searchOrder = getSearchOrder(request);
+        return _request(collection, table, filter, request.getSkip(), request.getLimit(), searchOrder, request.isPerformEnrichment(), session);
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperationWithCustomPreview(
