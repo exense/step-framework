@@ -87,12 +87,6 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 		return isObjectAccessibleInContext(context, object, ObjectHook::isObjectReadableInContext);
 	}
 
-	// Define TriFunction since it's not available in Java 11
-	@FunctionalInterface
-	private interface TriFunction<T, U, V, R> {
-		R apply(T t, U u, V v);
-	}
-
 	private Optional<ObjectAccessException> isObjectAccessibleInContext(AbstractContext context, EnricheableObject object,
 																		TriFunction<ObjectHook, AbstractContext, EnricheableObject, Optional<ObjectAccessViolation>> accessChecker) {
 		List<ObjectAccessViolation> violations = new ArrayList<>();

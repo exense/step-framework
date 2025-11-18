@@ -9,6 +9,7 @@ import step.core.collections.Filters;
 import step.core.collections.SearchOrder;
 import step.core.objectenricher.ObjectFilter;
 import step.core.objectenricher.ObjectHookRegistry;
+import step.core.objectenricher.TriFunction;
 import step.core.ql.OQLFilterBuilder;
 import step.framework.server.Session;
 import step.framework.server.access.AuthorizationManager;
@@ -83,7 +84,7 @@ public class TableService {
 
         // Perform the search
         Collection<T> collection = table.getCollection();
-        try (Stream<T> tStream = _request(collection, table, filter, request.getSkip(), newLimit, searchOrder, request.isPerformEnrichment(), session)) {
+        try (Stream<T> tStream = _request(collection, table, filter, request.getSkip(), newLimit, searchOrder, request.isPerformEnrichment(), session, request.getTableParameters())) {
             tStream.forEachOrdered(result::add);
         }
 
@@ -117,7 +118,8 @@ public class TableService {
         return response;
     }
 
-    private <T> Stream<T> _request(Collection<T> collection, Table<T> table, Filter filter, Integer skip, Integer limit, SearchOrder searchOrder, boolean performEnrichment, Session<?> session) {
+    private <T> Stream<T> _request(Collection<T> collection, Table<T> table, Filter filter, Integer skip, Integer limit, SearchOrder searchOrder,
+                                   boolean performEnrichment, Session<?> session, TableParameters tableParameters) {
         // Perform the search
         Stream<T> result = collection.findLazy(filter, searchOrder, skip, limit, table.getMaxFindDuration().orElse(defaultMaxFindDuration));
         Optional<BiFunction<T, Session<?>, T>> transformer = table.getResultItemTransformer();
@@ -126,9 +128,9 @@ public class TableService {
         }
 
         if (performEnrichment) {
-            Optional<BiFunction<T, Session<?>, T>> enricher = table.getResultItemEnricher();
+            Optional<TriFunction<T, Session<?>, TableParameters, T>> enricher = table.getResultItemEnricher();
             if (enricher.isPresent()) {
-                result = result.map(item -> enricher.get().apply(item, session));
+                result = result.map(item -> enricher.get().apply(item, session, tableParameters));
             }
         }
         return result;
@@ -146,7 +148,7 @@ public class TableService {
 
         // Get the search order
         SearchOrder searchOrder = getSearchOrder(request);
-        return _request(collection, table, filter, request.getSkip(), request.getLimit(), searchOrder, request.isPerformEnrichment(), session);
+        return _request(collection, table, filter, request.getSkip(), request.getLimit(), searchOrder, request.isPerformEnrichment(), session, request.getTableParameters());
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperationWithCustomPreview(
