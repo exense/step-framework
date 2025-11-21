@@ -45,7 +45,7 @@
         <maven.compiler.release>11</maven.compiler.release>
         <!-- internal dependencies -->
         <dependencies.version>2025.6.25</dependencies.version>
-        <exense-commons.version>2025.7.28-688790164e318f3fad9e6aad</exense-commons.version>
+        <exense-commons.version>2.1.0</exense-commons.version>
 
         <!-- external dependencies -->
         <dep.jaxb.version>2.3.1</dep.jaxb.version>
