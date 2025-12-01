@@ -115,4 +115,19 @@ public class Bucket extends AbstractIdentifiableObject {
         }
         return percentileValue;
     }
+
+    @Override
+    public String toString() {
+        return "Bucket{" +
+                "begin=" + begin +
+                ", end=" + end +
+                ", attributes=" + attributes +
+                ", count=" + count +
+                ", sum=" + sum +
+                ", min=" + min +
+                ", max=" + max +
+                ", pclPrecision=" + pclPrecision +
+                ", distribution=" + distribution +
+                '}';
+    }
 }

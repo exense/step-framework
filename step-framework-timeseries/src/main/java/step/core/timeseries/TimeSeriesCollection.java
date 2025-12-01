@@ -188,4 +188,8 @@ public class TimeSeriesCollection {
     protected void drop() {
         mainCollection.drop();
     }
+
+    protected Collection<Bucket> getMainCollection() {
+        return mainCollection;
+    }
 }
