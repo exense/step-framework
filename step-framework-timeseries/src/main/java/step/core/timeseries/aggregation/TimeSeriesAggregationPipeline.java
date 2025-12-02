@@ -75,7 +75,7 @@ public class TimeSeriesAggregationPipeline {
         if (query.getOptimizationType() == TimeSeriesOptimizationType.MOST_ACCURATE) {
             idealResolution = collections.get(0).getResolution(); // first collection with the best resolution
         } else { // most efficient
-            idealResolution = this.roundDownToAvailableResolution(getIdealResolution(query));
+            idealResolution = getIdealResolution(query);
         }
         TimeSeriesCollection idealAvailableCollection = ttlEnabled ? chooseFirstAvailableCollectionBasedOnTTL(idealResolution, query) : this.collections.get(this.resolutionsIndexes.get(idealResolution));
         idealAvailableCollection = chooseLastCollectionWhichHandleAttributes(idealAvailableCollection.getResolution(), usedAttributes);
@@ -133,16 +133,6 @@ public class TimeSeriesAggregationPipeline {
                 .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
                 .setTtlCovered(ttlCovered)
                 .build();
-    }
-    
-    private long roundDownToAvailableResolution(long targetResolution) {
-        List<Long> availableResolutions = getAvailableResolutions();
-        for (int i = 1; i < availableResolutions.size(); i++) {
-            if (availableResolutions.get(i) > targetResolution) {
-                return availableResolutions.get(i - 1);
-            }
-        }
-        return availableResolutions.get(availableResolutions.size() - 1); // return last resolution 
     }
     
     private TimeSeriesProcessedParams processQueryParams(TimeSeriesAggregationQuery query, long sourceResolution) {
@@ -266,17 +256,51 @@ public class TimeSeriesAggregationPipeline {
         Long bucketsResolution = query.getBucketsResolution();
         long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         long requestedRange = queryTo - query.getFrom();
-        long idealResolution;
-        if (query.isShrink()) {
-            idealResolution = requestedRange / idealResponseIntervals;
-        } else if (bucketsCount != null && bucketsCount > 0) {
-            idealResolution = requestedRange / bucketsCount;
+        // First determine how many time buckets should ideally be returned
+        long idealBucketCount = idealResponseIntervals;
+        if (bucketsCount != null && bucketsCount > 0) {
+            idealBucketCount = bucketsCount;
         } else if (bucketsResolution != null && bucketsResolution > 0) {
-            idealResolution = bucketsResolution;
-        } else {
-            idealResolution = requestedRange / idealResponseIntervals;
+            idealBucketCount = requestedRange / bucketsResolution;
+            if (idealBucketCount <= 0) {
+                idealBucketCount = 1; // at least one bucket
+            }
         }
-        return idealResolution;
+        // Then find the resolution which would be closest to that number of bucket
+        return findClosestResolution(requestedRange, idealBucketCount);
+    }
+
+    private long findClosestResolution(long requestedRange, long idealBucketCount) {
+        List<Long> availableResolutions = getAvailableResolutions();
+        if (availableResolutions == null || availableResolutions.isEmpty()) {
+            throw new IllegalStateException("No available resolutions configured");
+        }
+        long bestResolution = availableResolutions.get(0);
+        long bestDiff = Long.MAX_VALUE;
+        long bestBuckets = -1;
+
+        for (Long resolution : availableResolutions) {
+            if (resolution == null || resolution <= 0) {
+                continue;
+            }
+
+            long buckets = requestedRange / resolution;
+            if (buckets <= 0) {
+                buckets = 1; // clamp to at least one bucket
+            }
+
+            long diff = Math.abs(buckets - idealBucketCount);
+
+            // Pick the resolution whose bucket count is closest to idealBucketCount.
+            // Tie-breaker: prefer fewer buckets (i.e. coarser resolution) to reduce load.
+            if (diff < bestDiff || (diff == bestDiff && buckets < bestBuckets)) {
+                bestDiff = diff;
+                bestBuckets = buckets;
+                bestResolution = resolution;
+            }
+        }
+
+        return bestResolution;
     }
 
     private boolean collectionTtlCoverInterval(TimeSeriesCollection collection, long from, long to) {

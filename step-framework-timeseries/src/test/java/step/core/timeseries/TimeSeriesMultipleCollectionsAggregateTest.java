@@ -19,36 +19,42 @@ public class TimeSeriesMultipleCollectionsAggregateTest extends TimeSeriesBaseTe
         timeSeries.getDefaultCollection().save(b1);
         timeSeries.ingestDataForEmptyCollections();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
+        //Requested range 10_000_000 -> select coarser resolution
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
                 .range(now - 10_000 * 1000, now)
                 .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
-        Assert.assertEquals(10000, response.getCollectionResolution());
+        Assert.assertEquals(10_000, response.getCollectionResolution());
+        //Requested range 5000 -> select finest resolution
         query = new TimeSeriesAggregationQueryBuilder()
                 .range(now - 5000, now)
                 .build();
         response = aggregationPipeline.collect(query);
+        //Requested range 1000 -> select finest resolution
         Assert.assertEquals(1000, response.getCollectionResolution());
         query = new TimeSeriesAggregationQueryBuilder()
                 .range(now - 1000, now)
                 .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(1000, response.getCollectionResolution());
+        //Requested range 500_001 -> select resolution closed to 100 buckets (1000 -> 500 buckets, 5000 -> 100 buckest (winner))
         query = new TimeSeriesAggregationQueryBuilder()
                 .range(now - 5000 * AGGREGATION_RESOLUTION_LAMBDA + 1, now)
                 .build();
         response = aggregationPipeline.collect(query);
-        Assert.assertEquals(1000, response.getCollectionResolution());
+        Assert.assertEquals(5000, response.getCollectionResolution());
+        //Requested range 499_999 -> select resolution closed to 100 buckets (1000 -> 500 buckets, 5000 -> 100 buckest (winner))
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 5000 * AGGREGATION_RESOLUTION_LAMBDA, now)
+                .range(now - 5000 * AGGREGATION_RESOLUTION_LAMBDA-1, now)
                 .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(5000, response.getCollectionResolution());
+        //Requested range 1_000_001 -> select resolution closed to 100 buckets (5000 -> 200 buckets, 10000 -> 100 buckest (winner))
         query = new TimeSeriesAggregationQueryBuilder()
                 .range(now - 10_000 * AGGREGATION_RESOLUTION_LAMBDA + 1, now)
                 .build();
         response = aggregationPipeline.collect(query);
-        Assert.assertEquals(5000, response.getCollectionResolution());
+        Assert.assertEquals(10_000, response.getCollectionResolution());
         query = new TimeSeriesAggregationQueryBuilder()
                 .range(now - 10_000 * AGGREGATION_RESOLUTION_LAMBDA, now)
                 .build();
