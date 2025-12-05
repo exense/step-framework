@@ -75,8 +75,8 @@ public class TimeSeriesBuilder {
 	}
 
 	public TimeSeries build() {
-		if (handledCollections.isEmpty() || (handledCollections.get(0).getIgnoredAttributes() != null && !handledCollections.get(0).getIgnoredAttributes().isEmpty())) {
-			throw new IllegalArgumentException("At least one time series collection must be registered with a resolution interval lower than 1 hour.");
+		if (handledCollections.isEmpty()) {
+			throw new IllegalArgumentException("At least one time series collection must be registered.");
 		}
 		handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
 		validateResolutions();
