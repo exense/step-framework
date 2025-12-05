@@ -47,6 +47,20 @@ public class TimeSeries implements AutoCloseable {
         return this;
     }
 
+    public void updateAllCollectionsTtl(boolean ttlEnabled, Map<Long, Long> resolutionsToTtl) {
+        setTtlEnabled(ttlEnabled);
+        resolutionsToTtl.forEach((resolution, ttl) -> {
+            if (hasCollection(resolution)) {
+                getCollection(resolution).setTtl(ttl);
+            }
+        });
+    }
+    public void updateCollectionTtl(long resolution, long ttl) {
+        if (hasCollection(resolution)) {
+            getCollection(resolution).setTtl(ttl);
+        }
+    }
+
     /**
      * This method will ingest the data for all the resolutions which are empty.
      * Each collection is ingesting the data from the previous collection only.
