@@ -49,11 +49,7 @@ public class TimeSeries implements AutoCloseable {
 
     public void updateAllCollectionsTtl(boolean ttlEnabled, Map<Long, Long> resolutionsToTtl) {
         setTtlEnabled(ttlEnabled);
-        resolutionsToTtl.forEach((resolution, ttl) -> {
-            if (hasCollection(resolution)) {
-                getCollection(resolution).setTtl(ttl);
-            }
-        });
+        resolutionsToTtl.forEach(this::updateCollectionTtl);
     }
     public void updateCollectionTtl(long resolution, long ttl) {
         if (hasCollection(resolution)) {

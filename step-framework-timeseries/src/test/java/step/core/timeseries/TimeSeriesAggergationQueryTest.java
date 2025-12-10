@@ -192,6 +192,10 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
         Assert.assertEquals(5000, response.getResolution());
     }
 
+    /**
+     *  This test aims to validate that a collection created initially with a resolution (i.e. 1 seconds)
+     *  and with data already ingested, can then be reconfigured and resued with a higher resolution (i.e. 5 seconds).
+     */
     @Test
     public void aggregationTestWithResolutionChanges() {
         int resolution = 1000;
@@ -215,7 +219,7 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
 
         //Change timeSerie resolution on the fly to make sure this doesn't induce aggregation errors
         int newResolution = 5000;
-        TimeSeriesCollection collection = new TimeSeriesCollection(timeSeries.getDefaultCollection().getMainCollection(), newResolution);
+        TimeSeriesCollection collection = new TimeSeriesCollection(timeSeries.getDefaultCollection().getUnderlyingCollection(), newResolution);
         TimeSeries timeSeriesHigherResolution = new TimeSeriesBuilder().registerCollection(collection).build();
         aggregationTest(timeSeriesHigherResolution, newResolution, iterations, start, end);
     }
