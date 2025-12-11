@@ -65,7 +65,7 @@ public class TimeSeriesCollection {
      * @return true if empty
      */
     protected boolean isEmpty() {
-        return mainCollection.estimatedCount() == 0;
+        return mainCollection.estimatedCount() <= 0;
     }
 
     /**
