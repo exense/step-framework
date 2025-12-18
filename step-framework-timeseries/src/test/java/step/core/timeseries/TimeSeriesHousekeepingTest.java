@@ -34,8 +34,8 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
 
     @Test
     public void ttlNotCoveringTest() {
-        TimeSeriesCollection tsCol1 = new TimeSeriesCollection(new InMemoryCollection<>(), new TimeSeriesCollectionSettings().setResolution(10).setTtl(40)); // this live longer
-        TimeSeriesCollection tsCol2 = new TimeSeriesCollection(new InMemoryCollection<>(), new TimeSeriesCollectionSettings().setResolution(100).setTtl(10_000)); // this should not cover the request
+        TimeSeriesCollection tsCol1 = new TimeSeriesCollection(new InMemoryCollection<>(), new TimeSeriesCollectionSettings().setResolution(10).setTtl(40).setIngestionFlushSeriesQueueSize(100)); // this live longer
+        TimeSeriesCollection tsCol2 = new TimeSeriesCollection(new InMemoryCollection<>(), new TimeSeriesCollectionSettings().setResolution(100).setTtl(10_000).setIngestionFlushSeriesQueueSize(100)); // this should not cover the request
         long now = System.currentTimeMillis();
         for (int i = 0; i < 5; i++) {
             Bucket bucket = new Bucket();

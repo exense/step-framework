@@ -27,23 +27,19 @@ public class TimeSeriesCollection {
     private long ttl; // In milliseconds. set to 0 in case deletion is never required
     private final Set<String> ignoredAttributes;
 
-    public TimeSeriesCollection(Collection<Bucket> mainCollection, long resolution) {
+    protected TimeSeriesCollection(Collection<Bucket> mainCollection, long resolution) {
         this(mainCollection, new TimeSeriesCollectionSettings()
                 .setResolution(resolution)
+                .setIngestionFlushSeriesQueueSize(20000)
         );
     }
-
-    public TimeSeriesCollection(Collection<Bucket> mainCollection, long resolution, long flushPeriod) {
-        this(mainCollection, new TimeSeriesCollectionSettings()
-                .setResolution(resolution)
-                .setIngestionFlushingPeriodMs(flushPeriod)
-        );
-    }
-
 
     public TimeSeriesCollection(Collection<Bucket> mainCollection, TimeSeriesCollectionSettings settings) {
         if (settings.getResolution() <= 0) {
             throw new IllegalArgumentException("The resolution parameter must be greater than zero");
+        }
+        if (settings.getIngestionFlushSeriesQueueSize() <= 1) {
+            throw new IllegalArgumentException("The ingestion series queue size must be greater than 1");
         }
         validateTtl(settings.getTtl());
         this.mainCollection = mainCollection;

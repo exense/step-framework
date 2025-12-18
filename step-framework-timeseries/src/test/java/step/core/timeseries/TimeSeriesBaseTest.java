@@ -26,7 +26,8 @@ public class TimeSeriesBaseTest {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>("resolution_" + resolution);
         TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
                 .setResolution(resolution)
-                .setIgnoredAttributes(ignoredAttributes);
+                .setIgnoredAttributes(ignoredAttributes)
+                .setIngestionFlushSeriesQueueSize(20000);
         return new TimeSeriesCollection(col, settings);
     }
 
@@ -39,7 +40,8 @@ public class TimeSeriesBaseTest {
         TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
                 .setTtl(ttl)
                 .setResolution(resolution)
-                .setIgnoredAttributes(ignoredAttributes);
+                .setIgnoredAttributes(ignoredAttributes)
+                .setIngestionFlushSeriesQueueSize(100);
         return new TimeSeriesCollection(col, settings);
     }
 

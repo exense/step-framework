@@ -42,6 +42,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     private final int seriesQueueSizeflush;
 
     public TimeSeriesIngestionPipeline(TimeSeriesCollection collection, TimeSeriesIngestionPipelineSettings settings) {
+        validateSettings(settings);
         this.collection = collection;
         this.sourceResolution = settings.getResolution();
         long flushingPeriodMs = settings.getFlushingPeriodMs();
@@ -62,6 +63,15 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
                 logger.error("Unable to save bucket with attribute {}", entity.getAttributes());
             }
         });
+    }
+
+    public void validateSettings(TimeSeriesIngestionPipelineSettings settings) {
+        if (settings.getResolution() <= 0) {
+            throw new IllegalArgumentException("The resolution parameter must be greater than zero");
+        }
+        if (settings.getFlushSeriesQueueSize() <= 1) {
+            throw new IllegalArgumentException("The ingestion series queue size must be greater than 1");
+        }
     }
 
     public long getResolution() {
