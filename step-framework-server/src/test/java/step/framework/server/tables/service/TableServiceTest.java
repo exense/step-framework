@@ -25,7 +25,9 @@ import step.framework.server.tables.service.bulk.TableBulkOperationTargetType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -94,6 +96,9 @@ public class TableServiceTest {
         assertEquals(List.of(bean1, bean2, bean3), response.getData());
         assertEquals(3, response.getRecordsTotal());
         assertEquals(3, response.getRecordsFiltered());
+        assertFalse(response.hasNext);
+        // Test export with the same request
+        assertEquals(List.of(bean1, bean2, bean3), tableService.export(SIMPLE_TABLE, request, null).collect(Collectors.toList()));
 
         // Test request with count disabled
         request = new TableRequest();
@@ -102,6 +107,9 @@ public class TableServiceTest {
         assertEquals(List.of(bean1, bean2, bean3), response.getData());
         assertEquals(-1, response.getRecordsTotal());
         assertEquals(-1, response.getRecordsFiltered());
+        assertFalse(response.hasNext);
+        // Test export with the same request, disabling the count should have no impact
+        assertEquals(List.of(bean1, bean2, bean3), tableService.export(SIMPLE_TABLE, request, null).collect(Collectors.toList()));
 
 
         // Test FieldFilter
@@ -111,6 +119,10 @@ public class TableServiceTest {
         assertEquals(List.of(bean1), response.getData());
         assertEquals(3, response.getRecordsTotal());
         assertEquals(1, response.getRecordsFiltered());
+        // For the applied filter, no additional elements exist
+        assertFalse(response.hasNext);
+        // Test the export with the same request
+        assertEquals(List.of(bean1), tableService.export(SIMPLE_TABLE, request, null).collect(Collectors.toList()));
 
         // Test skip limit
         request = new TableRequest();
@@ -118,8 +130,22 @@ public class TableServiceTest {
         request.setLimit(1);
         response = tableService.request(SIMPLE_TABLE, request, null);
         assertEquals(List.of(bean2), response.getData());
+        // Additional element exist
+        assertTrue(response.hasNext);
+        // Test the export with the same request
+        assertEquals(List.of(bean2), tableService.export(SIMPLE_TABLE, request, null).collect(Collectors.toList()));
 
-        // Test skip limit
+        request = new TableRequest();
+        request.setSkip(2);
+        request.setLimit(1);
+        response = tableService.request(SIMPLE_TABLE, request, null);
+        assertEquals(List.of(bean3), response.getData());
+        // We've queried the last range. No additional element exist
+        assertFalse(response.hasNext);
+        // Test the export with the same request
+        assertEquals(List.of(bean3), tableService.export(SIMPLE_TABLE, request, null).collect(Collectors.toList()));
+
+        // Test sort
         request = new TableRequest();
         Sort sort = new Sort();
         sort.setField("property1");
@@ -127,6 +153,10 @@ public class TableServiceTest {
         request.setSort(List.of(sort));
         response = tableService.request(SIMPLE_TABLE, request, null);
         assertEquals(List.of(bean3, bean2, bean1), response.getData());
+        // We've queried the full range. No additional element exist
+        assertFalse(response.hasNext);
+        // Test the export with the same request
+        assertEquals(List.of(bean3, bean2, bean1), tableService.export(SIMPLE_TABLE, request, null).collect(Collectors.toList()));
 
         // Test custom ResultItemEnricher
         table.withResultItemEnricher(e -> {
@@ -138,6 +168,9 @@ public class TableServiceTest {
         response = tableService.request(SIMPLE_TABLE, request, null);
         assertEquals(List.of(bean1), response.getData());
         Bean actualBean = (Bean) response.getData().get(0);
+        assertEquals(ENRICHED_ATTRIBUTE_VALUE, actualBean.getAttribute(ENRICHED_ATTRIBUTE_KEY));
+        // Test the export and ensure it also consider the enrichment parameter
+        actualBean = (Bean) tableService.export(SIMPLE_TABLE, request, null).collect(Collectors.toList()).get(0);
         assertEquals(ENRICHED_ATTRIBUTE_VALUE, actualBean.getAttribute(ENRICHED_ATTRIBUTE_KEY));
 
         // Test request with enrichment disabled
@@ -440,8 +473,8 @@ public class TableServiceTest {
             }
 
             @Override
-            public boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object) {
-                return false;
+            public Optional<ObjectAccessViolation> isObjectEditableInContext(AbstractContext context, EnricheableObject object) {
+                return Optional.of(new ObjectAccessViolation(getHookIdentifier(), "Access denied", "Access denied for test"));
             }
         });
         return objectHookRegistry;

@@ -2,6 +2,7 @@ package step.framework.server.tables;
 
 import step.core.collections.Collection;
 import step.core.collections.Filter;
+import step.core.objectenricher.TriFunction;
 import step.framework.server.Session;
 import step.framework.server.tables.service.TableParameters;
 
@@ -24,7 +25,7 @@ public class Table<T> {
     private Integer countLimit;
 
     private Supplier<List<T>> resultListFactory;
-    private BiFunction<T, Session<?>, T> resultItemEnricher;
+    private TriFunction<T, Session<?>, TableParameters, T> resultItemEnricher;
     private BiFunction<T, Session<?>, T> resultItemTransformer;
 
     /**
@@ -120,7 +121,7 @@ public class Table<T> {
      * @return this instance
      */
     public Table<T> withResultItemEnricher(Function<T, T> resultItemEnricher) {
-        this.resultItemEnricher = (data, session) -> resultItemEnricher.apply(data);
+        this.resultItemEnricher = (data, session, tableParameters) -> resultItemEnricher.apply(data);
         return this;
     }
 
@@ -134,6 +135,11 @@ public class Table<T> {
      * @return this instance
      */
     public Table<T> withResultItemEnricher(BiFunction<T, Session<?>, T> resultItemEnricher) {
+        this.resultItemEnricher = (data, session, tableParameters) -> resultItemEnricher.apply(data, session);;
+        return this;
+    }
+
+    public Table<T> withResultItemEnricher(TriFunction<T, Session<?>, TableParameters, T> resultItemEnricher) {
         this.resultItemEnricher = resultItemEnricher;
         return this;
     }
@@ -166,7 +172,7 @@ public class Table<T> {
         return Optional.ofNullable(resultListFactory);
     }
 
-    public Optional<BiFunction<T, Session<?>, T>> getResultItemEnricher() {
+    public Optional<TriFunction<T, Session<?>, TableParameters, T>> getResultItemEnricher() {
         return Optional.ofNullable(resultItemEnricher);
     }
 

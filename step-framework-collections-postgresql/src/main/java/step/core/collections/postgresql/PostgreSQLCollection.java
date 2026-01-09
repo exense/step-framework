@@ -21,7 +21,6 @@ package step.core.collections.postgresql;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
-import com.zaxxer.hikari.pool.HikariProxyStatement;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -115,7 +114,17 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 				throw new RuntimeException("Unable to estimate the count for collection: " + collectionName + ", query: " + query);
 			}
 		} catch (SQLException e) {
-			throw new RuntimeException("Query execution failed: " + query,e);
+			throw toRuntimeException(e, query, null);
+		}
+	}
+
+	// consolidated method to produce RuntimeExceptions from SQLExceptions resulting from given query,
+	// with meaningful and standardized messages
+	private RuntimeException toRuntimeException(SQLException e, String query, Integer maxTime) {
+		if (maxTime != null && maxTime > 0 && isTimeoutException(e)) {
+			return new RuntimeException("Query timeout after " + maxTime + " seconds: " + query, e);
+		} else {
+			return new RuntimeException("Query execution failed: " + query, e);
 		}
 	}
 
@@ -135,7 +144,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 				}
 			}
 		} catch (SQLException e) {
-			throw new RuntimeException("Query execution failed: " + query, e);
+			throw toRuntimeException(e, query, null);
 		}
 	}
 
@@ -148,7 +157,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 				resultList.add(sq.resultSet.getString(2));
 			}
 		} catch (SQLException e) {
-			throw new RuntimeException("Query execution failed: " + query, e);
+			throw toRuntimeException(e, query, maxTime);
 		}
 		return resultList.stream().map(s -> {
 			try {
@@ -185,7 +194,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		String query = buildQuery(filter, order, skip, limit);
 		AtomicReference<StreamingQuery> queryRef = new AtomicReference<>();
 		try {
-			queryRef.set(new StreamingQuery(ds, query));
+			queryRef.set(new StreamingQuery(ds, query, maxTime));
 			return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new ResultSetIterator(queryRef.get().resultSet),
 							Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED), false)
 					.map(s -> {
@@ -197,7 +206,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 					}).onClose(() -> safeClose(queryRef.get()));
 		} catch (SQLException e) {
 			safeClose(queryRef.get());
-			throw new RuntimeException("Query execution failed: " + query, e);
+			throw toRuntimeException(e, query, maxTime);
 		}
 	}
 
@@ -229,7 +238,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 			}
 			return resultList;
 		} catch (SQLException e) {
-			throw new RuntimeException("Query execution failed: " + query,e);
+			throw toRuntimeException(e, query.toString(), null);
 		}
 	}
 
@@ -449,11 +458,17 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 			 Statement statement = connection.createStatement()) {
 			statement.executeUpdate(query);
 		} catch (SQLException e) {
-			throw new RuntimeException("Query execution failed: " + query,e);
+			throw toRuntimeException(e, query, null);
 		}
 	}
 
 	private String filterToWhereClause(Filter filter) {
 		return new PostgreSQLFilterFactory().buildFilter(filter);
+	}
+
+	public static boolean isTimeoutException(SQLException e) {
+		// This is the "official" Postgres-specific error/state code for "query_canceled" (which is
+		// what timeouts result in), see https://www.postgresql.org/docs/current/errcodes-appendix.html
+		return e != null && "57014".equals(e.getSQLState());
 	}
 }

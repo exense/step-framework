@@ -20,18 +20,35 @@ package step.framework.server.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import step.core.accessors.AbstractOrganizableObject;
+import step.core.accessors.AbstractUser;
+import step.core.objectenricher.ObjectEnricher;
 import step.framework.server.AbstractServices;
 import step.framework.server.Session;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-import java.util.Objects;
+import java.util.*;
 
 public class AuditLogger {
+    public static final String CONF_LOG_ENTITY_MODIFICATIONS = "auditLog.logEntityModifications";
+
     private static final Logger auditLogger = LoggerFactory.getLogger("AuditLogger");
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static boolean entityModificationsLoggingEnabled = false;
+
+    public static boolean isEntityModificationsLoggingEnabled() {
+        return entityModificationsLoggingEnabled;
+    }
+
+    public static void setEntityModificationsLoggingEnabled(boolean enabled) {
+        entityModificationsLoggingEnabled = enabled;
+    }
+
 
     public static void trace(HttpServletRequest req, int status) {
         if (auditLogger.isTraceEnabled()) {
@@ -76,17 +93,21 @@ public class AuditLogger {
         } catch (Exception e) {
             source = "unknown";
         }
+        Optional<HttpSession> maybeHttpSession = Optional.ofNullable(req.getSession(false));
         String user;
         try {
-            user = AbstractServices.getSession(req.getSession()).getUser().getSessionUsername();
+            user = maybeHttpSession.map(AbstractServices::getSession).map(Session::getUser).map(AbstractUser::getSessionUsername).orElse(null);
         } catch (Exception e) {
+            // shouldn't happen
             user = "unknown";
         }
         AuditMessage msg = new AuditMessage();
-        msg.req = req.getMethod() + " " + req.getRequestURI(); 
-        msg.sesId = req.getSession().getId();
+        msg.req = req.getMethod() + " " + req.getRequestURI();
+        maybeHttpSession.ifPresent(s -> msg.sesId = s.getId()); // otherwise will use default "-"
         msg.src = source;
-        msg.user = user;
+        if (user != null) { // otherwise will stay at default "-"
+            msg.user = user;
+        }
         msg.agent = req.getHeader("User-Agent");
         msg.sc = status;
 
@@ -172,7 +193,65 @@ public class AuditLogger {
         }
     }
 
+    private static class EntityModificationLogMessage {
+        // keep the field naming consistent with the other messages
+        public String user;
+        public String operation;
+        public String type;
+        public String name;
+        public String id;
+        public Map<String, String> attributes;
+
+        @Override
+        public String toString() {
+            try {
+                return objectMapper.writeValueAsString(this);
+            } catch (JsonProcessingException e) {
+                // format mimics the "default" toString()
+                return "Unexpected error serializing " + getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(this));
+            }
+        }
+    }
 
 
+    public static void logEntityModification(Session<? extends AbstractUser> userSession, String operation, String entityTypeName, AbstractOrganizableObject entity, ObjectEnricher objectEnricher) {
+        logEntityModification(userSession, operation, entityTypeName, entity, objectEnricher, null);
+    }
+
+    public static void logEntityModification(Session<? extends AbstractUser> userSession, String operation, String entityTypeName, AbstractOrganizableObject entity, ObjectEnricher objectEnricher, Map<String, String> moreAttributes) {
+        if (entity != null) {
+            LinkedHashMap<String, String> attributes = new LinkedHashMap<>();
+            Optional.ofNullable(objectEnricher).map(ObjectEnricher::getAdditionalAttributes).ifPresent(attributes::putAll);
+            Optional.ofNullable(moreAttributes).ifPresent(attributes::putAll);
+
+            modify(userSession, operation, entityTypeName,
+                    Optional.ofNullable(entity.getId()).map(ObjectId::toString).orElse(null),
+                    entity.getAttribute(AbstractOrganizableObject.NAME),
+                    attributes
+            );
+        }
+    }
+
+    public static void logEntityModification(Session<? extends AbstractUser> userSession, String operation, String entityTypeName, String entityId, String entityName, Map<String, String> attributes) {
+        modify(userSession, operation, entityTypeName, entityId, entityName, attributes);
+    }
+
+    // This method is named "modify" because that's what will appear in the logs if configured to use the separate audit log file:
+    // {"timestamp":"2025-10-15 15:06:52,709","method":"modify","msg":{...}}
+    private static void modify(Session<?> userSession, String operation, String entityTypeName, String entityId, String entityName, Map<String, String> attributes) {
+        if (!isEntityModificationsLoggingEnabled()) {
+            // We check (possibly again) if logging is enabled at all in case the caller didn't do it -- this adds no measurable overhead
+            return;
+        }
+        EntityModificationLogMessage msg = new EntityModificationLogMessage();
+        // all the following code is guaranteed to never produce NPE
+        msg.user = Optional.ofNullable(userSession).map(Session::getUser).map(AbstractUser::getSessionUsername).orElse(null);
+        msg.operation = operation;
+        msg.type = entityTypeName;
+        msg.name = entityName;
+        msg.id = entityId;
+        msg.attributes = (attributes != null && attributes.isEmpty()) ? null : attributes; // omit null or empty attributes
+        auditLogger.info(msg.toString());
+    }
 
 }

@@ -59,13 +59,17 @@ public class TimeSeriesCollection {
         this.ignoredAttributes = settings.getIgnoredAttributes();
     }
 
+    public Collection<Bucket> getUnderlyingCollection() {
+        return mainCollection;
+    }
+
     /**
      * This method check if the collection isEmpty in the backend database.
      * Currently used to detect if the collection needs to be rebuilds based on higher resolution collection
      * @return true if empty
      */
     protected boolean isEmpty() {
-        return mainCollection.estimatedCount() == 0;
+        return mainCollection.estimatedCount() <= 0;
     }
 
     /**

@@ -19,14 +19,13 @@
 package step.core.objectenricher;
 
 import step.core.AbstractContext;
-import step.core.collections.Filter;
 import step.core.collections.PojoFilter;
-import step.core.collections.PojoFilters;
 import step.core.ql.OQLFilterBuilder;
 
 import java.util.ArrayList;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.List;
 
 public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 
@@ -54,7 +53,7 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 	 * 
 	 * @param context the context to be recreated
 	 * @param object the object to base the context reconstruction on
-	 * @throws Exception
+	 * @throws Exception occurring while trying to rebuild the context
 	 */
 	public void rebuildContext(AbstractContext context, EnricheableObject object) throws Exception {
 		this.forEach(hook->{
@@ -67,13 +66,35 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 	}
 	
 	/**
-	 * @param context
-	 * @param object
-	 * @return true if the provided object belongs to the provided context or
-	 *         doesn't belong to any context
+	 * Performs detailed write access control checks across all registered hooks.
+	 *
+	 * @param context the context to check access against
+	 * @param object the object to check access for
+	 * @return ObjectAccessException with all violations if any hook denies write access, null if access is allowed
 	 */
-	public boolean isObjectAcceptableInContext(AbstractContext context, EnricheableObject object) {
-		return this.stream().allMatch(hook -> hook.isObjectAcceptableInContext(context, object));
+	public Optional<ObjectAccessException> isObjectEditableInContext(AbstractContext context, EnricheableObject object) {
+		return isObjectAccessibleInContext(context, object, ObjectHook::isObjectEditableInContext);
+	}
+
+	/**
+	 * Performs detailed read access control checks across all registered hooks.
+	 *
+	 * @param context the context to check access against
+	 * @param object the object to check access for
+	 * @return ObjectAccessException with all violations if any hook denies access, null if access is allowed
+	 */
+	public Optional<ObjectAccessException> isObjectReadableInContext(AbstractContext context, EnricheableObject object) {
+		return isObjectAccessibleInContext(context, object, ObjectHook::isObjectReadableInContext);
+	}
+
+	private Optional<ObjectAccessException> isObjectAccessibleInContext(AbstractContext context, EnricheableObject object,
+																		TriFunction<ObjectHook, AbstractContext, EnricheableObject, Optional<ObjectAccessViolation>> accessChecker) {
+		List<ObjectAccessViolation> violations = new ArrayList<>();
+		for (ObjectHook hook : this) {
+			Optional<ObjectAccessViolation> violation = accessChecker.apply(hook, context, object);
+			violation.ifPresent(violations::add);
+		}
+		return violations.isEmpty() ? Optional.empty() : Optional.of(new ObjectAccessException(violations));
 	}
 
 	public ObjectPredicate getObjectPredicate(AbstractContext context) {
@@ -82,5 +103,4 @@ public class ObjectHookRegistry extends ArrayList<ObjectHook> {
 		PojoFilter<Object> pojoFilter = OQLFilterBuilder.getPojoFilter(oqlFilter);
 		return pojoFilter::test;
 	}
-
 }
