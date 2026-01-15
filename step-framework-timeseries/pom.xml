@@ -14,10 +14,6 @@
 	</parent>
 	
 	<dependencies>
-		 <dependency>
-			<groupId>jakarta.validation</groupId>
-			<artifactId>jakarta.validation-api</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>ch.exense.step</groupId>
 			<artifactId>step-framework-model</artifactId>
@@ -29,14 +25,22 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>ch.exense.step</groupId>
 			<artifactId>step-framework-collections-mongodb</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.validation</groupId>
+			<artifactId>jakarta.validation-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.findbugs</groupId>
+			<artifactId>jsr305</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>pl.pragmatists</groupId>
