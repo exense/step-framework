@@ -12,6 +12,7 @@ import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,24 +31,17 @@ public class TimeSeriesCollection {
     public TimeSeriesCollection(Collection<Bucket> mainCollection, long resolution) {
         this(mainCollection, new TimeSeriesCollectionSettings()
                 .setResolution(resolution)
+                .setIngestionFlushSeriesQueueSize(20000)
         );
     }
-
-    public TimeSeriesCollection(Collection<Bucket> mainCollection, long resolution, long flushPeriod) {
-        this(mainCollection, new TimeSeriesCollectionSettings()
-                .setResolution(resolution)
-                .setIngestionFlushingPeriodMs(flushPeriod)
-        );
-    }
-
 
     public TimeSeriesCollection(Collection<Bucket> mainCollection, TimeSeriesCollectionSettings settings) {
+        this.mainCollection = Objects.requireNonNull(mainCollection);
         if (settings.getResolution() <= 0) {
             throw new IllegalArgumentException("The resolution parameter must be greater than zero");
         }
-        validateTtl(settings.getTtl());
-        this.mainCollection = mainCollection;
         this.resolution = settings.getResolution();
+        validateTtl(settings.getTtl());
         this.ttl = settings.getTtl();
         TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
                 .setResolution(settings.getResolution())

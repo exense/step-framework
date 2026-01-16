@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
 
     @Test
@@ -199,6 +202,19 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
             Assert.assertEquals(sum, foundBucket.getSum());
             Assert.assertEquals(max, foundBucket.getMax());
             Assert.assertEquals(min, foundBucket.getMin());
+        }
+    }
+
+    @Test
+    public void ingestionIncorrectSettings() throws InterruptedException {
+        TimeSeriesCollectionSettings timeSeriesCollectionSettings = new TimeSeriesCollectionSettings();
+        timeSeriesCollectionSettings.setIngestionFlushAsyncQueueSize(500);
+        timeSeriesCollectionSettings.setIngestionFlushingPeriodMs(100);
+        timeSeriesCollectionSettings.setResolution(30_000);
+        try (TimeSeries timeSeries = getTimeSeriesWithSettings(timeSeriesCollectionSettings)) {
+            fail("Flush queue size should be mandatory");
+        } catch (IllegalArgumentException e) {
+            assertEquals("The ingestion series queue size must be greater than 1 when flushing periodically (flushing period greater than 0)", e.getMessage());
         }
     }
 
