@@ -64,6 +64,9 @@ public class TimeSeriesAggregationPipeline {
      * 3. Go backward from the resolution obtained above and choose the first collection which handle all the attributes
      */
     public TimeSeriesAggregationResponse collect(TimeSeriesAggregationQuery query) {
+        if (logger.isDebugEnabled()){
+            logger.debug("Aggregation query: {}", query);
+        }
         validateQuery(query);
         Set<String> usedAttributes = collectAllUsedAttributes(query).stream().map(a -> a.replace("attributes.", "")).collect(Collectors.toSet());
         long queryFrom = query.getFrom() != null ? query.getFrom() : 0;
@@ -82,6 +85,10 @@ public class TimeSeriesAggregationPipeline {
 
         long sourceResolution = idealAvailableCollection.getResolution();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Ideal resolution calculated: {}, source resolution covering the data: {}", idealResolution, sourceResolution);
+        }
 
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
 
@@ -113,6 +120,9 @@ public class TimeSeriesAggregationPipeline {
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
                 e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("Processed query results in " + (System.currentTimeMillis() - t2) + "ms. Results size: " + result.size());
+        }
         return new TimeSeriesAggregationResponseBuilder()
                 .setSeries(result)
                 .setStart(finalParams.getFrom())
