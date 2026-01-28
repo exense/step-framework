@@ -26,6 +26,7 @@ import step.core.collections.filters.*;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -76,6 +77,8 @@ public class PojoFilters {
 				return new GtePojoFilter<>((Gte) filter);
 			} else if (filter instanceof Exists) {
 				return new ExistsPojoFilter<>((Exists) filter);
+			} else if (filter instanceof In) {
+				return new InPojoFilter<>((In) filter);
 			} else {
 				throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 			}
@@ -354,6 +357,47 @@ public class PojoFilters {
 				//consider bean does not exist
 			}
 			return beanProperty != null;
+		}
+	}
+
+	public static class InPojoFilter<T> implements PojoFilter<T> {
+
+		private final String field;
+		private final List<Object> values;
+
+		public InPojoFilter(In inFilter) {
+			super();
+			this.field = inFilter.getField();
+			if (field.equals(AbstractIdentifiableObject.ID)) {
+				//Convert String values to ObjectId as for the equal filter
+				values = inFilter.getValues().stream().map(v -> (v instanceof String) ? new ObjectId((String) v) : v).collect(Collectors.toList());
+			} else {
+				values = inFilter.getValues();
+			}
+		}
+
+		@Override
+		public boolean test(T t) {
+			try {
+				Object beanProperty = getBeanProperty(t, field);
+				if(beanProperty != null) {
+					return values.stream().anyMatch(v -> v != null && compareNonNullValues(beanProperty, v));
+				} else {
+					return values.stream().anyMatch(Objects::isNull);
+				}
+			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+				return false;
+			}
+		}
+
+		public boolean compareNonNullValues(Object beanValue, Object inValue) {
+			if (beanValue instanceof ObjectId && inValue instanceof String) {
+				return ((ObjectId) beanValue).toHexString().equals(inValue);
+			} else if (beanValue instanceof String && inValue instanceof ObjectId) {
+				return ((ObjectId) inValue).toHexString().equals(beanValue);
+			} else {
+				return beanValue.equals(inValue);
+			}
 		}
 	}
 	

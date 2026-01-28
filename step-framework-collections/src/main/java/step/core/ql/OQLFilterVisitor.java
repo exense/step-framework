@@ -106,7 +106,7 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
     }
 
     protected Filter processInExpr(InExprContext ctx, String text0) {
-        List<String> ins = ctx.STRING().stream().map(tn -> unescapeStringIfNecessary(tn.getText())).collect(Collectors.toList());
+        List<Object> ins = ctx.STRING().stream().map(tn -> unescapeStringIfNecessary(tn.getText())).collect(Collectors.toList());
         return Filters.in(text0, ins);
     }
 
