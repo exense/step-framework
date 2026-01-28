@@ -40,7 +40,8 @@ import java.util.List;
         @JsonSubTypes.Type(Or.class),
         @JsonSubTypes.Type(Regex.class),
         @JsonSubTypes.Type(True.class),
-        @JsonSubTypes.Type(Exists.class)
+        @JsonSubTypes.Type(Exists.class),
+        @JsonSubTypes.Type(In.class)
 })
 public interface Filter {
 

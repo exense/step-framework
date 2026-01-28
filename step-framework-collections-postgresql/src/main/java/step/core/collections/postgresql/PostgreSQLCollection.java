@@ -106,8 +106,8 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		String query = "SELECT count(d.*) FROM (SELECT id FROM " + collectionNameStr +
 				" WHERE " + filterToWhereClause(filter) + " LIMIT " + limit + ") d";
 		try (Connection connection = ds.getConnection();
-			 Statement statement = connection.createStatement()) {
-			ResultSet resultSet = statement.executeQuery(query);
+			 Statement statement = connection.createStatement();
+			 ResultSet resultSet = statement.executeQuery(query)) {
 			if (resultSet.next()) {
 				return resultSet.getInt(1);
 			} else {
