@@ -5,7 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import step.core.collections.Filter;
 import step.core.collections.filters.Equals;
-import step.core.collections.filters.Or;
+import step.core.collections.filters.In;
 import step.core.collections.filters.True;
 
 import java.util.Arrays;
@@ -66,11 +66,12 @@ public class OQLAttributesAwareFilterVisitorTest {
         OQLParser.ParseContext context = parse("field1 in ( \"prop1\", \"prop2\" )");
         OQLAttributesAwareFilterVisitor visitor = new OQLAttributesAwareFilterVisitor((key) -> "prefix." + key);
         Filter filter = visitor.visit(context.getChild(0));
-        Assert.assertTrue(filter instanceof Or);
-        Or orFilter = (Or) filter;
-        Assert.assertEquals(2, orFilter.getChildren().size());
-        Equals prop1Equals = (Equals) orFilter.getChildren().get(0);
-        Assert.assertEquals("prefix.field1", prop1Equals.getField());
+        Assert.assertTrue(filter instanceof In);
+        In inFilter = (In) filter;
+        Assert.assertEquals(2, inFilter.getValues().size());
+        Assert.assertEquals("prefix.field1", inFilter.getField());
+        Assert.assertEquals("prop1", inFilter.getValues().get(0));
+        Assert.assertEquals("prop2", inFilter.getValues().get(1));
     }
 
     private static OQLParser.ParseContext parse(String expression) {

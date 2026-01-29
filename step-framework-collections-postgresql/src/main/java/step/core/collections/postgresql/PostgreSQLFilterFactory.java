@@ -91,6 +91,13 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 		} else if (filter instanceof Exists) {
 			Exists existsFilter = (Exists) filter;
 			return formatField(existsFilter.getField(),false) + " IS NOT NULL ";
+		} else if (filter instanceof In) {
+			In inFilter = (In) filter;
+			//In filter values implementation only support comparison as Strings, so the field and values are formated to string
+			String values = inFilter.getValues().stream()
+					.map(this::formatInValue) // Escape single quotes for SQL
+					.collect(Collectors.joining(",", "(", ")"));
+			return formatField(inFilter.getField(), true) + " IN " + values + " ";
 		} else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 		}
@@ -104,6 +111,18 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 		} else {
 			return "NOT (" + childerPojoFilters.get(0) + ")";
 		}
+	}
+
+	private String formatInValue(Object expectedValue) {
+		String result;
+		if (expectedValue instanceof String) {
+			result =  escapeValue((String) expectedValue);
+		} else if (expectedValue instanceof ObjectId) {
+			result = ((ObjectId) expectedValue).toHexString();
+		} else {
+			result = expectedValue.toString();
+		}
+		return "'" + result + "'";
 	}
 
 	private String escapeValue(String expectedValue) {

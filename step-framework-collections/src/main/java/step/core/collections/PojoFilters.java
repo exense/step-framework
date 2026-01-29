@@ -26,6 +26,7 @@ import step.core.collections.filters.*;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -76,6 +77,8 @@ public class PojoFilters {
 				return new GtePojoFilter<>((Gte) filter);
 			} else if (filter instanceof Exists) {
 				return new ExistsPojoFilter<>((Exists) filter);
+			} else if (filter instanceof In) {
+				return new InPojoFilter<>((In) filter);
 			} else {
 				throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 			}
@@ -173,25 +176,29 @@ public class PojoFilters {
 			try {
 				String field = equalsFilter.getField();
 				Object beanProperty = getBeanProperty(t, field);
-				if(expectedValue != null) {
-					if(expectedValue instanceof Number) {
-						if(beanProperty != null) {
-							return new BigDecimal(expectedValue.toString()).compareTo(new BigDecimal(beanProperty.toString()))==0;
-						} else {
-							return false;
-						}
-					} if (expectedValue instanceof String && beanProperty!= null && beanProperty.getClass().isEnum())  {
-						return expectedValue.equals(beanProperty.toString());
-					} else {
-						return expectedValue.equals(beanProperty);
-					}
-				} else {
-					return beanProperty == null; 
-				}
+				return testProperty(beanProperty);
 			} catch (NoSuchMethodException e) {
 				return (expectedValue == null);
 			} catch (IllegalAccessException | InvocationTargetException e) {
 				return false;
+			}
+		}
+
+		public boolean testProperty(Object beanProperty) {
+			if(expectedValue != null) {
+				if(expectedValue instanceof Number) {
+					if(beanProperty instanceof Number) {
+						return new BigDecimal(expectedValue.toString()).compareTo(new BigDecimal(beanProperty.toString()))==0;
+					} else {
+						return false;
+					}
+				} if (expectedValue instanceof String && beanProperty!= null && beanProperty.getClass().isEnum())  {
+					return expectedValue.equals(beanProperty.toString());
+				} else {
+					return expectedValue.equals(beanProperty);
+				}
+			} else {
+				return beanProperty == null;
 			}
 		}
 	}
@@ -354,6 +361,38 @@ public class PojoFilters {
 				//consider bean does not exist
 			}
 			return beanProperty != null;
+		}
+	}
+
+	public static class InPojoFilter<T> implements PojoFilter<T> {
+
+		private final String field;
+		private final List<EqualsPojoFilter<T>> equalFilters;
+
+		public InPojoFilter(In inFilter) {
+			super();
+			field = inFilter.getField();
+			equalFilters = inFilter.getValues().stream().map(v -> new EqualsPojoFilter<T>(new Equals(field, v))).collect(Collectors.toList());
+		}
+
+		@Override
+		public boolean test(T t) {
+			try {
+				Object beanProperty = getBeanProperty(t, field);
+				return equalFilters.stream().anyMatch(eq -> eq.testProperty(beanProperty));
+			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+				return false;
+			}
+		}
+
+		public boolean compareNonNullValues(Object beanValue, Object inValue) {
+			if (beanValue instanceof ObjectId && inValue instanceof String) {
+				return ((ObjectId) beanValue).toHexString().equals(inValue);
+			} else if (beanValue instanceof String && inValue instanceof ObjectId) {
+				return ((ObjectId) inValue).toHexString().equals(beanValue);
+			} else {
+				return beanValue.equals(inValue);
+			}
 		}
 	}
 	
