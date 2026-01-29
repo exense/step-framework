@@ -176,25 +176,29 @@ public class PojoFilters {
 			try {
 				String field = equalsFilter.getField();
 				Object beanProperty = getBeanProperty(t, field);
-				if(expectedValue != null) {
-					if(expectedValue instanceof Number) {
-						if(beanProperty != null) {
-							return new BigDecimal(expectedValue.toString()).compareTo(new BigDecimal(beanProperty.toString()))==0;
-						} else {
-							return false;
-						}
-					} if (expectedValue instanceof String && beanProperty!= null && beanProperty.getClass().isEnum())  {
-						return expectedValue.equals(beanProperty.toString());
-					} else {
-						return expectedValue.equals(beanProperty);
-					}
-				} else {
-					return beanProperty == null; 
-				}
+				return testProperty(beanProperty);
 			} catch (NoSuchMethodException e) {
 				return (expectedValue == null);
 			} catch (IllegalAccessException | InvocationTargetException e) {
 				return false;
+			}
+		}
+
+		public boolean testProperty(Object beanProperty) {
+			if(expectedValue != null) {
+				if(expectedValue instanceof Number) {
+					if(beanProperty instanceof Number) {
+						return new BigDecimal(expectedValue.toString()).compareTo(new BigDecimal(beanProperty.toString()))==0;
+					} else {
+						return false;
+					}
+				} if (expectedValue instanceof String && beanProperty!= null && beanProperty.getClass().isEnum())  {
+					return expectedValue.equals(beanProperty.toString());
+				} else {
+					return expectedValue.equals(beanProperty);
+				}
+			} else {
+				return beanProperty == null;
 			}
 		}
 	}
@@ -363,28 +367,19 @@ public class PojoFilters {
 	public static class InPojoFilter<T> implements PojoFilter<T> {
 
 		private final String field;
-		private final List<Object> values;
+		private final List<EqualsPojoFilter<T>> equalFilters;
 
 		public InPojoFilter(In inFilter) {
 			super();
-			this.field = inFilter.getField();
-			if (field.equals(AbstractIdentifiableObject.ID)) {
-				//Convert String values to ObjectId as for the equal filter
-				values = inFilter.getValues().stream().map(v -> (v instanceof String) ? new ObjectId((String) v) : v).collect(Collectors.toList());
-			} else {
-				values = inFilter.getValues();
-			}
+			field = inFilter.getField();
+			equalFilters = inFilter.getValues().stream().map(v -> new EqualsPojoFilter<T>(new Equals(field, v))).collect(Collectors.toList());
 		}
 
 		@Override
 		public boolean test(T t) {
 			try {
 				Object beanProperty = getBeanProperty(t, field);
-				if(beanProperty != null) {
-					return values.stream().anyMatch(v -> v != null && compareNonNullValues(beanProperty, v));
-				} else {
-					return values.stream().anyMatch(Objects::isNull);
-				}
+				return equalFilters.stream().anyMatch(eq -> eq.testProperty(beanProperty));
 			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 				return false;
 			}
