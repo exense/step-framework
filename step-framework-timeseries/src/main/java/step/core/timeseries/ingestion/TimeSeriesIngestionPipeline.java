@@ -42,8 +42,14 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     private final int seriesQueueSizeflush;
 
     public TimeSeriesIngestionPipeline(TimeSeriesCollection collection, TimeSeriesIngestionPipelineSettings settings) {
+        validateSettings(settings);
         this.collection = collection;
         this.sourceResolution = settings.getResolution();
+        this.seriesQueueSizeflush = settings.getFlushSeriesQueueSize();
+        this.ignoredAttributes = settings.getIgnoredAttributes();
+        this.nextPipeline = settings.getNextPipeline();
+
+        //Enable periodical flush when configured
         long flushingPeriodMs = settings.getFlushingPeriodMs();
         if (flushingPeriodMs > 0) {
             scheduler = Executors.newScheduledThreadPool(1, threadFactory);
@@ -51,9 +57,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         } else {
             scheduler = null;
         }
-        this.ignoredAttributes = settings.getIgnoredAttributes();
-        this.nextPipeline = settings.getNextPipeline();
-        this.seriesQueueSizeflush = settings.getFlushSeriesQueueSize();
+
         //collection is null when overridden in TimeSeriesExecutionPlugin, in such case async processor is not required
         this.asyncProcessor =  (collection == null)  ? null : new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), entity -> {
             try {
@@ -62,6 +66,15 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
                 logger.error("Unable to save bucket with attribute {}", entity.getAttributes());
             }
         });
+    }
+
+    public void validateSettings(TimeSeriesIngestionPipelineSettings settings) {
+        if (settings.getResolution() <= 0) {
+            throw new IllegalArgumentException("The resolution parameter must be greater than zero");
+        }
+        if (settings.getFlushingPeriodMs() > 0 && settings.getFlushSeriesQueueSize() <= 1) {
+            throw new IllegalArgumentException("The ingestion series queue size must be greater than 1 when flushing periodically (flushing period greater than 0)");
+        }
     }
 
     public long getResolution() {
