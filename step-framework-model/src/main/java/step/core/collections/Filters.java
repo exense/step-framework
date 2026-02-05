@@ -95,14 +95,6 @@ public class Filters {
 		return new Gte(field, value);
 	}
 	
-	public static Filter in(String field, List<String> values) {
-		List<Filter> filters = new ArrayList<>();
-		for (String v : values) {
-			filters.add(Filters.equals(field, v));
-		}
-		return (filters.isEmpty()) ? Filters.falseFilter() : Filters.or(filters);
-	}
-	
 	public static Regex regex(String field, String expression, boolean caseSensitive) {
 		return new Regex(field, expression, caseSensitive);
 	}
@@ -113,6 +105,10 @@ public class Filters {
 
 	public static Exists exists(String field) {
 		return new Exists(field);
+	}
+
+	public static In in(String field, List<Object> values) {
+		return new In(field, values);
 	}
 
 	/**

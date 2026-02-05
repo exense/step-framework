@@ -268,7 +268,7 @@ public abstract class AbstractCollectionTest {
 		Bean bean2 = new Bean();
 		bean2.setProperty1("My property 2");
 		bean2.setLongProperty(21l);
-		bean2.setBooleanProperty(false);
+		bean2.setBooleanProperty(true);
 		bean2.addAttribute("MyAtt1", "My value 2");
 		bean2.addAttribute("MyAtt2", "My other value");
 		collection.save(bean2);
@@ -291,16 +291,21 @@ public abstract class AbstractCollectionTest {
 		
 		// Equals boolean
 		result = collection.find(Filters.equals("booleanProperty", false), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
 		assertEquals(bean.getId(), result.get(0).getId());
 		
 		// Equals long
 		result = collection.find(Filters.equals("longProperty", 11), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
 		assertEquals(bean.getId(), result.get(0).getId());
 
+		result = collection.find(Filters.equals("longProperty", 11L), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(bean.getId(), result.get(0).getId());
+
 		//is null
 		result = collection.find(Filters.equals("missingField", (String) null), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
 		assertEquals(bean.getId(), result.get(0).getId());
 
+		//and
 		result = collection.find(Filters.and(List.of(Filters.gte("longProperty", 11),Filters.lt("longProperty",21))), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
 		assertEquals(bean.getId(), result.get(0).getId());
 		assertEquals(1, result.size());
@@ -308,6 +313,42 @@ public abstract class AbstractCollectionTest {
 		result = collection.find(Filters.and(List.of(Filters.gt("longProperty", 11),Filters.lte("longProperty",21))), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
 		assertEquals(bean2.getId(), result.get(0).getId());
 		assertEquals(1, result.size());
+
+		//or
+		result = collection.find(Filters.or(List.of(Filters.equals("property1", "My property 1"),Filters.equals("property1", "My property 2"))), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+
+		//in
+		result = collection.find(Filters.in("property1", List.of("My property 1")), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals(bean.getId(), result.get(0).getId());
+
+		result = collection.find(Filters.in("property1", List.of("My property 1", "My property 2")), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+		assertEquals(bean.getId(), result.get(0).getId());
+
+		//in boolean + mix in values
+		result = collection.find(Filters.in("booleanProperty", List.of("My property 1", true, 12)), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals(bean2.getId(), result.get(0).getId());
+
+		//in long + mix in values
+		result = collection.find(Filters.in("longProperty", List.of("My property 1", true, 21)), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals(bean2.getId(), result.get(0).getId());
+
+		result = collection.find(Filters.in("property1", List.of("My property 1")), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals(bean.getId(), result.get(0).getId());
+
+		//in IDs
+		result = collection.find(Filters.in("id", List.of(bean.getId(), bean2.getId())), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(2, result.size());
+		assertEquals(bean.getId(), result.get(0).getId());
+
+		result = collection.find(Filters.in("id", List.of(bean.getId().toHexString())), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
+		assertEquals(1, result.size());
+		assertEquals(bean.getId(), result.get(0).getId());
 
 		//Not equal
 		result = collection.find(Filters.not(Filters.equals("attributes.MyAtt2", "My value 1")), new SearchOrder("MyAtt1", 1), null, null, 0).collect(Collectors.toList());
@@ -328,6 +369,8 @@ public abstract class AbstractCollectionTest {
 		assertThrows(Throwable.class, () -> collection.find(Filters.and(new ArrayList<>()), null, null, null, 0).collect(Collectors.toList()));
 
 		assertThrows(Throwable.class, () -> collection.find(Filters.or(new ArrayList<>()), null, null, null, 0).collect(Collectors.toList()));
+
+		assertThrows(Throwable.class, () -> collection.find(Filters.in("test", new ArrayList<>()), null, null, null, 0).collect(Collectors.toList()));
 	}
 
 	@Test
