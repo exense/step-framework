@@ -263,16 +263,22 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
 		Document index = getIndex(collection, indexFieldNames);
 
 		if(index==null) {
+			logIndexCreation(this.getName(), fields.stream().map(f->f.fieldName).collect(Collectors.joining(",")));
 			Document newIndex = new Document();
 			fields.forEach(i -> newIndex.append(i.fieldName, i.order.numeric));
 			collection.createIndex(newIndex);
 		}
 	}
 
+	private static void logIndexCreation(String collectionName, String fields) {
+		logger.info("Creating index for collection {} and fields: {}", collectionName, fields);
+	}
+
 
 	public static void createOrUpdateIndex(com.mongodb.client.MongoCollection<?> collection, IndexField indexField) {
 		Document index = getIndex(collection, Set.of(indexField.fieldName));
 		if(index==null) {
+			logIndexCreation(collection.getNamespace().getCollectionName(), indexField.fieldName);
 			collection.createIndex(new Document(indexField.fieldName, indexField.order.numeric));
 		}
 	}
