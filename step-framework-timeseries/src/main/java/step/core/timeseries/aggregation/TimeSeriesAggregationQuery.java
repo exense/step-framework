@@ -94,4 +94,17 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     public TimeSeriesOptimizationType getOptimizationType() {
         return optimizationType;
     }
+
+    @Override
+    public String toString() {
+        return "TimeSeriesAggregationQuery{" +
+                "optimizationType=" + optimizationType +
+                ", groupDimensions=" + groupDimensions +
+                ", bucketsCount=" + bucketsCount +
+                ", bucketsResolution=" + bucketsResolution +
+                ", shrink=" + shrink +
+                ", collectAttributeKeys=" + collectAttributeKeys +
+                ", collectAttributesValuesLimit=" + collectAttributesValuesLimit +
+                '}';
+    }
 }

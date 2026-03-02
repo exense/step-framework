@@ -76,7 +76,7 @@ public class TimeSeriesBuilder {
 
 	public TimeSeries build() {
 		if (handledCollections.isEmpty()) {
-			throw new IllegalArgumentException("At least one time series collection must be registered");
+			throw new IllegalArgumentException("At least one time series collection must be registered.");
 		}
 		handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
 		validateResolutions();
