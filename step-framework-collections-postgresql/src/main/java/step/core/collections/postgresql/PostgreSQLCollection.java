@@ -106,8 +106,8 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		String query = "SELECT count(d.*) FROM (SELECT id FROM " + collectionNameStr +
 				" WHERE " + filterToWhereClause(filter) + " LIMIT " + limit + ") d";
 		try (Connection connection = ds.getConnection();
-			 Statement statement = connection.createStatement()) {
-			ResultSet resultSet = statement.executeQuery(query);
+			 Statement statement = connection.createStatement();
+			 ResultSet resultSet = statement.executeQuery(query)) {
 			if (resultSet.next()) {
 				return resultSet.getInt(1);
 			} else {
@@ -340,8 +340,8 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 		} else {
 			try (Connection connection = ds.getConnection();
 				 Statement statement = connection.createStatement()) {
+				logger.info("Creating index {} if it doesn't exist.", indexId);
 				statement.executeUpdate(query);
-				logger.info("Created index with id: " + indexId);
 			} catch (SQLException e) {
 				throw new RuntimeException("Unable to create index, query: " + query, e);
 			}

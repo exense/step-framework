@@ -83,7 +83,16 @@ public class MongoDBFilterFactory implements FilterFactory<Bson> {
 		} else if (filter instanceof Exists) {
 			Exists existsFilter = (Exists) filter;
 			return com.mongodb.client.model.Filters.exists(existsFilter.getField());
-		} else {
+		} else if (filter instanceof In) {
+			In inFilter = (In) filter;
+			String field = inFilter.getField();
+			List<Object> values = inFilter.getValues();
+			if(field.equals("id")) {
+				field = "_id";
+				values = values.stream().map(s -> (s instanceof String) ? new ObjectId((String) s) : s).collect(Collectors.toList());
+			}
+			return com.mongodb.client.model.Filters.in(field, values);
+		}else {
 			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
 		}
 	}
