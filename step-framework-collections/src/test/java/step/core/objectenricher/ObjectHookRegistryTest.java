@@ -24,7 +24,8 @@ public class ObjectHookRegistryTest {
         assertEquals("val1", t.getAttribute("att1"));
         objectHookRegistry.rebuildContext(null, null);
 
-        AbstractContext context = new AbstractContext() {};
+        AbstractContext context = new AbstractContext() {
+        };
         objectHookRegistry.rebuildContext(context, null);
         assertEquals("val1", context.get("att1"));
 
@@ -34,14 +35,14 @@ public class ObjectHookRegistryTest {
         Optional<ObjectAccessException> objectReadableInContext = objectHookRegistry.isObjectReadableInContext(null, null);
         assertTrue(objectReadableInContext.isEmpty());
 
-       assertTrue(objectHookRegistry.getObjectPredicate(null).test(t));
+        assertTrue(objectHookRegistry.getObjectPredicate(null).test(t));
     }
 
     @Test
     public void testIsObjectAccessibleInContextSingleViolation() {
         ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
         objectHookRegistry.add(new RestrictiveObjectHook("TenantHook", "WRONG_TENANT", "Object belongs to different tenant"));
-        
+
         TestEnricheableObject object = new TestEnricheableObject();
         Optional<ObjectAccessException> optionalViolations = objectHookRegistry.isObjectReadableInContext(null, object);
         assertViolations(optionalViolations);
@@ -67,7 +68,7 @@ public class ObjectHookRegistryTest {
         ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
         objectHookRegistry.add(new RestrictiveObjectHook("TenantHook", "WRONG_TENANT", "Object belongs to different tenant"));
         objectHookRegistry.add(new RestrictiveObjectHook("PermissionHook", "INSUFFICIENT_PERMISSIONS", "User lacks required permissions"));
-        
+
         TestEnricheableObject object = new TestEnricheableObject();
         Optional<ObjectAccessException> optionalViolations = objectHookRegistry.isObjectReadableInContext(null, object);
         assertMultipleViolations(optionalViolations);
@@ -94,7 +95,7 @@ public class ObjectHookRegistryTest {
     public void testIsObjectAccessibleInContextWithDetails() {
         ObjectHookRegistry objectHookRegistry = new ObjectHookRegistry();
         objectHookRegistry.add(new DetailedRestrictiveObjectHook());
-        
+
         TestEnricheableObject object = new TestEnricheableObject();
         Optional<ObjectAccessException> optionalViolations = objectHookRegistry.isObjectReadableInContext(null, object);
         assertViolationWithDetails(optionalViolations);
@@ -232,8 +233,8 @@ public class ObjectHookRegistryTest {
 
         private static Optional<ObjectAccessViolation> getObjectAccessViolation() {
             Map<String, Object> details = Map.of(
-                    "key1", "value1",
-                    "key2", "value2"
+                "key1", "value1",
+                "key2", "value2"
             );
             return Optional.of(new CustomObjectAccessViolation("DetailedHook", "CUSTOM_ERROR", "Custom error with details", details));
         }
@@ -250,6 +251,7 @@ public class ObjectHookRegistryTest {
 
         private static class CustomObjectAccessViolation extends ObjectAccessViolation {
             public final Map<String, Object> details;
+
             public CustomObjectAccessViolation(String detailedHook, String customError, String customErrorWithDetails, Map<String, Object> details) {
                 super(detailedHook, customError, customErrorWithDetails);
                 this.details = details;

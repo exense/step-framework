@@ -19,7 +19,7 @@ public class ControllerServerTest implements ServerPlugin<AbstractContext> {
 
     @Override
     public void serverStart(AbstractContext context) throws Exception {
-        context.put(Version.class, new Version(0,0,0));
+        context.put(Version.class, new Version(0, 0, 0));
         context.put(AuthorizationManager.class, new TestAuthorizationManager());
         context.require(ServiceRegistrationCallback.class).registerService(AuthorizationFilter.class);
         context.require(ServiceRegistrationCallback.class).registerService(TestService.class);

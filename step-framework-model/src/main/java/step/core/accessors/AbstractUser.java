@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public abstract class AbstractUser extends AbstractIdentifiableObject {
 
-	@JsonIgnore
-	abstract public String getSessionUsername();
+    @JsonIgnore
+    abstract public String getSessionUsername();
 
 }

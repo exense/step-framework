@@ -101,10 +101,10 @@ public class Table<T> {
      * Sets a transformation function to be applied to the items of the table.
      * If defined, transformation is mandatory and performed on each request.
      * Transformations are performed before potential enrichment.
-     * @see #withResultItemEnricher(BiFunction)
      *
      * @param resultItemTransformer a transformer function used to transform each element returned by this table.
      * @return this instance
+     * @see #withResultItemEnricher(BiFunction)
      */
     public Table<T> withResultItemTransformer(BiFunction<T, Session<?>, T> resultItemTransformer) {
         this.resultItemTransformer = resultItemTransformer;
@@ -115,10 +115,10 @@ public class Table<T> {
      * Sets an enricher function to be applied to the items of the table.
      * Note that enrichment can be turned on or off by users.
      * Enrichment, if applicable, is performed after potential transformation.
-     * @see #withResultItemTransformer(BiFunction)
      *
      * @param resultItemEnricher an enricher function used to enrich each element returned by this table.
      * @return this instance
+     * @see #withResultItemTransformer(BiFunction)
      */
     public Table<T> withResultItemEnricher(Function<T, T> resultItemEnricher) {
         this.resultItemEnricher = (data, session, tableParameters) -> resultItemEnricher.apply(data);
@@ -129,13 +129,14 @@ public class Table<T> {
      * Sets an enricher function to be applied to the items of the table.
      * Note that enrichment can be turned on or off by users.
      * Enrichment, if applicable, is performed after potential transformation.
-     * @see #withResultItemTransformer(BiFunction)
      *
      * @param resultItemEnricher an enricher function used to enrich each element returned by this table.
      * @return this instance
+     * @see #withResultItemTransformer(BiFunction)
      */
     public Table<T> withResultItemEnricher(BiFunction<T, Session<?>, T> resultItemEnricher) {
-        this.resultItemEnricher = (data, session, tableParameters) -> resultItemEnricher.apply(data, session);;
+        this.resultItemEnricher = (data, session, tableParameters) -> resultItemEnricher.apply(data, session);
+        ;
         return this;
     }
 

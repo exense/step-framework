@@ -1,18 +1,18 @@
 /*******************************************************************************
  * Copyright (C) 2020, exense GmbH
- *  
+ *
  * This file is part of STEP
- *  
+ *
  * STEP is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * STEP is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
@@ -44,201 +44,201 @@ import io.github.classgraph.ScanResult;
 
 public class AnnotationScanner implements AutoCloseable {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnnotationScanner.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnnotationScanner.class);
 
-	private final ScanResult scanResult;
-	private final ClassLoader classLoader;
+    private final ScanResult scanResult;
+    private final ClassLoader classLoader;
 
-	/**
-	 * The flag determining if the class loader is created together with annotation scanner and can be closed together with scanner
-	 */
-	private final boolean internalClassLoader;
+    /**
+     * The flag determining if the class loader is created together with annotation scanner and can be closed together with scanner
+     */
+    private final boolean internalClassLoader;
 
-	private AnnotationScanner(ScanResult scanResult, ClassLoader classLoader, boolean internalClassLoader) {
-		this.scanResult = scanResult;
-		this.classLoader = classLoader;
-		this.internalClassLoader = internalClassLoader;
-	}
+    private AnnotationScanner(ScanResult scanResult, ClassLoader classLoader, boolean internalClassLoader) {
+        this.scanResult = scanResult;
+        this.classLoader = classLoader;
+        this.internalClassLoader = internalClassLoader;
+    }
 
-	/**
-	 * @return an instance of {@link AnnotationScanner} scanning all classes of the
-	 *         context class loader
-	 */
-	public static AnnotationScanner forAllClassesFromContextClassLoader() {
-		return forAllClassesFromClassLoader(null, Thread.currentThread().getContextClassLoader());
-	}
+    /**
+     * @return an instance of {@link AnnotationScanner} scanning all classes of the
+     * context class loader
+     */
+    public static AnnotationScanner forAllClassesFromContextClassLoader() {
+        return forAllClassesFromClassLoader(null, Thread.currentThread().getContextClassLoader());
+    }
 
-	/**
-	 * @param classloader the {@link ClassLoader} (including parents) to be scanned
-	 * @return an instance of {@link AnnotationScanner} scanning all classes of the
-	 *         provided class loader
-	 */
-	public static AnnotationScanner forAllClassesFromClassLoader(ClassLoader classloader) {
-		return forAllClassesFromClassLoader(null, classloader);
-	}
+    /**
+     * @param classloader the {@link ClassLoader} (including parents) to be scanned
+     * @return an instance of {@link AnnotationScanner} scanning all classes of the
+     * provided class loader
+     */
+    public static AnnotationScanner forAllClassesFromClassLoader(ClassLoader classloader) {
+        return forAllClassesFromClassLoader(null, classloader);
+    }
 
-	/**
-	 * @param packagePrefix the specific package to be scanned
-	 * @param classloader   the {@link ClassLoader} (including parents) to be
-	 *                      scanned
-	 * @return an instance of {@link AnnotationScanner} scanning all classes of the
-	 *         provided class loader
-	 */
-	public static AnnotationScanner forAllClassesFromClassLoader(String packagePrefix, ClassLoader classloader) {
-		ClassGraph classGraph = new ClassGraph();
-		if (packagePrefix != null) {
-			classGraph.whitelistPackages(packagePrefix);
-		}
-		
-		// In this method we would actually like to only scan the classes of the provided
-		// class loader and thus use the following method. This method is unfortunately 
-		// not working under Java 9+ (https://github.com/classgraph/classgraph/issues/382)
-		//classGraph.overrideClassLoaders(classloader);
-		classGraph.addClassLoader(classloader);
-		classGraph.enableClassInfo().enableAnnotationInfo().enableMethodInfo();
+    /**
+     * @param packagePrefix the specific package to be scanned
+     * @param classloader   the {@link ClassLoader} (including parents) to be
+     *                      scanned
+     * @return an instance of {@link AnnotationScanner} scanning all classes of the
+     * provided class loader
+     */
+    public static AnnotationScanner forAllClassesFromClassLoader(String packagePrefix, ClassLoader classloader) {
+        ClassGraph classGraph = new ClassGraph();
+        if (packagePrefix != null) {
+            classGraph.whitelistPackages(packagePrefix);
+        }
 
-		return scan(classGraph, classloader, false);
-	}
+        // In this method we would actually like to only scan the classes of the provided
+        // class loader and thus use the following method. This method is unfortunately
+        // not working under Java 9+ (https://github.com/classgraph/classgraph/issues/382)
+        //classGraph.overrideClassLoaders(classloader);
+        classGraph.addClassLoader(classloader);
+        classGraph.enableClassInfo().enableAnnotationInfo().enableMethodInfo();
 
-	/**
-	 * @param jar the specific jar file to be scanned
-	 * @return an instance of {@link AnnotationScanner} scanning all classes of the
-	 *         provided jar file
-	 */
-	public static AnnotationScanner forSpecificJar(File jar) {
-		try {
-			return forSpecificJar(jar,new URLClassLoader(new URL[] { jar.toURI().toURL() }), true);
-		} catch (MalformedURLException e) {
-			throw new RuntimeException(e);
-		}
-	}
+        return scan(classGraph, classloader, false);
+    }
 
-	public static AnnotationScanner forSpecificJar(File jar, ClassLoader classLoaderForResultClassesAndMethods) {
-		return forSpecificJar(jar, classLoaderForResultClassesAndMethods, false);
-	}
+    /**
+     * @param jar the specific jar file to be scanned
+     * @return an instance of {@link AnnotationScanner} scanning all classes of the
+     * provided jar file
+     */
+    public static AnnotationScanner forSpecificJar(File jar) {
+        try {
+            return forSpecificJar(jar, new URLClassLoader(new URL[]{jar.toURI().toURL()}), true);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	private static AnnotationScanner forSpecificJar(File jar, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
-		URLClassLoader urlClassLoader;
-		try {
-			urlClassLoader = new URLClassLoader(new URL[]{jar.toURI().toURL()});
-		} catch (MalformedURLException e) {
-			throw new RuntimeException(e);
-		}
-		return forSpecificJarFromURLClassLoader(urlClassLoader, classLoaderForResultClassesAndMethods, internalClassLoader);
-	}
+    public static AnnotationScanner forSpecificJar(File jar, ClassLoader classLoaderForResultClassesAndMethods) {
+        return forSpecificJar(jar, classLoaderForResultClassesAndMethods, false);
+    }
 
-	/**
-	 * Scans the jar files of a specific {@link URLClassLoader}
-	 * 
-	 * @param classloader the specific {@link ClassLoader} to scan the {@link URL}s
-	 *                    of
-	 * @return an instance of {@link AnnotationScanner} scanning all classes of the
-	 *         provided {@link URLClassLoader} (parent excluded)
-	 */
-	public static AnnotationScanner forSpecificJarFromURLClassLoader(URLClassLoader classloader) {
-		return forSpecificJarFromURLClassLoader(classloader,classloader);
-	}
+    private static AnnotationScanner forSpecificJar(File jar, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
+        URLClassLoader urlClassLoader;
+        try {
+            urlClassLoader = new URLClassLoader(new URL[]{jar.toURI().toURL()});
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+        return forSpecificJarFromURLClassLoader(urlClassLoader, classLoaderForResultClassesAndMethods, internalClassLoader);
+    }
 
-	/**
-	 * Scans the jar files of a specific {@link URLClassLoader}
-	 *
-	 * @param classloader                           the specific {@link ClassLoader} to scan the {@link URL}s
-	 * @param classLoaderForResultClassesAndMethods the {@link ClassLoader} containing the context
-	 * @return an instance of {@link AnnotationScanner} scanning all classes of the
-	 * provided {@link URLClassLoader} (parent excluded)
-	 */
-	public static AnnotationScanner forSpecificJarFromURLClassLoader(URLClassLoader classloader, ClassLoader classLoaderForResultClassesAndMethods) {
-		return forSpecificJarFromURLClassLoader(classloader, classLoaderForResultClassesAndMethods, false);
-	}
+    /**
+     * Scans the jar files of a specific {@link URLClassLoader}
+     *
+     * @param classloader the specific {@link ClassLoader} to scan the {@link URL}s
+     *                    of
+     * @return an instance of {@link AnnotationScanner} scanning all classes of the
+     * provided {@link URLClassLoader} (parent excluded)
+     */
+    public static AnnotationScanner forSpecificJarFromURLClassLoader(URLClassLoader classloader) {
+        return forSpecificJarFromURLClassLoader(classloader, classloader);
+    }
 
-	private static AnnotationScanner forSpecificJarFromURLClassLoader(URLClassLoader classloader, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
-		List<String> jars = Arrays.asList(classloader.getURLs()).stream().map(url -> {
-			try {
-				// Use url decoder to ensure that escaped space %20 are unescaped properly
-				return URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8.name());
-			} catch (UnsupportedEncodingException e) {
-				throw new RuntimeException(e);
-			}
-		}).collect(Collectors.toList());
+    /**
+     * Scans the jar files of a specific {@link URLClassLoader}
+     *
+     * @param classloader                           the specific {@link ClassLoader} to scan the {@link URL}s
+     * @param classLoaderForResultClassesAndMethods the {@link ClassLoader} containing the context
+     * @return an instance of {@link AnnotationScanner} scanning all classes of the
+     * provided {@link URLClassLoader} (parent excluded)
+     */
+    public static AnnotationScanner forSpecificJarFromURLClassLoader(URLClassLoader classloader, ClassLoader classLoaderForResultClassesAndMethods) {
+        return forSpecificJarFromURLClassLoader(classloader, classLoaderForResultClassesAndMethods, false);
+    }
 
-		ClassGraph classGraph = new ClassGraph().overrideClasspath(jars).enableClassInfo().enableAnnotationInfo()
-				.enableMethodInfo();
+    private static AnnotationScanner forSpecificJarFromURLClassLoader(URLClassLoader classloader, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
+        List<String> jars = Arrays.asList(classloader.getURLs()).stream().map(url -> {
+            try {
+                // Use url decoder to ensure that escaped space %20 are unescaped properly
+                return URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8.name());
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
+        }).collect(Collectors.toList());
 
-		return scan(classGraph, classLoaderForResultClassesAndMethods, internalClassLoader);
-	}
+        ClassGraph classGraph = new ClassGraph().overrideClasspath(jars).enableClassInfo().enableAnnotationInfo()
+            .enableMethodInfo();
 
-	private static AnnotationScanner scan(ClassGraph classGraph, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
-		long t1 = System.currentTimeMillis();
-		logger.info("Scanning classpath...");
-		ScanResult scanResult = classGraph.scan();
-		logger.info("Scanned classpath in " + (System.currentTimeMillis() - t1) + "ms");
-		return new AnnotationScanner(scanResult, classLoaderForResultClassesAndMethods, internalClassLoader);
-	}
+        return scan(classGraph, classLoaderForResultClassesAndMethods, internalClassLoader);
+    }
 
-	/**
-	 * Get all classes annotated by the provided {@link Annotation}
-	 * 
-	 * @param annotationClass
-	 * @return the {@link Set} of classes annotated by the provided
-	 *         {@link Annotation}
-	 */
-	public Set<Class<?>> getClassesWithAnnotation(Class<? extends Annotation> annotationClass) {
-		ClassInfoList classInfos = scanResult.getClassesWithAnnotation(annotationClass.getName());
-		return loadClassesFromClassInfoList(classLoader, classInfos);
-	}
+    private static AnnotationScanner scan(ClassGraph classGraph, ClassLoader classLoaderForResultClassesAndMethods, boolean internalClassLoader) {
+        long t1 = System.currentTimeMillis();
+        logger.info("Scanning classpath...");
+        ScanResult scanResult = classGraph.scan();
+        logger.info("Scanned classpath in " + (System.currentTimeMillis() - t1) + "ms");
+        return new AnnotationScanner(scanResult, classLoaderForResultClassesAndMethods, internalClassLoader);
+    }
 
-	/**
-	 * Get all methods annotated by the provided {@link Annotation}
-	 * 
-	 * @param annotationClass
-	 * @return the {@link Set} of methods annotated by the provided
-	 *         {@link Annotation}
-	 */
-	public Set<Method> getMethodsWithAnnotation(Class<? extends Annotation> annotationClass) {
-		Set<Method> result = new HashSet<>();
-		ClassInfoList classInfos = scanResult.getClassesWithMethodAnnotation(annotationClass.getName());
-		Set<Class<?>> classesFromClassInfoList = loadClassesFromClassInfoList(classLoader, classInfos);
-		classesFromClassInfoList.forEach(c -> {
-			Method[] methods = c.getMethods();
-			for (Method method : methods) {
-				if (isAnnotationPresent(annotationClass, method)) {
-					result.add(method);
-				}
-			}
-		});
-		return result;
-	}
+    /**
+     * Get all classes annotated by the provided {@link Annotation}
+     *
+     * @param annotationClass
+     * @return the {@link Set} of classes annotated by the provided
+     * {@link Annotation}
+     */
+    public Set<Class<?>> getClassesWithAnnotation(Class<? extends Annotation> annotationClass) {
+        ClassInfoList classInfos = scanResult.getClassesWithAnnotation(annotationClass.getName());
+        return loadClassesFromClassInfoList(classLoader, classInfos);
+    }
 
-	/**
-	 * Alternative implementation of {@link Class#isAnnotationPresent(Class)} which
-	 * doesn't rely on class equality but class names. The class loaders of the
-	 * annotationClass and the method provided as argument might be different
-	 * 
-	 * @param annotationClass
-	 * @param method
-	 * @return
-	 */
-	private static boolean isAnnotationPresent(Class<? extends Annotation> annotationClass, Method method) {
-		return Arrays.asList(method.getAnnotations()).stream()
-				.filter(an -> an.annotationType().getName().equals(annotationClass.getName())).findAny().isPresent();
-	}
+    /**
+     * Get all methods annotated by the provided {@link Annotation}
+     *
+     * @param annotationClass
+     * @return the {@link Set} of methods annotated by the provided
+     * {@link Annotation}
+     */
+    public Set<Method> getMethodsWithAnnotation(Class<? extends Annotation> annotationClass) {
+        Set<Method> result = new HashSet<>();
+        ClassInfoList classInfos = scanResult.getClassesWithMethodAnnotation(annotationClass.getName());
+        Set<Class<?>> classesFromClassInfoList = loadClassesFromClassInfoList(classLoader, classInfos);
+        classesFromClassInfoList.forEach(c -> {
+            Method[] methods = c.getMethods();
+            for (Method method : methods) {
+                if (isAnnotationPresent(annotationClass, method)) {
+                    result.add(method);
+                }
+            }
+        });
+        return result;
+    }
 
-	private static Set<Class<?>> loadClassesFromClassInfoList(ClassLoader classloader, ClassInfoList classInfos) {
-		return classInfos.getNames().stream().map(Classes.loadWith(classloader)).collect(Collectors.toSet());
-	}
+    /**
+     * Alternative implementation of {@link Class#isAnnotationPresent(Class)} which
+     * doesn't rely on class equality but class names. The class loaders of the
+     * annotationClass and the method provided as argument might be different
+     *
+     * @param annotationClass
+     * @param method
+     * @return
+     */
+    private static boolean isAnnotationPresent(Class<? extends Annotation> annotationClass, Method method) {
+        return Arrays.asList(method.getAnnotations()).stream()
+            .filter(an -> an.annotationType().getName().equals(annotationClass.getName())).findAny().isPresent();
+    }
 
-	@Override
-	public void close() {
-		scanResult.close();
+    private static Set<Class<?>> loadClassesFromClassInfoList(ClassLoader classloader, ClassInfoList classInfos) {
+        return classInfos.getNames().stream().map(Classes.loadWith(classloader)).collect(Collectors.toSet());
+    }
 
-		// some class loaders (like URLClassLoader) have to be closed to release opened resources
-		// we can do that, if this classloader is created together with annotation scanner (AnnotationScanner#forSpecificJar)
-		if (internalClassLoader && classLoader instanceof Closeable) {
-			try {
-				((Closeable) classLoader).close();
-			} catch (IOException e) {
-				logger.error("The classloader hasn't been closed properly", e);
-			}
-		}
-	}
+    @Override
+    public void close() {
+        scanResult.close();
+
+        // some class loaders (like URLClassLoader) have to be closed to release opened resources
+        // we can do that, if this classloader is created together with annotation scanner (AnnotationScanner#forSpecificJar)
+        if (internalClassLoader && classLoader instanceof Closeable) {
+            try {
+                ((Closeable) classLoader).close();
+            } catch (IOException e) {
+                logger.error("The classloader hasn't been closed properly", e);
+            }
+        }
+    }
 }

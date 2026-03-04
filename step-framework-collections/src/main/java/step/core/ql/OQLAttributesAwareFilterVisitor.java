@@ -27,6 +27,7 @@ public class OQLAttributesAwareFilterVisitor extends OQLFilterVisitor {
 
     /**
      * Transform is the first operation, then ignore attributes
+     *
      * @param attributesTransformFunction
      * @param ignoreAttributes
      */

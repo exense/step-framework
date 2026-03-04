@@ -33,7 +33,7 @@ public class TimeSeriesAggregationPipeline {
         if (responseMaxIntervals <= 0) {
             throw new IllegalArgumentException("responseMaxIntervals must be greater than 0");
         }
-        if (idealResponseIntervals <=0) {
+        if (idealResponseIntervals <= 0) {
             throw new IllegalArgumentException("idealResponseIntervals must be greater than 0");
         }
         this.responseMaxIntervals = responseMaxIntervals;
@@ -102,7 +102,7 @@ public class TimeSeriesAggregationPipeline {
 
                 long index = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
                 series.computeIfAbsent(index, i -> new BucketBuilder(i, i + getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), finalParams.getResolution()))
-                        .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit())).accumulate(bucket);
+                    .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit())).accumulate(bucket);
             });
         }
         long t2 = System.currentTimeMillis();
@@ -111,20 +111,20 @@ public class TimeSeriesAggregationPipeline {
         }
 
         Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-                e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
+            e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
 
         return new TimeSeriesAggregationResponseBuilder()
-                .setSeries(result)
-                .setStart(finalParams.getFrom())
-                .setEnd(finalParams.getTo())
-                .setResolution(finalParams.getResolution())
-                .setCollectionResolution(idealAvailableCollection.getResolution())
-                .setCollectionIgnoredAttributes(idealAvailableCollection.getIgnoredAttributes())
-                .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
-                .setTtlCovered(ttlCovered)
-                .build();
+            .setSeries(result)
+            .setStart(finalParams.getFrom())
+            .setEnd(finalParams.getTo())
+            .setResolution(finalParams.getResolution())
+            .setCollectionResolution(idealAvailableCollection.getResolution())
+            .setCollectionIgnoredAttributes(idealAvailableCollection.getIgnoredAttributes())
+            .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
+            .setTtlCovered(ttlCovered)
+            .build();
     }
-    
+
     private long roundDownToAvailableResolution(long targetResolution) {
         List<Long> availableResolutions = getAvailableResolutions();
         for (int i = 1; i < availableResolutions.size(); i++) {
@@ -132,9 +132,9 @@ public class TimeSeriesAggregationPipeline {
                 return availableResolutions.get(i - 1);
             }
         }
-        return availableResolutions.get(availableResolutions.size() - 1); // return last resolution 
+        return availableResolutions.get(availableResolutions.size() - 1); // return last resolution
     }
-    
+
     private TimeSeriesProcessedParams processQueryParams(TimeSeriesAggregationQuery query, long sourceResolution) {
         if (query.getFrom() == null) {
             throw new IllegalArgumentException("From parameters must be specified");
@@ -166,14 +166,14 @@ public class TimeSeriesAggregationPipeline {
             }
         }
         return new TimeSeriesProcessedParams()
-                .setFrom(resultFrom)
-                .setTo(resultTo)
-                .setResolution(resultResolution)
-                .setGroupDimensions(query.getGroupDimensions())
-                .setFilter(query.getFilter())
-                .setShrink(query.isShrink())
-                .setCollectAttributeKeys(query.getCollectAttributeKeys())
-                .setCollectAttributesValuesLimit(query.getCollectAttributesValuesLimit());
+            .setFrom(resultFrom)
+            .setTo(resultTo)
+            .setResolution(resultResolution)
+            .setGroupDimensions(query.getGroupDimensions())
+            .setFilter(query.getFilter())
+            .setShrink(query.isShrink())
+            .setCollectAttributeKeys(query.getCollectAttributeKeys())
+            .setCollectAttributesValuesLimit(query.getCollectAttributesValuesLimit());
     }
 
     private static long getResolutionBasedOnBucketsCount(long sourceResolution, long rangeDiff, Integer bucketsCount) {
@@ -197,7 +197,7 @@ public class TimeSeriesAggregationPipeline {
     }
 
     private void validateQuery(TimeSeriesAggregationQuery query) {
-        if (query.getBucketsCount() != null){
+        if (query.getBucketsCount() != null) {
             if (query.getFrom() == null || query.getTo() == null) {
                 throw new IllegalArgumentException("While splitting, from and to params must be set");
             }
@@ -222,7 +222,7 @@ public class TimeSeriesAggregationPipeline {
         }
 
     }
-    
+
     private TimeSeriesCollection chooseFirstAvailableCollectionBasedOnTTL(long resolution, TimeSeriesAggregationQuery query) {
         long from = query.getFrom() != null ? query.getFrom() : 0;
         long to = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
@@ -281,8 +281,8 @@ public class TimeSeriesAggregationPipeline {
     }
 
     public List<Long> getAvailableResolutions() {
-		return this.collections.stream().map(TimeSeriesCollection::getResolution).collect(Collectors.toList());
-	}
+        return this.collections.stream().map(TimeSeriesCollection::getResolution).collect(Collectors.toList());
+    }
 
     private long calculateBucketBeginAnchor(long bucketBegin, TimeSeriesProcessedParams params) {
         long rangeFrom = params.getFrom();

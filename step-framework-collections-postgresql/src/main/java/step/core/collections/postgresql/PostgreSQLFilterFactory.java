@@ -31,155 +31,156 @@ import java.util.stream.Collectors;
 
 public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 
-	private static final Pattern p = Pattern.compile("([^.]+)");
-	@Override
-	public String buildFilter(Filter filter) {
-		List<String> childerPojoFilters;
-		List<Filter> children = filter.getChildren();
-		if(children != null) {
-			childerPojoFilters = filter.getChildren().stream().map(this::buildFilter)
-					.collect(Collectors.toList());
-		} else {
-			childerPojoFilters = null;
-		}
+    private static final Pattern p = Pattern.compile("([^.]+)");
 
-		if (filter instanceof And) {
-			return subQueryWithChildren(childerPojoFilters, "AND");
-		} else if (filter instanceof Or) {
-			return subQueryWithChildren(childerPojoFilters, "OR");
-		} else if (filter instanceof Not) {
-			return notPsqlClause((Not) filter, childerPojoFilters);
-		} else if (filter instanceof True) {
-			return "TRUE";
-		} else if (filter instanceof False) {
-			return "FALSE";
-		} else if (filter instanceof Equals) {
-			Equals equalsFilter = (Equals) filter;
-			Object expectedValue = equalsFilter.getExpectedValue();
-			String formattedFieldName = formatField(equalsFilter.getField(),
-					(expectedValue!=null) ? expectedValue.getClass(): String.class);
-			if (expectedValue == null) {
-				return formattedFieldName + " IS NULL";
-			} else {
-				if (expectedValue instanceof ObjectId) {
-					expectedValue = ((ObjectId) expectedValue).toHexString();
-				} else if (expectedValue instanceof String) {
-					expectedValue = escapeValue((String) expectedValue);
-				}
-				return formattedFieldName + " = '" + expectedValue + "'";
-			}
-		} else if (filter instanceof Regex) {
-			Regex regexFilter = (Regex) filter;
-			String operator = (regexFilter.isCaseSensitive()) ? " ~ " : " ~* ";
-			return formatFieldForValueAsText(regexFilter.getField()) + operator + "'" + escapeValue(regexFilter.getExpression()) + "'";
-		} else if (filter instanceof Gt) {
-			Gt gtFilter = (Gt) filter;
-			return formatField(gtFilter.getField(),true) + " IS NOT NULL AND "
-					+ formatField(gtFilter.getField(),false) + " > '" + gtFilter.getValue() + "'";
-		} else if (filter instanceof Gte) {
-			Gte gteFilter = (Gte) filter;
-			return formatField(gteFilter.getField(),true) + " IS NOT NULL AND "
-					+ formatField(gteFilter.getField(),false) + " >= '" + gteFilter.getValue() + "'";
-		} else if (filter instanceof Lt) {
-			Lt ltFilter = (Lt) filter;
-			return formatField(ltFilter.getField(),true) + " IS NOT NULL AND "
-					+ formatField(ltFilter.getField(),false) + " < '" + ltFilter.getValue() + "'";
-		} else if (filter instanceof Lte) {
-			Lte lteFilter = (Lte) filter;
-			return formatField(lteFilter.getField(),true) + " IS NOT NULL AND "
-					+ formatField(lteFilter.getField(),false) + " <= '" + lteFilter.getValue() + "'";
-		} else if (filter instanceof Exists) {
-			Exists existsFilter = (Exists) filter;
-			return formatField(existsFilter.getField(),false) + " IS NOT NULL ";
-		} else if (filter instanceof In) {
-			In inFilter = (In) filter;
-			//In filter values implementation only support comparison as Strings, so the field and values are formated to string
-			String values = inFilter.getValues().stream()
-					.map(this::formatInValue) // Escape single quotes for SQL
-					.collect(Collectors.joining(",", "(", ")"));
-			return formatField(inFilter.getField(), true) + " IN " + values + " ";
-		} else {
-			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
-		}
-	}
+    @Override
+    public String buildFilter(Filter filter) {
+        List<String> childerPojoFilters;
+        List<Filter> children = filter.getChildren();
+        if (children != null) {
+            childerPojoFilters = filter.getChildren().stream().map(this::buildFilter)
+                .collect(Collectors.toList());
+        } else {
+            childerPojoFilters = null;
+        }
 
-	private String notPsqlClause(Not notFilter, List<String> childerPojoFilters) {
-		//For psql filering out with NOT field = value will also filter out field is null
-		if (notFilter.getChildren().get(0) instanceof Equals && ((Equals) notFilter.getChildren().get(0)).getExpectedValue() != null) {
-			Equals eqFilter = (Equals) notFilter.getChildren().get(0);
-			return "(NOT (" + childerPojoFilters.get(0) + ") OR " + buildFilter(Filters.equals(eqFilter.getField(), (String) null)) + ")";
-		} else {
-			return "NOT (" + childerPojoFilters.get(0) + ")";
-		}
-	}
+        if (filter instanceof And) {
+            return subQueryWithChildren(childerPojoFilters, "AND");
+        } else if (filter instanceof Or) {
+            return subQueryWithChildren(childerPojoFilters, "OR");
+        } else if (filter instanceof Not) {
+            return notPsqlClause((Not) filter, childerPojoFilters);
+        } else if (filter instanceof True) {
+            return "TRUE";
+        } else if (filter instanceof False) {
+            return "FALSE";
+        } else if (filter instanceof Equals) {
+            Equals equalsFilter = (Equals) filter;
+            Object expectedValue = equalsFilter.getExpectedValue();
+            String formattedFieldName = formatField(equalsFilter.getField(),
+                (expectedValue != null) ? expectedValue.getClass() : String.class);
+            if (expectedValue == null) {
+                return formattedFieldName + " IS NULL";
+            } else {
+                if (expectedValue instanceof ObjectId) {
+                    expectedValue = ((ObjectId) expectedValue).toHexString();
+                } else if (expectedValue instanceof String) {
+                    expectedValue = escapeValue((String) expectedValue);
+                }
+                return formattedFieldName + " = '" + expectedValue + "'";
+            }
+        } else if (filter instanceof Regex) {
+            Regex regexFilter = (Regex) filter;
+            String operator = (regexFilter.isCaseSensitive()) ? " ~ " : " ~* ";
+            return formatFieldForValueAsText(regexFilter.getField()) + operator + "'" + escapeValue(regexFilter.getExpression()) + "'";
+        } else if (filter instanceof Gt) {
+            Gt gtFilter = (Gt) filter;
+            return formatField(gtFilter.getField(), true) + " IS NOT NULL AND "
+                + formatField(gtFilter.getField(), false) + " > '" + gtFilter.getValue() + "'";
+        } else if (filter instanceof Gte) {
+            Gte gteFilter = (Gte) filter;
+            return formatField(gteFilter.getField(), true) + " IS NOT NULL AND "
+                + formatField(gteFilter.getField(), false) + " >= '" + gteFilter.getValue() + "'";
+        } else if (filter instanceof Lt) {
+            Lt ltFilter = (Lt) filter;
+            return formatField(ltFilter.getField(), true) + " IS NOT NULL AND "
+                + formatField(ltFilter.getField(), false) + " < '" + ltFilter.getValue() + "'";
+        } else if (filter instanceof Lte) {
+            Lte lteFilter = (Lte) filter;
+            return formatField(lteFilter.getField(), true) + " IS NOT NULL AND "
+                + formatField(lteFilter.getField(), false) + " <= '" + lteFilter.getValue() + "'";
+        } else if (filter instanceof Exists) {
+            Exists existsFilter = (Exists) filter;
+            return formatField(existsFilter.getField(), false) + " IS NOT NULL ";
+        } else if (filter instanceof In) {
+            In inFilter = (In) filter;
+            //In filter values implementation only support comparison as Strings, so the field and values are formated to string
+            String values = inFilter.getValues().stream()
+                .map(this::formatInValue) // Escape single quotes for SQL
+                .collect(Collectors.joining(",", "(", ")"));
+            return formatField(inFilter.getField(), true) + " IN " + values + " ";
+        } else {
+            throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
+        }
+    }
 
-	private String formatInValue(Object expectedValue) {
-		String result;
-		if (expectedValue instanceof String) {
-			result =  escapeValue((String) expectedValue);
-		} else if (expectedValue instanceof ObjectId) {
-			result = ((ObjectId) expectedValue).toHexString();
-		} else {
-			result = expectedValue.toString();
-		}
-		return "'" + result + "'";
-	}
+    private String notPsqlClause(Not notFilter, List<String> childerPojoFilters) {
+        //For psql filering out with NOT field = value will also filter out field is null
+        if (notFilter.getChildren().get(0) instanceof Equals && ((Equals) notFilter.getChildren().get(0)).getExpectedValue() != null) {
+            Equals eqFilter = (Equals) notFilter.getChildren().get(0);
+            return "(NOT (" + childerPojoFilters.get(0) + ") OR " + buildFilter(Filters.equals(eqFilter.getField(), (String) null)) + ")";
+        } else {
+            return "NOT (" + childerPojoFilters.get(0) + ")";
+        }
+    }
 
-	private String escapeValue(String expectedValue) {
-		return expectedValue.replaceAll("'","''");
-	}
+    private String formatInValue(Object expectedValue) {
+        String result;
+        if (expectedValue instanceof String) {
+            result = escapeValue((String) expectedValue);
+        } else if (expectedValue instanceof ObjectId) {
+            result = ((ObjectId) expectedValue).toHexString();
+        } else {
+            result = expectedValue.toString();
+        }
+        return "'" + result + "'";
+    }
 
-	public static String formatField(String field, Class<?> clazz) {
-		return formatField(field, clazz.equals(String.class) || clazz.equals(ObjectId.class));
-	}
+    private String escapeValue(String expectedValue) {
+        return expectedValue.replaceAll("'", "''");
+    }
 
-	public static String formatFieldForValueAsText(String field) {
-		return formatField(field, true);
-	}
+    public static String formatField(String field, Class<?> clazz) {
+        return formatField(field, clazz.equals(String.class) || clazz.equals(ObjectId.class));
+    }
 
-	private static String formatField(String field, boolean asText) {
-		if (field.equals(AbstractIdentifiableObject.ID)) {
-			return field;
-		}
-		StringBuilder b = new StringBuilder();
-		b.append("object");
-		Matcher m = p.matcher(field);
-		String previous = null;
-		while (m.find()) {
-			if (previous != null) {
-				b.append("->'").append(previous).append("'");
-			}
-			previous = m.group(1);
-			if (previous.equals("_id")) {
-				previous = "id";
-			}
-		}
-		if (previous == null) {
-			throw new RuntimeException("Failed to format jsonb field: " + field);
-		}
-		if (asText) {
-			b.append("->>'");
-		} else {
-			b.append("->'");
-		}
-		b.append(previous).append("'");
-		return b.toString();
-	}
+    public static String formatFieldForValueAsText(String field) {
+        return formatField(field, true);
+    }
 
-	private String subQueryWithChildren(List<String> childerPojoFilters, String operator) {
-		if (childerPojoFilters == null || childerPojoFilters.isEmpty()) {
-			return "";
-		} else if (childerPojoFilters.size() == 1) {
-			return childerPojoFilters.get(0);
-		} else {
-			StringBuilder buf = new StringBuilder();
-			buf.append("(").append(childerPojoFilters.get(0));
-			for (int i=1; i < childerPojoFilters.size(); i++) {
-				buf.append(" ").append(operator).append(" ").append(childerPojoFilters.get(i));
-			}
-			buf.append(")");
-			return buf.toString();
-		}
-	}
+    private static String formatField(String field, boolean asText) {
+        if (field.equals(AbstractIdentifiableObject.ID)) {
+            return field;
+        }
+        StringBuilder b = new StringBuilder();
+        b.append("object");
+        Matcher m = p.matcher(field);
+        String previous = null;
+        while (m.find()) {
+            if (previous != null) {
+                b.append("->'").append(previous).append("'");
+            }
+            previous = m.group(1);
+            if (previous.equals("_id")) {
+                previous = "id";
+            }
+        }
+        if (previous == null) {
+            throw new RuntimeException("Failed to format jsonb field: " + field);
+        }
+        if (asText) {
+            b.append("->>'");
+        } else {
+            b.append("->'");
+        }
+        b.append(previous).append("'");
+        return b.toString();
+    }
+
+    private String subQueryWithChildren(List<String> childerPojoFilters, String operator) {
+        if (childerPojoFilters == null || childerPojoFilters.isEmpty()) {
+            return "";
+        } else if (childerPojoFilters.size() == 1) {
+            return childerPojoFilters.get(0);
+        } else {
+            StringBuilder buf = new StringBuilder();
+            buf.append("(").append(childerPojoFilters.get(0));
+            for (int i = 1; i < childerPojoFilters.size(); i++) {
+                buf.append(" ").append(operator).append(" ").append(childerPojoFilters.get(i));
+            }
+            buf.append(")");
+            return buf.toString();
+        }
+    }
 
 }

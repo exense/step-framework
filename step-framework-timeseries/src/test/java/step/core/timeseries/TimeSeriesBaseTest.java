@@ -25,8 +25,8 @@ public class TimeSeriesBaseTest {
     protected TimeSeriesCollection getCollection(long resolution, Set<String> ignoredAttributes) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>("resolution_" + resolution);
         TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
-                .setResolution(resolution)
-                .setIgnoredAttributes(ignoredAttributes);
+            .setResolution(resolution)
+            .setIgnoredAttributes(ignoredAttributes);
         return new TimeSeriesCollection(col, settings);
     }
 
@@ -37,9 +37,9 @@ public class TimeSeriesBaseTest {
     protected TimeSeriesCollection getCollectionWithTTL(long resolution, long ttl, Set<String> ignoredAttributes) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>();
         TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
-                .setTtl(ttl)
-                .setResolution(resolution)
-                .setIgnoredAttributes(ignoredAttributes);
+            .setTtl(ttl)
+            .setResolution(resolution)
+            .setIgnoredAttributes(ignoredAttributes);
         return new TimeSeriesCollection(col, settings);
     }
 
@@ -62,26 +62,26 @@ public class TimeSeriesBaseTest {
 
     protected TimeSeries getTimeSeriesWithResolutions(long... resolutions) {
         return new TimeSeriesBuilder()
-                .registerCollections(Arrays.stream(resolutions).mapToObj(this::getCollection).collect(Collectors.toList()))
-                .setSettings(new TimeSeriesSettings()
-                        .setTtlEnabled(true))
-                .build();
+            .registerCollections(Arrays.stream(resolutions).mapToObj(this::getCollection).collect(Collectors.toList()))
+            .setSettings(new TimeSeriesSettings()
+                .setTtlEnabled(true))
+            .build();
     }
 
     protected TimeSeries getTimeSeriesWithSettings(TimeSeriesCollectionSettings... settings) {
         return new TimeSeriesBuilder()
-                .registerCollections(Arrays.stream(settings).map(this::getCollectionWithSettings).collect(Collectors.toList()))
-                .setSettings(new TimeSeriesSettings()
-                        .setTtlEnabled(true))
-                .build();
+            .registerCollections(Arrays.stream(settings).map(this::getCollectionWithSettings).collect(Collectors.toList()))
+            .setSettings(new TimeSeriesSettings()
+                .setTtlEnabled(true))
+            .build();
     }
 
     protected TimeSeries getNewTimeSeries(long resolution) {
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
         TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, resolution);
         return new TimeSeriesBuilder()
-                .registerCollection(collection)
-                .build();
+            .registerCollection(collection)
+            .build();
     }
 
     protected Bucket getCurrentUniqueRandomBucket() {

@@ -28,21 +28,22 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.ext.Provider;
+
 import java.io.IOException;
 
 @Provider
 public class AuditResponseFilter<U extends AbstractUser> extends AbstractServices<U> implements ContainerResponseFilter {
 
-	@Context
-	private HttpServletRequest sr;
-	
-	@PostConstruct
-	public void init() throws Exception {
+    @Context
+    private HttpServletRequest sr;
 
-	}
+    @PostConstruct
+    public void init() throws Exception {
 
-	public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
-			throws IOException {
-		AuditLogger.trace(sr, responseContext.getStatus());
-	}
+    }
+
+    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+        throws IOException {
+        AuditLogger.trace(sr, responseContext.getStatus());
+    }
 }

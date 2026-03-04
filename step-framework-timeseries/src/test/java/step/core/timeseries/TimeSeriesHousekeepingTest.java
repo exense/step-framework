@@ -50,15 +50,15 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
         col2Bucket.setAttributes(new BucketAttributes(Map.of("col", "2")));
         tsCol2.save(col2Bucket);
         TimeSeries timeSeries = new TimeSeriesBuilder()
-                .registerCollections(Arrays.asList(tsCol1, tsCol2))
-                .setSettings(new TimeSeriesSettings()
-                        .setTtlEnabled(true))
-                .build();
+            .registerCollections(Arrays.asList(tsCol1, tsCol2))
+            .setSettings(new TimeSeriesSettings()
+                .setTtlEnabled(true))
+            .build();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 1000, now) // col1 collection should be ignored, even if it is the ideal target
-                .split(1)
-                .withGroupDimensions(Set.of("col"))
-                .build();
+            .range(now - 1000, now) // col1 collection should be ignored, even if it is the ideal target
+            .split(1)
+            .withGroupDimensions(Set.of("col"))
+            .build();
         Map<BucketAttributes, Map<Long, Bucket>> response = timeSeries.getAggregationPipeline().collect(query).getSeries();
         Assert.assertEquals(1, response.size());
         BucketAttributes bucketAttributes = new ArrayList<>(response.keySet()).get(0);
@@ -72,27 +72,27 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
         TimeSeriesCollection collection = getCollectionWithTTL(1000, 50_000);
         long now = System.currentTimeMillis();
         TimeSeries timeSeries = new TimeSeriesBuilder()
-                .registerCollection(collection)
-                .setSettings(new TimeSeriesSettings()
-                        .setTtlEnabled(true))
-                .build();
+            .registerCollection(collection)
+            .setSettings(new TimeSeriesSettings()
+                .setTtlEnabled(true))
+            .build();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 30_000, now)
-                .build();
+            .range(now - 30_000, now)
+            .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertTrue(response.isTtlCovered());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 60_000, now)
-                .build();
+            .range(now - 60_000, now)
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertFalse(response.isTtlCovered());
 
         timeSeries.setTtlEnabled(false);
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 60_000, now)
-                .build();
+            .range(now - 60_000, now)
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertTrue(response.isTtlCovered());
     }

@@ -108,6 +108,7 @@ public class AuthenticationTokenDetails {
         private ZonedDateTime expirationDate;
         private int refreshCount;
         private int refreshLimit;
+
         public Builder withId(String id) {
             this.id = id;
             return this;
@@ -119,7 +120,7 @@ public class AuthenticationTokenDetails {
         }
 
         public Builder withRole(String role) {
-            this.role =  role;
+            this.role = role;
             return this;
         }
 
@@ -168,16 +169,16 @@ public class AuthenticationTokenDetails {
     @Override
     public String toString() {
         return "AuthenticationTokenDetails{" +
-                "id='" + id + '\'' +
-                ", username='" + username + '\'' +
-                ", role='" + role + '\'' +
-                ", issuer='" + issuer + '\'' +
-                ", audience='" + audience + '\'' +
-                ", issuedDate=" + issuedDate +
-                ", notBeforeDate=" + notBeforeDate +
-                ", expirationDate=" + expirationDate +
-                ", refreshCount=" + refreshCount +
-                ", refreshLimit=" + refreshLimit +
-                '}';
+            "id='" + id + '\'' +
+            ", username='" + username + '\'' +
+            ", role='" + role + '\'' +
+            ", issuer='" + issuer + '\'' +
+            ", audience='" + audience + '\'' +
+            ", issuedDate=" + issuedDate +
+            ", notBeforeDate=" + notBeforeDate +
+            ", expirationDate=" + expirationDate +
+            ", refreshCount=" + refreshCount +
+            ", refreshLimit=" + refreshLimit +
+            '}';
     }
 }

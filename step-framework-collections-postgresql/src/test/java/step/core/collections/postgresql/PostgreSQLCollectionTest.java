@@ -50,239 +50,239 @@ import static step.core.collections.postgresql.PostgreSQLFilterFactory.formatFie
 
 public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 
-	public PostgreSQLCollectionTest() {
-		super(new PostgreSQLCollectionFactory(PostgreSQLCollectionTest.getProperties()));
-	}
+    public PostgreSQLCollectionTest() {
+        super(new PostgreSQLCollectionFactory(PostgreSQLCollectionTest.getProperties()));
+    }
 
-	private static Properties getProperties()  {
-		Properties properties = new Properties();
-		properties.put("jdbcUrl", "jdbc:postgresql://central-postgresql.stepcloud-test.ch/Test");
-		properties.put("user", "step");
-		properties.put("password", "Jua4Nr!46V");
-		return properties;
-	}
+    private static Properties getProperties() {
+        Properties properties = new Properties();
+        properties.put("jdbcUrl", "jdbc:postgresql://central-postgresql.stepcloud-test.ch/Test");
+        properties.put("user", "step");
+        properties.put("password", "Jua4Nr!46V");
+        return properties;
+    }
 
-	@Test
-	@Ignore
-	public void benchmarkInsert() {
-		Collection<Bean> beanCollection = collectionFactory.getCollection("Beans", Bean.class);
-		beanCollection.remove(Filters.empty());
-		int total = 50000;
+    @Test
+    @Ignore
+    public void benchmarkInsert() {
+        Collection<Bean> beanCollection = collectionFactory.getCollection("Beans", Bean.class);
+        beanCollection.remove(Filters.empty());
+        int total = 50000;
 
-		for (int loop=1; loop <= 3; loop++) {
-			long start = System.currentTimeMillis();
-			for (int i = 0; i < total; i++) {
-				beanCollection.save(new Bean("property1"));
-			}
-			long endInsert = System.currentTimeMillis();
-			Assert.assertEquals(total*loop, beanCollection.count(Filters.empty(), null));
-			System.out.println("insert duration " + (endInsert - start) + " ms, avg: " + ((endInsert - start) / (total * 1.0)) + " ms, count duration: " + (System.currentTimeMillis() - endInsert) + " ms");
-		}
-	}
+        for (int loop = 1; loop <= 3; loop++) {
+            long start = System.currentTimeMillis();
+            for (int i = 0; i < total; i++) {
+                beanCollection.save(new Bean("property1"));
+            }
+            long endInsert = System.currentTimeMillis();
+            Assert.assertEquals(total * loop, beanCollection.count(Filters.empty(), null));
+            System.out.println("insert duration " + (endInsert - start) + " ms, avg: " + ((endInsert - start) / (total * 1.0)) + " ms, count duration: " + (System.currentTimeMillis() - endInsert) + " ms");
+        }
+    }
 
-	@Test
-	@Ignore
-	public void benchmarkBulkInsert() {
-		Collection<Bean> beanCollection = collectionFactory.getCollection("Beans", Bean.class);
-		beanCollection.remove(Filters.empty());
-		int total = 50000;
-		int bulkSize = 100;
+    @Test
+    @Ignore
+    public void benchmarkBulkInsert() {
+        Collection<Bean> beanCollection = collectionFactory.getCollection("Beans", Bean.class);
+        beanCollection.remove(Filters.empty());
+        int total = 50000;
+        int bulkSize = 100;
 
-		for (int loop=1; loop <= 3; loop++) {
-			long start = System.currentTimeMillis();
-			for (int bulks = 0 ; bulks < (total/bulkSize); bulks++) {
-				List<Bean> bulk = new ArrayList<>();
-				for (int i = 0; i < bulkSize; i++) {
-					bulk.add(new Bean("property1"));
-				}
-				beanCollection.save(bulk);
-			}
-			long endInsert = System.currentTimeMillis();
-			Assert.assertEquals(total*loop, beanCollection.count(Filters.empty(), null));
-			System.out.println("insert duration " + (endInsert - start) + " ms, avg: " + ((endInsert - start) / (total * 1.0)) + " ms, count duration: " + (System.currentTimeMillis() - endInsert) + " ms");
-		}
-	}
+        for (int loop = 1; loop <= 3; loop++) {
+            long start = System.currentTimeMillis();
+            for (int bulks = 0; bulks < (total / bulkSize); bulks++) {
+                List<Bean> bulk = new ArrayList<>();
+                for (int i = 0; i < bulkSize; i++) {
+                    bulk.add(new Bean("property1"));
+                }
+                beanCollection.save(bulk);
+            }
+            long endInsert = System.currentTimeMillis();
+            Assert.assertEquals(total * loop, beanCollection.count(Filters.empty(), null));
+            System.out.println("insert duration " + (endInsert - start) + " ms, avg: " + ((endInsert - start) / (total * 1.0)) + " ms, count duration: " + (System.currentTimeMillis() - endInsert) + " ms");
+        }
+    }
 
-	@Test
-	public void testGetFieldClass() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-		PostgreSQLCollection<Bean> beanCollection = (PostgreSQLCollection<Bean>) collectionFactory.getCollection("Beans", Bean.class);
-		Assert.assertEquals(String.class,beanCollection.getFieldClass("property1"));
+    @Test
+    public void testGetFieldClass() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        PostgreSQLCollection<Bean> beanCollection = (PostgreSQLCollection<Bean>) collectionFactory.getCollection("Beans", Bean.class);
+        Assert.assertEquals(String.class, beanCollection.getFieldClass("property1"));
 
-		Assert.assertEquals(Long.class, beanCollection.getFieldClass("longProperty"));
+        Assert.assertEquals(Long.class, beanCollection.getFieldClass("longProperty"));
 
-		Assert.assertEquals(Boolean.TYPE, beanCollection.getFieldClass("booleanProperty"));
+        Assert.assertEquals(Boolean.TYPE, beanCollection.getFieldClass("booleanProperty"));
 
-		Assert.assertThrows(UnsupportedOperationException.class, () -> beanCollection.getFieldClass("list"));
+        Assert.assertThrows(UnsupportedOperationException.class, () -> beanCollection.getFieldClass("list"));
 
-		Assert.assertEquals(String.class,beanCollection.getFieldClass("map.property1"));
+        Assert.assertEquals(String.class, beanCollection.getFieldClass("map.property1"));
 
-		Assert.assertEquals(Long.class, beanCollection.getFieldClass("nested.longProperty"));
+        Assert.assertEquals(Long.class, beanCollection.getFieldClass("nested.longProperty"));
 
 
-		Assert.assertEquals(String.class, beanCollection.getFieldClass("simpleBean.stringProperty"));
+        Assert.assertEquals(String.class, beanCollection.getFieldClass("simpleBean.stringProperty"));
 
-		Assert.assertEquals(String.class,beanCollection.getFieldClass("map.property1"));
+        Assert.assertEquals(String.class, beanCollection.getFieldClass("map.property1"));
 
-		Assert.assertEquals(JSONObject.class,beanCollection.getFieldClass("jsonOrgObject.key"));
+        Assert.assertEquals(JSONObject.class, beanCollection.getFieldClass("jsonOrgObject.key"));
 
-		Assert.assertEquals(String.class,beanCollection.getFieldClass("attributes.property1"));
+        Assert.assertEquals(String.class, beanCollection.getFieldClass("attributes.property1"));
 
-		Assert.assertEquals(String.class,beanCollection.getFieldClass("publicFinalField"));
-	}
+        Assert.assertEquals(String.class, beanCollection.getFieldClass("publicFinalField"));
+    }
 
-	@Test
-	public void testFieldFormatter() {
-		String test;
-		test = formatField("id",String.class);
-		assertEquals("id",test);
+    @Test
+    public void testFieldFormatter() {
+        String test;
+        test = formatField("id", String.class);
+        assertEquals("id", test);
 
-		test = formatField("id", ObjectId.class);
-		assertEquals("id",test);
+        test = formatField("id", ObjectId.class);
+        assertEquals("id", test);
 
-		test = formatField("_id", String.class);
-		assertEquals("object->>'id'", test);
+        test = formatField("_id", String.class);
+        assertEquals("object->>'id'", test);
 
-		test = formatField("entity._id", String.class);
-		assertEquals("object->'entity'->>'id'", test);
+        test = formatField("entity._id", String.class);
+        assertEquals("object->'entity'->>'id'", test);
 
-		test = formatFieldForValueAsText("id");
-		assertEquals("id",test);
+        test = formatFieldForValueAsText("id");
+        assertEquals("id", test);
 
-		test = formatField("test",Long.class);
-		assertEquals("object->'test'",test);
+        test = formatField("test", Long.class);
+        assertEquals("object->'test'", test);
 
-		test = formatField("test",String.class);
-		assertEquals("object->>'test'",test);
+        test = formatField("test", String.class);
+        assertEquals("object->>'test'", test);
 
-		test = formatFieldForValueAsText("test");
-		assertEquals("object->>'test'",test);
+        test = formatFieldForValueAsText("test");
+        assertEquals("object->>'test'", test);
 
-		test = formatField("test.nested",String.class);
-		assertEquals("object->'test'->>'nested'",test);
+        test = formatField("test.nested", String.class);
+        assertEquals("object->'test'->>'nested'", test);
 
-		test = formatField("test.nested",Boolean.class);
-		assertEquals("object->'test'->'nested'",test);
+        test = formatField("test.nested", Boolean.class);
+        assertEquals("object->'test'->'nested'", test);
 
-		test = formatFieldForValueAsText("test.nested");
-		assertEquals("object->'test'->>'nested'",test);
-	}
+        test = formatFieldForValueAsText("test.nested");
+        assertEquals("object->'test'->>'nested'", test);
+    }
 
-	private static class MyReport extends AbstractOrganizableObject {
-		protected String executionID;
-	}
+    private static class MyReport extends AbstractOrganizableObject {
+        protected String executionID;
+    }
 
-	// SED-4114 - Before the fix, this would have caused an OOM.
-	@Ignore // Run this manually. Plus (this is important!!!) run it with -Xmx50M.
-	@SuppressWarnings("SqlNoDataSourceInspection")
-	@Test
-	public void testLargeDataSet() throws Exception {
-		// This test might take multiple minutes.
-		HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
-		Connection connection = ds.getConnection();
-		assertTrue(connection.getAutoCommit());
+    // SED-4114 - Before the fix, this would have caused an OOM.
+    @Ignore // Run this manually. Plus (this is important!!!) run it with -Xmx50M.
+    @SuppressWarnings("SqlNoDataSourceInspection")
+    @Test
+    public void testLargeDataSet() throws Exception {
+        // This test might take multiple minutes.
+        HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
+        Connection connection = ds.getConnection();
+        assertTrue(connection.getAutoCommit());
 
-		String tablename = "oomtest";
-		Function<String, Integer> execUpdate = (sql) -> {
-			try (Statement stmt = connection.createStatement()) {
-				System.out.println(sql);
-				//noinspection SqlSourceToSinkFlow // IntelliJ, shut up!
-				return stmt.executeUpdate(sql);
-			} catch (SQLException e) {
-				throw new RuntimeException(e);
-			}
-		};
+        String tablename = "oomtest";
+        Function<String, Integer> execUpdate = (sql) -> {
+            try (Statement stmt = connection.createStatement()) {
+                System.out.println(sql);
+                //noinspection SqlSourceToSinkFlow // IntelliJ, shut up!
+                return stmt.executeUpdate(sql);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        };
 
-		Callable<Long> count = () -> {
-			try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery("select count(*) from " + tablename)) {
-				return rs.next() ? rs.getLong(1) : 0;
-			} catch (SQLException e) {
-				throw new RuntimeException(e);
-			}
-		};
+        Callable<Long> count = () -> {
+            try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery("select count(*) from " + tablename)) {
+                return rs.next() ? rs.getLong(1) : 0;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        };
 
-		try {
-			count.call();
-		} catch (Exception e) {
-			// Assuming table doesn't exist
-			assertEquals(0, execUpdate.apply("DROP TABLE IF EXISTS " + tablename).intValue());
-			assertEquals(0, execUpdate.apply("CREATE TABLE " + tablename + "(id text, object jsonb)").intValue());
-			assertEquals(0, count.call().longValue());
+        try {
+            count.call();
+        } catch (Exception e) {
+            // Assuming table doesn't exist
+            assertEquals(0, execUpdate.apply("DROP TABLE IF EXISTS " + tablename).intValue());
+            assertEquals(0, execUpdate.apply("CREATE TABLE " + tablename + "(id text, object jsonb)").intValue());
+            assertEquals(0, count.call().longValue());
 
-			// populate data
-			// 2. JSON payload (escaped and quoted)
-			String json = "{\"id\": \"68820f2ef74c111105c56454\", \"name\": \"NOP\", \"path\": \"68820f2ef74c111105c56454\", \"error\": null, \"_class\": \"step.artefacts.reports.TestCaseReportNode\", \"orphan\": false, \"status\": \"PASSED\", \"duration\": 597, \"parentID\": \"68820f2ef74c111105c563f5\", \"artefactID\": \"6881fd2f40bd6c67ea0d970b\", \"attachments\": [], \"executionID\": \"68820f2ef74c111105c563f5\", \"artefactHash\": \"F31CCC37FEFC08542360607EA9795DCB\", \"customFields\": null, \"parentSource\": \"MAIN\", \"executionTime\": 1753354030955, \"customAttributes\": {\"TestCase\": \"6881fd2f40bd6c67ea0d970b\"}, \"resolvedArtefact\": {\"id\": \"6881fd2f40bd6c67ea0d970b\", \"after\": null, \"_class\": \"TestCase\", \"before\": null, \"children\": null, \"skipNode\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}, \"attributes\": {\"name\": \"NOP\"}, \"attachments\": null, \"description\": null, \"dynamicName\": {\"value\": \"\", \"dynamic\": false, \"expression\": \"\", \"expressionType\": null}, \"customFields\": null, \"workArtefact\": false, \"instrumentNode\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}, \"useDynamicName\": false, \"customAttributes\": null, \"continueParentNodeExecutionOnError\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}}, \"contributingError\": null}";
+            // populate data
+            // 2. JSON payload (escaped and quoted)
+            String json = "{\"id\": \"68820f2ef74c111105c56454\", \"name\": \"NOP\", \"path\": \"68820f2ef74c111105c56454\", \"error\": null, \"_class\": \"step.artefacts.reports.TestCaseReportNode\", \"orphan\": false, \"status\": \"PASSED\", \"duration\": 597, \"parentID\": \"68820f2ef74c111105c563f5\", \"artefactID\": \"6881fd2f40bd6c67ea0d970b\", \"attachments\": [], \"executionID\": \"68820f2ef74c111105c563f5\", \"artefactHash\": \"F31CCC37FEFC08542360607EA9795DCB\", \"customFields\": null, \"parentSource\": \"MAIN\", \"executionTime\": 1753354030955, \"customAttributes\": {\"TestCase\": \"6881fd2f40bd6c67ea0d970b\"}, \"resolvedArtefact\": {\"id\": \"6881fd2f40bd6c67ea0d970b\", \"after\": null, \"_class\": \"TestCase\", \"before\": null, \"children\": null, \"skipNode\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}, \"attributes\": {\"name\": \"NOP\"}, \"attachments\": null, \"description\": null, \"dynamicName\": {\"value\": \"\", \"dynamic\": false, \"expression\": \"\", \"expressionType\": null}, \"customFields\": null, \"workArtefact\": false, \"instrumentNode\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}, \"useDynamicName\": false, \"customAttributes\": null, \"continueParentNodeExecutionOnError\": {\"value\": false, \"dynamic\": false, \"expression\": null, \"expressionType\": null}}, \"contributingError\": null}";
 
-			// 3. Build the SQL query string
-			String insertSql =
-					"INSERT INTO " + tablename + " (id, object) " +
-							"SELECT '68820f2ef74c111105c56454', '" + json.replace("'", "''") + "'::jsonb " +
-							"FROM generate_series(1, 1000000);";
+            // 3. Build the SQL query string
+            String insertSql =
+                "INSERT INTO " + tablename + " (id, object) " +
+                    "SELECT '68820f2ef74c111105c56454', '" + json.replace("'", "''") + "'::jsonb " +
+                    "FROM generate_series(1, 1000000);";
 
-			// 4. Execute bulk insert, this should take about a minute
-			assertEquals(1000000, execUpdate.apply(insertSql).intValue());
-		}
-		assertEquals(1000000, count.call().longValue());
+            // 4. Execute bulk insert, this should take about a minute
+            assertEquals(1000000, execUpdate.apply(insertSql).intValue());
+        }
+        assertEquals(1000000, count.call().longValue());
 
-		// OK, now onto the actual test
-		AtomicInteger all = new AtomicInteger(0);
-		Collection<MyReport> coll = collectionFactory.getCollection(tablename, MyReport.class);
-		long d = System.currentTimeMillis();
-		try (Stream<MyReport> s = coll.findLazy(Filters.empty(), null, null, null, 0)) {
-			s.forEach(o -> all.incrementAndGet());
-		}
-		d = System.currentTimeMillis() - d;
-		System.err.println(all.get() + ", duration " + d + "ms");
-		assertEquals(1000000, all.get());
-	}
+        // OK, now onto the actual test
+        AtomicInteger all = new AtomicInteger(0);
+        Collection<MyReport> coll = collectionFactory.getCollection(tablename, MyReport.class);
+        long d = System.currentTimeMillis();
+        try (Stream<MyReport> s = coll.findLazy(Filters.empty(), null, null, null, 0)) {
+            s.forEach(o -> all.incrementAndGet());
+        }
+        d = System.currentTimeMillis() - d;
+        System.err.println(all.get() + ", duration " + d + "ms");
+        assertEquals(1000000, all.get());
+    }
 
-	@Test
-	public void testMixingTableCases() throws Exception {
-		Collection<MyReport> lc = collectionFactory.getCollection("myreport", MyReport.class);
-		Collection<MyReport> mc = collectionFactory.getCollection("myReport", MyReport.class);
-		Collection<MyReport> uc = collectionFactory.getCollection("MYREPORT", MyReport.class);
-		List<Collection<MyReport>> all = List.of(lc, mc, uc);
-		// drop and recreate collections in case they existed before
-		all.forEach(Collection::drop);
-		lc = collectionFactory.getCollection("myreport", MyReport.class);
-		mc = collectionFactory.getCollection("myReport", MyReport.class);
-		uc = collectionFactory.getCollection("MYREPORT", MyReport.class);
+    @Test
+    public void testMixingTableCases() throws Exception {
+        Collection<MyReport> lc = collectionFactory.getCollection("myreport", MyReport.class);
+        Collection<MyReport> mc = collectionFactory.getCollection("myReport", MyReport.class);
+        Collection<MyReport> uc = collectionFactory.getCollection("MYREPORT", MyReport.class);
+        List<Collection<MyReport>> all = List.of(lc, mc, uc);
+        // drop and recreate collections in case they existed before
+        all.forEach(Collection::drop);
+        lc = collectionFactory.getCollection("myreport", MyReport.class);
+        mc = collectionFactory.getCollection("myReport", MyReport.class);
+        uc = collectionFactory.getCollection("MYREPORT", MyReport.class);
 
-		lc.save(new MyReport());
-		mc.save(List.of(new MyReport(), new MyReport()));
-		uc.save(List.of(new MyReport(), new MyReport(), new MyReport()));
-		assertEquals(1, lc.count(Filters.empty(), null));
-		assertEquals(2, mc.count(Filters.empty(), null));
-		assertEquals(3, uc.count(Filters.empty(), null));
+        lc.save(new MyReport());
+        mc.save(List.of(new MyReport(), new MyReport()));
+        uc.save(List.of(new MyReport(), new MyReport(), new MyReport()));
+        assertEquals(1, lc.count(Filters.empty(), null));
+        assertEquals(2, mc.count(Filters.empty(), null));
+        assertEquals(3, uc.count(Filters.empty(), null));
 
-		// no statistics yet
-		all.forEach(c -> assertEquals(-1, c.estimatedCount()));
+        // no statistics yet
+        all.forEach(c -> assertEquals(-1, c.estimatedCount()));
 
-		HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
-		Connection conn = ds.getConnection();
-		conn.createStatement().execute("ANALYZE myreport");
-		conn.createStatement().execute("ANALYZE \"myReport\"");
-		conn.createStatement().execute("ANALYZE \"MYREPORT\"");
+        HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
+        Connection conn = ds.getConnection();
+        conn.createStatement().execute("ANALYZE myreport");
+        conn.createStatement().execute("ANALYZE \"myReport\"");
+        conn.createStatement().execute("ANALYZE \"MYREPORT\"");
 
-		assertEquals(1, lc.estimatedCount());
-		assertEquals(2, mc.estimatedCount());
-		assertEquals(3, uc.estimatedCount());
+        assertEquals(1, lc.estimatedCount());
+        assertEquals(2, mc.estimatedCount());
+        assertEquals(3, uc.estimatedCount());
 
-	}
+    }
 
-	@Test
-	public void testTimeout() throws Exception {
-		// This simulates the same condition as the production code might run into when queries take too long,
-		// but here we're using an explicit query that will force a timeout.
-		try (
-				HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
-				StreamingQuery sq = new StreamingQuery(ds, "SELECT pg_sleep(3)", 1);
-		) {
-			Assert.fail("This should never be reached " + sq);
-		} catch (SQLException e) {
-			assertTrue(PostgreSQLCollection.isTimeoutException(e));
-			// Check the logs manually; depending on the log level, it should log either something like "timed out,
-			// enable logging to see full query", or "timed out" plus the actual query.
-		}
-	}
+    @Test
+    public void testTimeout() throws Exception {
+        // This simulates the same condition as the production code might run into when queries take too long,
+        // but here we're using an explicit query that will force a timeout.
+        try (
+            HikariDataSource ds = PostgreSQLCollectionFactory.createConnectionPool(getProperties());
+            StreamingQuery sq = new StreamingQuery(ds, "SELECT pg_sleep(3)", 1);
+        ) {
+            Assert.fail("This should never be reached " + sq);
+        } catch (SQLException e) {
+            assertTrue(PostgreSQLCollection.isTimeoutException(e));
+            // Check the logs manually; depending on the log level, it should log either something like "timed out,
+            // enable logging to see full query", or "timed out" plus the actual query.
+        }
+    }
 
 }

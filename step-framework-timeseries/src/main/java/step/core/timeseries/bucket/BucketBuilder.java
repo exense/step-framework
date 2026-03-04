@@ -69,7 +69,7 @@ public class BucketBuilder {
         Map<Long, Long> bucketDistribution = bucket.getDistribution();
         if (bucketDistribution != null) {
             bucketDistribution.forEach((key, value) ->
-                    distribution.computeIfAbsent(key, k -> new LongAdder()).add(value));
+                distribution.computeIfAbsent(key, k -> new LongAdder()).add(value));
         }
         accumulateAttributes(bucket);
         return this;
@@ -117,7 +117,7 @@ public class BucketBuilder {
         bucket.setMax(max.longValue());
         bucket.setPclPrecision(pclPrecision);
         bucket.setDistribution(distribution.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().longValue())));
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().longValue())));
         return bucket;
     }
 }

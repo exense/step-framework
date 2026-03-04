@@ -18,11 +18,11 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     @Test
     public void ingestDataForEmptyCollectionsWithNoTTL() {
         List<TimeSeriesCollection> collections = Arrays.asList(
-                getCollection(100),
-                getCollection(200),
-                getCollection(400),
-                getCollection(800),
-                getCollection(1600)
+            getCollection(100),
+            getCollection(200),
+            getCollection(400),
+            getCollection(800),
+            getCollection(1600)
         );
         try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
             Bucket bucket = getRandomBucket();
@@ -35,11 +35,11 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     @Test
     public void ingestDataForEmptyCollectionsWithNoTTLWithDataInMiddle() {
         List<TimeSeriesCollection> collections = Arrays.asList(
-                getCollection(100),
-                getCollection(200),
-                getCollection(400), // this is having data
-                getCollection(800),
-                getCollection(1600)
+            getCollection(100),
+            getCollection(200),
+            getCollection(400), // this is having data
+            getCollection(800),
+            getCollection(1600)
         );
         try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
             Bucket bucket = getRandomBucket();
@@ -121,10 +121,10 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     @Test
     public void initialIngestionWithTTLNotInRangeTest() {
         List<TimeSeriesCollection> collections = Arrays.asList(
-                getCollectionWithTTL(100, 1000),
-                getCollectionWithTTL(200, 1000),
-                getCollectionWithTTL(400, 1000),
-                getCollectionWithTTL(800, 1000)
+            getCollectionWithTTL(100, 1000),
+            getCollectionWithTTL(200, 1000),
+            getCollectionWithTTL(400, 1000),
+            getCollectionWithTTL(800, 1000)
         );
         try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
             Bucket b1 = getRandomBucket();
@@ -138,10 +138,10 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     @Test
     public void initialIngestionWithTTLInRangeTest() {
         List<TimeSeriesCollection> collections = Arrays.asList(
-                getCollectionWithTTL(100, 2000),
-                getCollectionWithTTL(200, 2000),
-                getCollectionWithTTL(400, 2000),
-                getCollectionWithTTL(800, 500)
+            getCollectionWithTTL(100, 2000),
+            getCollectionWithTTL(200, 2000),
+            getCollectionWithTTL(400, 2000),
+            getCollectionWithTTL(800, 500)
         );
         try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
             Bucket b1 = getRandomBucket();
@@ -158,8 +158,8 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
     @Test
     public void ingestionWithPartialTTLMatchingTest() {
         List<TimeSeriesCollection> collections = Arrays.asList(
-                getCollectionWithTTL(1000, 1000),
-                getCollectionWithTTL(2000, 1000)
+            getCollectionWithTTL(1000, 1000),
+            getCollectionWithTTL(2000, 1000)
         );
         try (TimeSeries timeSeries = new TimeSeriesBuilder().registerCollections(collections).build()) {
             long now = System.currentTimeMillis();

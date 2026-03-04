@@ -56,7 +56,7 @@ public class AuditLogger {
             auditLogger.trace(log);
         }
     }
-    
+
     public static void log(HttpServletRequest req, int status) {
         String log = getLogMessage(req, status);
         if (status < 400) {
@@ -65,7 +65,7 @@ public class AuditLogger {
             auditLogger.warn(log);
         }
     }
-    
+
     //called by session invalidation (no request context)
     public static void logSessionInvalidation(HttpSession httpSession) {
         Session session = AbstractServices.getSession(httpSession);
@@ -84,12 +84,12 @@ public class AuditLogger {
         msg.user = user;
         auditLogger.info(msg.toLogString());
     }
-    
-    private static String getLogMessage(HttpServletRequest req, int status)  {
+
+    private static String getLogMessage(HttpServletRequest req, int status) {
         String forwardedFor = req.getHeader("X-Forwarded-For");
         String source;
         try {
-            source = Objects.requireNonNullElse(forwardedFor,  req.getRemoteAddr()+":"+req.getRemotePort());
+            source = Objects.requireNonNullElse(forwardedFor, req.getRemoteAddr() + ":" + req.getRemotePort());
         } catch (Exception e) {
             source = "unknown";
         }
@@ -113,7 +113,7 @@ public class AuditLogger {
 
         return msg.toLogString();
     }
-    
+
     public static class AuditMessage {
         String req = "-";
         String sesId = "-";
@@ -121,8 +121,10 @@ public class AuditLogger {
         String user = "-";
         String agent = "-";
         int sc = -1;
-        
-        public AuditMessage(){super();}
+
+        public AuditMessage() {
+            super();
+        }
 
         public String getReq() {
             return req;
@@ -175,13 +177,13 @@ public class AuditLogger {
         @Override
         public String toString() {
             return "AuditMessage{" +
-                    "req='" + req + '\'' +
-                    ", sesId='" + sesId + '\'' +
-                    ", src='" + src + '\'' +
-                    ", user='" + user + '\'' +
-                    ", agent='" + agent + '\'' +
-                    ", sc=" + sc +
-                    '}';
+                "req='" + req + '\'' +
+                ", sesId='" + sesId + '\'' +
+                ", src='" + src + '\'' +
+                ", user='" + user + '\'' +
+                ", agent='" + agent + '\'' +
+                ", sc=" + sc +
+                '}';
         }
 
         public String toLogString() {
@@ -225,9 +227,9 @@ public class AuditLogger {
             Optional.ofNullable(moreAttributes).ifPresent(attributes::putAll);
 
             modify(userSession, operation, entityTypeName,
-                    Optional.ofNullable(entity.getId()).map(ObjectId::toString).orElse(null),
-                    entity.getAttribute(AbstractOrganizableObject.NAME),
-                    attributes
+                Optional.ofNullable(entity.getId()).map(ObjectId::toString).orElse(null),
+                entity.getAttribute(AbstractOrganizableObject.NAME),
+                attributes
             );
         }
     }

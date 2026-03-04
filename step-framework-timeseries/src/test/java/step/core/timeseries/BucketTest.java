@@ -31,7 +31,7 @@ public class BucketTest {
         assertEquals(20L, bucket.getPercentile(50));
         assertEquals(25L, bucket.getPercentile(100));
     }
-    
+
     @Test
     public void getDistributionWithDecimals() {
         Bucket bucket = new Bucket();
@@ -39,8 +39,8 @@ public class BucketTest {
         int count = 100;
         bucket.setCount(count);
         bucket.setDistribution(distribution);
-        
-        for (int i = 0; i < count; i+=2) {
+
+        for (int i = 0; i < count; i += 2) {
             distribution.put(i * 10L, 2L); // all will be above 100
         }
 

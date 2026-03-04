@@ -12,29 +12,29 @@ import step.core.collections.mongodb.MongoDBCollectionFactory;
 
 public class CollectionFactoryConfigurationParserTest {
 
-	@Test
-	public void testLegacyConfiguration() {
-		Configuration configuration = new Configuration();
-		configuration.putProperty("db.host", "localhost");
-		configuration.putProperty("database", "test");
-		DelegatingCollectionFactory factory = CollectionFactoryConfigurationParser.parseConfiguration(configuration);
-		
-		Collection<Document> collection = factory.getCollection("test", Document.class);
-		assertTrue(collection instanceof MongoDBCollection);
-	}
-	
-	@Test
-	public void testConfiguration() {
-		Configuration configuration = new Configuration();
-		configuration.putProperty(PREFIX + "myCollection" + TYPE, MongoDBCollectionFactory.class.getName());
-		configuration.putProperty(PREFIX + "myCollection" + APPLIES_TO, "test");
-		configuration.putProperty(PREFIX + "myCollection" + PROPERTIES + "host", "localhost");
-		configuration.putProperty(PREFIX + "myCollection" + PROPERTIES + "database", "test");
-		
-		DelegatingCollectionFactory factory = CollectionFactoryConfigurationParser.parseConfiguration(configuration);
-		
-		Collection<Document> collection = factory.getCollection("test", Document.class);
-		assertTrue(collection instanceof MongoDBCollection);
-	}
+    @Test
+    public void testLegacyConfiguration() {
+        Configuration configuration = new Configuration();
+        configuration.putProperty("db.host", "localhost");
+        configuration.putProperty("database", "test");
+        DelegatingCollectionFactory factory = CollectionFactoryConfigurationParser.parseConfiguration(configuration);
+
+        Collection<Document> collection = factory.getCollection("test", Document.class);
+        assertTrue(collection instanceof MongoDBCollection);
+    }
+
+    @Test
+    public void testConfiguration() {
+        Configuration configuration = new Configuration();
+        configuration.putProperty(PREFIX + "myCollection" + TYPE, MongoDBCollectionFactory.class.getName());
+        configuration.putProperty(PREFIX + "myCollection" + APPLIES_TO, "test");
+        configuration.putProperty(PREFIX + "myCollection" + PROPERTIES + "host", "localhost");
+        configuration.putProperty(PREFIX + "myCollection" + PROPERTIES + "database", "test");
+
+        DelegatingCollectionFactory factory = CollectionFactoryConfigurationParser.parseConfiguration(configuration);
+
+        Collection<Document> collection = factory.getCollection("test", Document.class);
+        assertTrue(collection instanceof MongoDBCollection);
+    }
 
 }

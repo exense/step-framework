@@ -1,6 +1,7 @@
 package step.core.timeseries;
 
 import static org.junit.Assert.*;
+
 import org.junit.Test;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
@@ -58,9 +59,9 @@ public class BucketBuilderTest {
         attributes = new BucketAttributes(Map.of("key", "value3"));
         Bucket bucket3 = BucketBuilder.create(0L).withAttributes(attributes).ingest(5L).build();
         Bucket bucket = BucketBuilder.create(0L).withAccumulateAttributes(Set.of("key"), 2)
-                .accumulate(bucket1)
-                .accumulate(bucket2)
-                .accumulate(bucket3).build();
+            .accumulate(bucket1)
+            .accumulate(bucket2)
+            .accumulate(bucket3).build();
         assertEquals(0L, bucket.getBegin());
         assertEquals(3L, bucket.getCount());
         assertEquals(5L, bucket.getSum());
@@ -68,6 +69,6 @@ public class BucketBuilderTest {
         assertEquals(-5L, bucket.getMin());
         assertEquals(5L, bucket.getMax());
         assertEquals(2, ((Set) bucket.getAttributes().get("key")).size());
-        assertTrue(((Set) bucket.getAttributes().get("key")).containsAll(List.of("value1","value2")));
+        assertTrue(((Set) bucket.getAttributes().get("key")).containsAll(List.of("value1", "value2")));
     }
 }

@@ -32,8 +32,8 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         ingestionPipeline.flush();
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, 3000)
-                .build();
+            .range(0, 3000)
+            .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertEquals(1, response.getFirstSeries().size());
         Assert.assertTrue(response.isTtlCovered());
@@ -55,9 +55,9 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         ingestionPipeline.flush();
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, 3000)
-                .withGroupDimensions(Set.of("z"))
-                .build();
+            .range(0, 3000)
+            .withGroupDimensions(Set.of("z"))
+            .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertEquals(1, response.getFirstSeries().size());
         Map<Long, Bucket> buckets = response.getSeries().get(Map.of("z", "custom"));
@@ -66,9 +66,9 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         Assert.assertTrue(response.isTtlCovered());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, 3000)
-                .withGroupDimensions(Set.of("a"))
-                .build();
+            .range(0, 3000)
+            .withGroupDimensions(Set.of("a"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(1, response.getFirstSeries().size());
         buckets = response.getSeries().get(Map.of());
@@ -95,10 +95,10 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         ingestionPipeline.flush();
 
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, 3000)
-                .withGroupDimensions(Set.of("z"))
-                .withFilter(Map.of("y", "valueY"))
-                .build();
+            .range(0, 3000)
+            .withGroupDimensions(Set.of("z"))
+            .withFilter(Map.of("y", "valueY"))
+            .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertEquals(1, response.getFirstSeries().size());
         Map<Long, Bucket> buckets = response.getSeries().get(Map.of("z", "valueZ"));
@@ -106,10 +106,10 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
         Assert.assertNotNull(buckets.get(0L));
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, 3000)
-                .withGroupDimensions(Set.of("a"))
-                .withFilter(Map.of("a", "valueA"))
-                .build();
+            .range(0, 3000)
+            .withGroupDimensions(Set.of("a"))
+            .withFilter(Map.of("a", "valueA"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(0, response.getSeries().size());
     }
@@ -117,13 +117,13 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
     @Test
     public void fallBackToAnotherCollectionBecauseOfAttributes() {
         TimeSeries timeSeries = new TimeSeriesBuilder()
-                .registerCollections(List.of(
-                        getCollection(1000, Set.of()),
-                        getCollection(2000, Set.of("a")),
-                        getCollection(10000, Set.of("a", "b")),
-                        getCollection(20000, Set.of("a", "b", "c"))
-                ))
-                .build();
+            .registerCollections(List.of(
+                getCollection(1000, Set.of()),
+                getCollection(2000, Set.of("a")),
+                getCollection(10000, Set.of("a", "b")),
+                getCollection(20000, Set.of("a", "b", "c"))
+            ))
+            .build();
         Bucket bucket = getRandomBucket();
         bucket.setAttributes(new BucketAttributes());
         bucket.setBegin(5000);
@@ -143,32 +143,32 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
 
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1) // to make sure 3rd interval is chosen
-                .build();
+            .range(0, AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1) // to make sure 3rd interval is chosen
+            .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertTrue(response.isTtlCovered());
         Assert.assertEquals(10_000, response.getCollectionResolution());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1) // to make sure 3rd interval is chosen
-                .withGroupDimensions(Set.of("b"))
-                .build();
+            .range(0, AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1) // to make sure 3rd interval is chosen
+            .withGroupDimensions(Set.of("b"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertTrue(response.isTtlCovered());
         Assert.assertEquals(2000, response.getCollectionResolution());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1) // to make sure 3rd interval is chosen
-                .withGroupDimensions(Set.of("c"))
-                .build();
+            .range(0, AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1) // to make sure 3rd interval is chosen
+            .withGroupDimensions(Set.of("c"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertTrue(response.isTtlCovered());
         Assert.assertEquals(10_000, response.getCollectionResolution());
 //
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1) // to make sure 3rd interval is chosen
-                .withFilter(Map.of("c", "3"))
-                .build();
+            .range(0, AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1) // to make sure 3rd interval is chosen
+            .withFilter(Map.of("c", "3"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertTrue(response.isTtlCovered());
         Assert.assertEquals(10_000, response.getCollectionResolution()); // first collection
@@ -177,15 +177,15 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
     @Test
     public void fallBackToAnotherCollectionBecauseOfAttributesAndTTL() {
         TimeSeries timeSeries = new TimeSeriesBuilder()
-                .registerCollections(List.of(
-                        getCollectionWithTTL(1000, 1000L, Set.of()),
-                        getCollectionWithTTL(2000, 2000L, Set.of("a")),
-                        getCollectionWithTTL(10000, 5000L, Set.of("a", "b")),
-                        getCollectionWithTTL(20000, 10_000L, Set.of("a", "b", "c"))
-                ))
-                .setSettings(new TimeSeriesSettings()
-                        .setTtlEnabled(true))
-                .build();
+            .registerCollections(List.of(
+                getCollectionWithTTL(1000, 1000L, Set.of()),
+                getCollectionWithTTL(2000, 2000L, Set.of("a")),
+                getCollectionWithTTL(10000, 5000L, Set.of("a", "b")),
+                getCollectionWithTTL(20000, 10_000L, Set.of("a", "b", "c"))
+            ))
+            .setSettings(new TimeSeriesSettings()
+                .setTtlEnabled(true))
+            .build();
         Bucket bucket = getRandomBucket();
         long now = System.currentTimeMillis();
         bucket.setBegin(now - 500);
@@ -198,64 +198,64 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
 
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 500, now)
-                .build();
+            .range(now - 500, now)
+            .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertTrue(response.isTtlCovered());
         Assert.assertEquals(1000, response.getCollectionResolution());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 1500, now)
-                // no filter
-                .build();
+            .range(now - 1500, now)
+            // no filter
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertTrue(response.isTtlCovered());
         Assert.assertEquals(2000, response.getCollectionResolution());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 1500, now)
-                .withFilter(Map.of("a", "1"))
-                .build();
+            .range(now - 1500, now)
+            .withFilter(Map.of("a", "1"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertFalse(response.isTtlCovered());
         Assert.assertEquals(1000, response.getCollectionResolution()); // because a is excluded in second resolution
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
-                .withFilter(Map.of("c", "3"))
-                .build();
+            .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
+            .withFilter(Map.of("c", "3"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertFalse(response.isTtlCovered());
         Assert.assertEquals(10000, response.getCollectionResolution());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
-                .withGroupDimensions(Set.of("b"))
-                .build();
+            .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
+            .withGroupDimensions(Set.of("b"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertFalse(response.isTtlCovered());
         Assert.assertEquals(2000, response.getCollectionResolution());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
-                .withGroupDimensions(Set.of("a", "b"))
-                .build();
+            .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
+            .withGroupDimensions(Set.of("a", "b"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertFalse(response.isTtlCovered());
         Assert.assertEquals(1000, response.getCollectionResolution());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
-                .withGroupDimensions(Set.of("b", "c"))
-                .build();
+            .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
+            .withGroupDimensions(Set.of("b", "c"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertFalse(response.isTtlCovered());
         Assert.assertEquals(2000, response.getCollectionResolution());
 
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
-                .withGroupDimensions(Set.of("a", "z"))
-                .build();
+            .range(now - AGGREGATION_RESOLUTION_LAMBDA * 10_000 + 1, now)
+            .withGroupDimensions(Set.of("a", "z"))
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertFalse(response.isTtlCovered());
         Assert.assertEquals(1000, response.getCollectionResolution());
@@ -270,8 +270,8 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
             collections.add(getCollection((long) Math.pow(2, i), collectionsAttributes.get(i)));
         }
         new TimeSeriesBuilder()
-                .registerCollections(collections)
-                .build();
+            .registerCollections(collections)
+            .build();
     }
 
     @Parameters(method = "invalidAttributesData")
@@ -282,29 +282,29 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
             collections.add(getCollection((long) Math.pow(2, i), collectionsAttributes.get(i)));
         }
         new TimeSeriesBuilder()
-                .registerCollections(collections)
-                .build();
+            .registerCollections(collections)
+            .build();
     }
 
 
     private static Object[] validAttributesData() {
         return new Object[]{
-                List.of(Set.of("a", "b", "c"), Set.of("a", "b", "c"), Set.of("a", "b", "c")),
-                List.of(Set.of(), Set.of("a", "b", "c"), Set.of("a", "b", "c", "d")),
-                List.of(Set.of(), Set.of(), Set.of("a", "b")),
-                List.of(Set.of(), Set.of(), Set.of()),
-                List.of(Set.of("a", "b"), Set.of("a", "b"), Set.of("a", "b" ,"c")),
+            List.of(Set.of("a", "b", "c"), Set.of("a", "b", "c"), Set.of("a", "b", "c")),
+            List.of(Set.of(), Set.of("a", "b", "c"), Set.of("a", "b", "c", "d")),
+            List.of(Set.of(), Set.of(), Set.of("a", "b")),
+            List.of(Set.of(), Set.of(), Set.of()),
+            List.of(Set.of("a", "b"), Set.of("a", "b"), Set.of("a", "b", "c")),
 
         };
     }
 
     private static Object[] invalidAttributesData() {
         return new Object[]{
-                List.of( Set.of("a", "b"), Set.of("a", "b", "c"), Set.of("a", "b")),
-                List.of(Set.of("a", "b", "c"), Set.of("a", "b"), Set.of()),
-                List.of(Set.of(), Set.of("a", "b"), Set.of()),
-                List.of(Set.of(), Set.of("a", "b"), Set.of("a", "c")),
-                List.of(Set.of("a"), Set.of("b")),
+            List.of(Set.of("a", "b"), Set.of("a", "b", "c"), Set.of("a", "b")),
+            List.of(Set.of("a", "b", "c"), Set.of("a", "b"), Set.of()),
+            List.of(Set.of(), Set.of("a", "b"), Set.of()),
+            List.of(Set.of(), Set.of("a", "b"), Set.of("a", "c")),
+            List.of(Set.of("a"), Set.of("b")),
 
         };
     }

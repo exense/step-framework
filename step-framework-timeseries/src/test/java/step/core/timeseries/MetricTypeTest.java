@@ -10,19 +10,19 @@ public class MetricTypeTest {
 
     @Test
     public void testMetricAggregationParams() {
-         MetricAggregation aggregation = new MetricAggregation(MetricAggregationType.PERCENTILE, Map.of("pclValue", 80));
-         MetricType metric = new MetricType()
-                .setName("newMetric")
-                .setDisplayName("label")
-                .setDescription("Custom description")
-                .setAttributes(Collections.emptyList())
-                .setDefaultAggregation(aggregation)
-                .setDefaultGroupingAttributes(Arrays.asList("name"))
-                .setUnit("unit");
-         Assert.assertEquals(80, metric.getDefaultAggregation().getParams().get("pclValue"));
-         
+        MetricAggregation aggregation = new MetricAggregation(MetricAggregationType.PERCENTILE, Map.of("pclValue", 80));
+        MetricType metric = new MetricType()
+            .setName("newMetric")
+            .setDisplayName("label")
+            .setDescription("Custom description")
+            .setAttributes(Collections.emptyList())
+            .setDefaultAggregation(aggregation)
+            .setDefaultGroupingAttributes(Arrays.asList("name"))
+            .setUnit("unit");
+        Assert.assertEquals(80, metric.getDefaultAggregation().getParams().get("pclValue"));
+
     }
-    
+
     @Test
     public void testBaseModel() {
         String name = "metricName";
@@ -31,34 +31,34 @@ public class MetricTypeTest {
         MetricAggregation aggregation = new MetricAggregation(MetricAggregationType.COUNT);
         Map<String, String> seriesColors = Map.of();
         List<MetricAttribute> attributes = Arrays.asList(
-                new MetricAttribute()
-                        .setType(MetricAttributeType.TEXT)
-                        .setDisplayName("displayName")
-                        .setMetadata(Map.of("metadataKey", "metadataValue"))
-                        .setName("name"),
-                new MetricAttribute()
-                        .setType(MetricAttributeType.NUMBER)
-                        .setDisplayName("Duration")
-                        .setName("duration"),
-                new MetricAttribute()
-                        .setType(MetricAttributeType.DATE)
-                        .setDisplayName("Created on")
-                        .setName("begin")
+            new MetricAttribute()
+                .setType(MetricAttributeType.TEXT)
+                .setDisplayName("displayName")
+                .setMetadata(Map.of("metadataKey", "metadataValue"))
+                .setName("name"),
+            new MetricAttribute()
+                .setType(MetricAttributeType.NUMBER)
+                .setDisplayName("Duration")
+                .setName("duration"),
+            new MetricAttribute()
+                .setType(MetricAttributeType.DATE)
+                .setDisplayName("Created on")
+                .setName("begin")
 
         );
 
         List<String> grouping = Arrays.asList("groupBy");
         MetricType metric = new MetricType()
-                .setName(name)
-                .setDisplayName(label)
-                .setDescription("Custom description")
-                .setAttributes(attributes)
-                .setDefaultAggregation(aggregation)
-                .setDefaultGroupingAttributes(grouping)
-                .setUnit(unit)
-                .setRenderingSettings(new MetricRenderingSettings()
-                    .setSeriesColors(seriesColors)
-                );
+            .setName(name)
+            .setDisplayName(label)
+            .setDescription("Custom description")
+            .setAttributes(attributes)
+            .setDefaultAggregation(aggregation)
+            .setDefaultGroupingAttributes(grouping)
+            .setUnit(unit)
+            .setRenderingSettings(new MetricRenderingSettings()
+                .setSeriesColors(seriesColors)
+            );
         Assert.assertEquals(name, metric.getName());
         Assert.assertEquals(label, metric.getDisplayName());
         Assert.assertEquals(unit, metric.getUnit());

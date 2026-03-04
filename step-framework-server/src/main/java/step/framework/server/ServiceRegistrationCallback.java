@@ -25,30 +25,31 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
+
 import java.util.EnumSet;
 
 public interface ServiceRegistrationCallback {
 
-	public void register(Object component);
+    public void register(Object component);
 
-	public void registerService(Class<?> serviceClass);
+    public void registerService(Class<?> serviceClass);
 
-	public void registerHandler(Handler handler);
+    public void registerHandler(Handler handler);
 
-	public void registerServlet(ServletHolder servletHolder, String subPath);
+    public void registerServlet(ServletHolder servletHolder, String subPath);
 
-	public FilterHolder registerServletFilter(Class<? extends Filter> filterClass, String pathSpec, EnumSet<DispatcherType> dispatches);
+    public FilterHolder registerServletFilter(Class<? extends Filter> filterClass, String pathSpec, EnumSet<DispatcherType> dispatches);
 
-	public void stop();
+    public void stop();
 
-	public void registerPackage(Package aPackage);
+    public void registerPackage(Package aPackage);
 
-	public void registerWebAppRoot(String webAppRoot);
+    public void registerWebAppRoot(String webAppRoot);
 
-	// For now, we only need the possibility to register ServerEndpointConfig instances.
-	// The Jetty Websocket implementation also supports annotated Server Endpoint classes,
-	// which are even simpler to write (but only support a no-args constructor, which was not enough for our uses).
-	// If we want to support these, another registerWebsocketEndpoint(Class<?> annotatedServerEndpointClass) can
-	// be introduced in the future.
-	void registerWebsocketEndpoint(ServerEndpointConfig serverEndpointConfig);
+    // For now, we only need the possibility to register ServerEndpointConfig instances.
+    // The Jetty Websocket implementation also supports annotated Server Endpoint classes,
+    // which are even simpler to write (but only support a no-args constructor, which was not enough for our uses).
+    // If we want to support these, another registerWebsocketEndpoint(Class<?> annotatedServerEndpointClass) can
+    // be introduced in the future.
+    void registerWebsocketEndpoint(ServerEndpointConfig serverEndpointConfig);
 }

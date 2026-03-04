@@ -32,7 +32,7 @@ public class SessionFilter extends AbstractServices implements ContainerRequestF
 
     protected Session retrieveOrInitializeSession() {
         Session session = getSession();
-        if(session == null) {
+        if (session == null) {
             session = new Session();
             session.setAuthenticated(false); //no authentication here, only setting
             session.setTokenType(TokenType.LOCAL_UI_TOKEN);//default

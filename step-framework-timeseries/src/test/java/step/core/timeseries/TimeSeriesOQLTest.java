@@ -41,10 +41,10 @@ public class TimeSeriesOQLTest {
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, 3)
-                .withGroupDimensions(Set.of("status"))
-                .withFilter(OQLFilterBuilder.getFilter("attributes.name = t1"))
-                .build();
+            .range(0, 3)
+            .withGroupDimensions(Set.of("status"))
+            .withFilter(OQLFilterBuilder.getFilter("attributes.name = t1"))
+            .build();
         TimeSeriesAggregationResponse response = pipeline.collect(query);
 
         assertEquals(2, response.getSeries().size());
@@ -65,10 +65,10 @@ public class TimeSeriesOQLTest {
 
         TimeSeriesAggregationPipeline pipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(0, 3)
-                .withGroupDimensions(Set.of("status"))
-                .withFilter(OQLFilterBuilder.getFilter("attributes.status = FAILED and attributes.name = t1"))
-                .build();
+            .range(0, 3)
+            .withGroupDimensions(Set.of("status"))
+            .withFilter(OQLFilterBuilder.getFilter("attributes.status = FAILED and attributes.name = t1"))
+            .build();
         TimeSeriesAggregationResponse response = pipeline.collect(query);
         assertEquals(1, response.getSeries().size());
     }

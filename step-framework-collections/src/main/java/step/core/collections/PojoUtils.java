@@ -81,7 +81,7 @@ public class PojoUtils {
 
             @Override
             public Object getSimpleProperty(Object bean, String name)
-                    throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+                throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
                 if (name.equals("_class")) {
                     return bean.getClass().getName();
                 } else if (name.equals("_id")) {
@@ -93,7 +93,7 @@ public class PojoUtils {
 
             @Override
             protected Object getPropertyOfMapBean(Map<?, ?> bean, String propertyName) throws IllegalArgumentException,
-                    IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+                IllegalAccessException, InvocationTargetException, NoSuchMethodException {
                 if (propertyName.equals(AbstractIdentifiableObject.ID)) {
                     if (bean instanceof Document) {
                         return ((Document) bean).getId();

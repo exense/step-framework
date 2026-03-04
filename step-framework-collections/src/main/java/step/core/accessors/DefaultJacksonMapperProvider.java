@@ -1,18 +1,18 @@
 /*******************************************************************************
  * Copyright (C) 2020, exense GmbH
- *  
+ *
  * This file is part of STEP
- *  
+ *
  * STEP is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * STEP is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
@@ -43,41 +43,41 @@ import com.fasterxml.jackson.datatype.jsonp.JSONPModule;
 
 public class DefaultJacksonMapperProvider {
 
-	private static List<Module> customModules = new ArrayList<>();
-	private static List<Module> modules = new ArrayList<>();
-	private static Class<ObjectId> _id = ObjectId.class;
-	
-	static {
-		customModules.add(new JSONPModule());
-		customModules.add(new JsonOrgModule());
-		customModules.add(new JavaTimeModule());
-        modules.add(new SimpleModule("jersey", new Version(1, 0, 0, null,null,null)) //
-                .addSerializer(_id, _idSerializer()) //
-                .addDeserializer(_id, _idDeserializer()));
-	}
+    private static List<Module> customModules = new ArrayList<>();
+    private static List<Module> modules = new ArrayList<>();
+    private static Class<ObjectId> _id = ObjectId.class;
 
-	public static List<Module> getCustomModules() {
-		return customModules;
-	}
-	
-	public static ObjectMapper getObjectMapper(JsonFactory factory) {
-		ObjectMapper objectMapper = new ObjectMapper(factory);
-		configure(objectMapper);
-		return objectMapper;
-	}
+    static {
+        customModules.add(new JSONPModule());
+        customModules.add(new JsonOrgModule());
+        customModules.add(new JavaTimeModule());
+        modules.add(new SimpleModule("jersey", new Version(1, 0, 0, null, null, null)) //
+            .addSerializer(_id, _idSerializer()) //
+            .addDeserializer(_id, _idDeserializer()));
+    }
 
-	public static ObjectMapper getObjectMapper() {
-		ObjectMapper objectMapper = new ObjectMapper();
-		configure(objectMapper);
-		return objectMapper;
-	}
+    public static List<Module> getCustomModules() {
+        return customModules;
+    }
 
-	private static void configure(ObjectMapper objectMapper) {
-		customModules.forEach(m->objectMapper.registerModule(m));
-		modules.forEach(m->objectMapper.registerModule(m));
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-	}
-	
+    public static ObjectMapper getObjectMapper(JsonFactory factory) {
+        ObjectMapper objectMapper = new ObjectMapper(factory);
+        configure(objectMapper);
+        return objectMapper;
+    }
+
+    public static ObjectMapper getObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        configure(objectMapper);
+        return objectMapper;
+    }
+
+    private static void configure(ObjectMapper objectMapper) {
+        customModules.forEach(m -> objectMapper.registerModule(m));
+        modules.forEach(m -> objectMapper.registerModule(m));
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
     private static JsonDeserializer<ObjectId> _idDeserializer() {
         return new JsonDeserializer<ObjectId>() {
             public ObjectId deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
@@ -85,7 +85,7 @@ public class DefaultJacksonMapperProvider {
             }
         };
     }
- 
+
     private static JsonSerializer<Object> _idSerializer() {
         return new JsonSerializer<Object>() {
             public void serialize(Object obj, JsonGenerator jsonGenerator, SerializerProvider provider) throws IOException, JsonProcessingException {

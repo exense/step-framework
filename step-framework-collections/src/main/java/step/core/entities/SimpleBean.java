@@ -14,25 +14,25 @@ public class SimpleBean {
         super();
     }
 
-	public SimpleBean(String stringProperty) {
-		this.stringProperty = stringProperty;
-	}
+    public SimpleBean(String stringProperty) {
+        this.stringProperty = stringProperty;
+    }
 
-	public String getId() {
-		return id;
-	}
+    public String getId() {
+        return id;
+    }
 
-	public void setId(String id) {
-		this.id = id;
-	}
+    public void setId(String id) {
+        this.id = id;
+    }
 
-	public String getStringProperty() {
-		return stringProperty;
-	}
+    public String getStringProperty() {
+        return stringProperty;
+    }
 
-	public void setStringProperty(String stringProperty) {
-		this.stringProperty = stringProperty;
-	}
+    public void setStringProperty(String stringProperty) {
+        this.stringProperty = stringProperty;
+    }
 }
 
 

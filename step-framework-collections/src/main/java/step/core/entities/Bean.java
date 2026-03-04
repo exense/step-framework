@@ -6,12 +6,13 @@ import org.json.JSONObject;
 
 import step.core.accessors.AbstractOrganizableObject;
 import step.core.collections.serialization.DottedKeyMap;
+
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
-@JsonTypeInfo(use=Id.CLASS,property="_class")
+@JsonTypeInfo(use = Id.CLASS, property = "_class")
 public class Bean extends AbstractOrganizableObject {
 
     public final String publicFinalField = "test";
@@ -48,22 +49,22 @@ public class Bean extends AbstractOrganizableObject {
     }
 
     public Long getLongProperty() {
-		return longProperty;
-	}
+        return longProperty;
+    }
 
-	public void setLongProperty(Long longProperty) {
-		this.longProperty = longProperty;
-	}
+    public void setLongProperty(Long longProperty) {
+        this.longProperty = longProperty;
+    }
 
-	public boolean isBooleanProperty() {
-		return booleanProperty;
-	}
+    public boolean isBooleanProperty() {
+        return booleanProperty;
+    }
 
-	public void setBooleanProperty(boolean booleanProperty) {
-		this.booleanProperty = booleanProperty;
-	}
+    public void setBooleanProperty(boolean booleanProperty) {
+        this.booleanProperty = booleanProperty;
+    }
 
-	public JsonObject getJsonObject() {
+    public JsonObject getJsonObject() {
         return jsonObject;
     }
 
@@ -104,14 +105,14 @@ public class Bean extends AbstractOrganizableObject {
     }
 
     public SimpleBean getSimpleBean() {
-		return simpleBean;
-	}
+        return simpleBean;
+    }
 
-	public void setSimpleBean(SimpleBean simpleBean) {
-		this.simpleBean = simpleBean;
-	}
+    public void setSimpleBean(SimpleBean simpleBean) {
+        this.simpleBean = simpleBean;
+    }
 
-	@Override
+    @Override
     public String toString() {
         return this.getId().toHexString();
     }

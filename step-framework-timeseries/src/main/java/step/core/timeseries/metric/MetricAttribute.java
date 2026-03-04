@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class MetricAttribute {
-    
+
     @NotNull
     private String name;
     @NotNull

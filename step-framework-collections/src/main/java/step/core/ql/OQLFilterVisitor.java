@@ -26,23 +26,23 @@ import step.core.ql.OQLParser.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
+public class OQLFilterVisitor extends OQLBaseVisitor<Filter> {
 
-	public OQLFilterVisitor() {
-		super();
-	}
+    public OQLFilterVisitor() {
+        super();
+    }
 
-	@Override
-	public Filter visitAndExpr(AndExprContext ctx) {
-		final Filter left = this.visit(ctx.expr(0));
-		final Filter right = this.visit(ctx.expr(1));
+    @Override
+    public Filter visitAndExpr(AndExprContext ctx) {
+        final Filter left = this.visit(ctx.expr(0));
+        final Filter right = this.visit(ctx.expr(1));
         return Filters.and(List.of(left, right));
-	}
+    }
 
-	@Override
-	public Filter visitEqualityExpr(EqualityExprContext ctx) {
-		String text0 = unescapeStringIfNecessary(ctx.expr(0).getText());
-		String text1 = unescapeStringIfNecessary(ctx.expr(1).getText());
+    @Override
+    public Filter visitEqualityExpr(EqualityExprContext ctx) {
+        String text0 = unescapeStringIfNecessary(ctx.expr(0).getText());
+        String text1 = unescapeStringIfNecessary(ctx.expr(1).getText());
         return processEqExpr(ctx, text0, text1);
     }
 
@@ -52,16 +52,16 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
         } else if (ctx.NEQ() != null) {
             return Filters.not(Filters.equals(text0, text1));
         } else if (ctx.REGEX() != null) {
-            return Filters.regex(text0, text1,false);
+            return Filters.regex(text0, text1, false);
         } else {
             throw new UnsupportedOperationException("Operation of the provided equality expression is not supported. Expression: " + ctx.getText());
         }
     }
 
     @Override
-	public Filter visitComparisonExpr(ComparisonExprContext ctx) {
-		String text0 = unescapeStringIfNecessary(ctx.expr(0).getText());
-		String text1 = unescapeStringIfNecessary(ctx.expr(1).getText());
+    public Filter visitComparisonExpr(ComparisonExprContext ctx) {
+        String text0 = unescapeStringIfNecessary(ctx.expr(0).getText());
+        String text1 = unescapeStringIfNecessary(ctx.expr(1).getText());
         return processComparisonExp(ctx, text0, text1);
     }
 
@@ -86,22 +86,22 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
     }
 
     protected String unescapeStringIfNecessary(String text1) {
-		if(text1.startsWith("\"") && text1.endsWith("\"")) {
-			text1 = unescapeStringAtom(text1);
-		}
-		return text1;
-	}
+        if (text1.startsWith("\"") && text1.endsWith("\"")) {
+            text1 = unescapeStringAtom(text1);
+        }
+        return text1;
+    }
 
-	@Override
-	public Filter visitOrExpr(OrExprContext ctx) {
-		final Filter left = this.visit(ctx.expr(0));
-		final Filter right = this.visit(ctx.expr(1));
+    @Override
+    public Filter visitOrExpr(OrExprContext ctx) {
+        final Filter left = this.visit(ctx.expr(0));
+        final Filter right = this.visit(ctx.expr(1));
         return Filters.or(List.of(left, right));
-	}
+    }
 
-	@Override
-	public Filter visitInExpr(InExprContext ctx) {
-		String text0 = unescapeStringIfNecessary(ctx.expr().getText());
+    @Override
+    public Filter visitInExpr(InExprContext ctx) {
+        String text0 = unescapeStringIfNecessary(ctx.expr().getText());
         return processInExpr(ctx, text0);
     }
 
@@ -111,32 +111,32 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter>{
     }
 
     @Override
-	public Filter visitNotExpr(NotExprContext ctx) {
-		final Filter expr = this.visit(ctx.expr());
+    public Filter visitNotExpr(NotExprContext ctx) {
+        final Filter expr = this.visit(ctx.expr());
         return Filters.not(expr);
-	}
+    }
 
-	@Override
-	public Filter visitParExpr(ParExprContext ctx) {
-		return this.visit(ctx.expr());
-	}
+    @Override
+    public Filter visitParExpr(ParExprContext ctx) {
+        return this.visit(ctx.expr());
+    }
 
-	@Override
-	public Filter visitNonQuotedStringAtom(NonQuotedStringAtomContext ctx) {
-		return Filters.fulltext(ctx.getText());
-	}
+    @Override
+    public Filter visitNonQuotedStringAtom(NonQuotedStringAtomContext ctx) {
+        return Filters.fulltext(ctx.getText());
+    }
 
-	@Override
-	public Filter visitStringAtom(StringAtomContext ctx) {
-		String str = unescapeStringAtom(ctx.getText());
+    @Override
+    public Filter visitStringAtom(StringAtomContext ctx) {
+        String str = unescapeStringAtom(ctx.getText());
         return Filters.fulltext(str);
-	}
+    }
 
-	protected String unescapeStringAtom(String str) {
+    protected String unescapeStringAtom(String str) {
         // strip quotes
         str = str.substring(1, str.length() - 1).replace("\"\"", "\"");
-		return str;
-	}
+        return str;
+    }
 
 
 }

@@ -20,38 +20,38 @@ public class TimeSeriesMultipleCollectionsAggregateTest extends TimeSeriesBaseTe
         timeSeries.ingestDataForEmptyCollections();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 10_000 * 1000, now)
-                .build();
+            .range(now - 10_000 * 1000, now)
+            .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertEquals(10000, response.getCollectionResolution());
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 5000, now)
-                .build();
+            .range(now - 5000, now)
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(1000, response.getCollectionResolution());
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 1000, now)
-                .build();
+            .range(now - 1000, now)
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(1000, response.getCollectionResolution());
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 5000 * AGGREGATION_RESOLUTION_LAMBDA + 1, now)
-                .build();
+            .range(now - 5000 * AGGREGATION_RESOLUTION_LAMBDA + 1, now)
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(1000, response.getCollectionResolution());
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 5000 * AGGREGATION_RESOLUTION_LAMBDA, now)
-                .build();
+            .range(now - 5000 * AGGREGATION_RESOLUTION_LAMBDA, now)
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(5000, response.getCollectionResolution());
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 10_000 * AGGREGATION_RESOLUTION_LAMBDA + 1, now)
-                .build();
+            .range(now - 10_000 * AGGREGATION_RESOLUTION_LAMBDA + 1, now)
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(5000, response.getCollectionResolution());
         query = new TimeSeriesAggregationQueryBuilder()
-                .range(now - 10_000 * AGGREGATION_RESOLUTION_LAMBDA, now)
-                .build();
+            .range(now - 10_000 * AGGREGATION_RESOLUTION_LAMBDA, now)
+            .build();
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(10_000, response.getCollectionResolution());
     }
@@ -63,8 +63,8 @@ public class TimeSeriesMultipleCollectionsAggregateTest extends TimeSeriesBaseTe
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
         long from = now - 1000 * AGGREGATION_RESOLUTION_LAMBDA;
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .range(from, now) // first resolution should be ideal
-                .build();
+            .range(from, now) // first resolution should be ideal
+            .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertEquals(1000, response.getCollectionResolution());
         timeSeries.getCollections().get(0).setTtl(10_000);
@@ -74,8 +74,6 @@ public class TimeSeriesMultipleCollectionsAggregateTest extends TimeSeriesBaseTe
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(1000, response.getCollectionResolution());
     }
-
-
 
 
 }

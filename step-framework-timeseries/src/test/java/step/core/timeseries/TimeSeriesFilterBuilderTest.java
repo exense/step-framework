@@ -52,9 +52,9 @@ public class TimeSeriesFilterBuilderTest {
     @Test
     public void buildTimeSeriesQueryFilterTest() {
         TimeSeriesQuery query = new TimeSeriesQueryBuilder()
-                .withFilter(TimeSeriesFilterBuilder.buildFilter("field1 = abc"))
-                .range(10L, 20L)
-                .build();
+            .withFilter(TimeSeriesFilterBuilder.buildFilter("field1 = abc"))
+            .range(10L, 20L)
+            .build();
         Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
         Assert.assertTrue(filter instanceof And);
         Assert.assertEquals(2, filter.getChildren().size());
@@ -63,9 +63,9 @@ public class TimeSeriesFilterBuilderTest {
     @Test
     public void buildTimeSeriesAggregationQueryFilterTest() {
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
-                .withFilter(TimeSeriesFilterBuilder.buildFilter("field1 = abc"))
-                .range(10L, 20L)
-                .build();
+            .withFilter(TimeSeriesFilterBuilder.buildFilter("field1 = abc"))
+            .range(10L, 20L)
+            .build();
         Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
         Assert.assertTrue(filter instanceof And);
         Assert.assertEquals(2, filter.getChildren().size());

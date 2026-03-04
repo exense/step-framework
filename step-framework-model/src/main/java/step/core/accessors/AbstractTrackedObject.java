@@ -1,18 +1,18 @@
 /*******************************************************************************
  * Copyright (C) 2020, exense GmbH
- *  
+ *
  * This file is part of STEP
- *  
+ *
  * STEP is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * STEP is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
@@ -27,47 +27,47 @@ import java.util.Date;
  */
 public class AbstractTrackedObject extends AbstractOrganizableObject {
 
-	private Date creationDate;
-	private String creationUser;
+    private Date creationDate;
+    private String creationUser;
 
-	private Date lastModificationDate;
-	private String lastModificationUser;
+    private Date lastModificationDate;
+    private String lastModificationUser;
 
-	public AbstractTrackedObject() {
-		super();
-	}
+    public AbstractTrackedObject() {
+        super();
+    }
 
-	public Date getCreationDate() {
-		return creationDate;
-	}
+    public Date getCreationDate() {
+        return creationDate;
+    }
 
-	public void setCreationDate(Date creationDate) {
-		this.creationDate = creationDate;
-	}
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
+    }
 
-	public String getCreationUser() {
-		return creationUser;
-	}
+    public String getCreationUser() {
+        return creationUser;
+    }
 
-	public void setCreationUser(String creationUser) {
-		this.creationUser = creationUser;
-	}
+    public void setCreationUser(String creationUser) {
+        this.creationUser = creationUser;
+    }
 
-	public Date getLastModificationDate() {
-		return lastModificationDate;
-	}
+    public Date getLastModificationDate() {
+        return lastModificationDate;
+    }
 
-	public void setLastModificationDate(Date lastModificationDate) {
-		this.lastModificationDate = lastModificationDate;
-	}
+    public void setLastModificationDate(Date lastModificationDate) {
+        this.lastModificationDate = lastModificationDate;
+    }
 
-	public String getLastModificationUser() {
-		return lastModificationUser;
-	}
+    public String getLastModificationUser() {
+        return lastModificationUser;
+    }
 
-	public void setLastModificationUser(String lastModificationUser) {
-		this.lastModificationUser = lastModificationUser;
-	}
+    public void setLastModificationUser(String lastModificationUser) {
+        this.lastModificationUser = lastModificationUser;
+    }
 
 
 }
