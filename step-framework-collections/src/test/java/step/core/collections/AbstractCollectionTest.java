@@ -639,12 +639,13 @@ public abstract class AbstractCollectionTest {
         collectionFactory.getCollection("testAbstractTrackedObject", AbstractTrackedObject.class).drop();
         Collection<AbstractTrackedObject> collection = collectionFactory.getCollection("testAbstractTrackedObject", AbstractTrackedObject.class);
         AbstractUser creator = new TestUser("creator");
+        String creatorId = creator.getId().toHexString();
         AbstractTrackedObject abstractTrackedObject = new AbstractTrackedObject();
-        abstractTrackedObject.setCreationUserId(creator.getId().toHexString());
+        abstractTrackedObject.setCreationUserId(creatorId);
         abstractTrackedObject.setCreationUser(creator.getSessionUsername());
         Date now = new Date();
         abstractTrackedObject.setCreationDate(now);
-        abstractTrackedObject.setLastModificationUserId(creator.getId().toHexString());
+        abstractTrackedObject.setLastModificationUserId(creatorId);
         abstractTrackedObject.setLastModificationUser(creator.getSessionUsername());
         abstractTrackedObject.setLastModificationDate(now);
         collection.save(abstractTrackedObject);
@@ -653,13 +654,13 @@ public abstract class AbstractCollectionTest {
             collection.find(Filters.equals("creationUser", creator.getSessionUsername()), null, null, null, 0).findFirst().isPresent());
         //Search by creator id
         assertTrue("Search by creator id did not find result",
-            collection.find(Filters.equals("creationUserId", creator.getId()), null, null, null, 0).findFirst().isPresent());
+            collection.find(Filters.equals("creationUserId", creatorId), null, null, null, 0).findFirst().isPresent());
         //Search by modifier name
         assertTrue("Search by modifier name did not find result",
             collection.find(Filters.equals("lastModificationUser", creator.getSessionUsername()), null, null, null, 0).findFirst().isPresent());
         //Search by modifier id
         assertTrue("Search by modifier id did not find result",
-            collection.find(Filters.equals("lastModificationUserId", creator.getId()), null, null, null, 0).findFirst().isPresent());
+            collection.find(Filters.equals("lastModificationUserId", creatorId), null, null, null, 0).findFirst().isPresent());
         TestUser modifier = new TestUser("modifier");
         abstractTrackedObject.setLastModificationDate(new Date());
         abstractTrackedObject.setLastModificationUser(modifier.getSessionUsername());
@@ -670,12 +671,12 @@ public abstract class AbstractCollectionTest {
             collection.find(Filters.equals("creationUser", creator.getSessionUsername()), null, null, null, 0).findFirst().isPresent());
         //Search by creator id
         assertTrue("Search by creator id did not find result",
-            collection.find(Filters.equals("creationUserId", creator.getId()), null, null, null, 0).findFirst().isPresent());
+            collection.find(Filters.equals("creationUserId", creatorId), null, null, null, 0).findFirst().isPresent());
         //Search by modifier name
         assertTrue("Search by modifier name did not find result",
             collection.find(Filters.equals("lastModificationUser", modifier.getSessionUsername()), null, null, null, 0).findFirst().isPresent());
         //Search by modifier id
         assertTrue("Search by modifier id did not find result",
-            collection.find(Filters.equals("lastModificationUserId", modifier.getId()), null, null, null, 0).findFirst().isPresent());
+            collection.find(Filters.equals("lastModificationUserId", modifier.getId().toHexString()), null, null, null, 0).findFirst().isPresent());
     }
 }
