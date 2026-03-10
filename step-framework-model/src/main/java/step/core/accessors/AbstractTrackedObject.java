@@ -31,11 +31,11 @@ public class AbstractTrackedObject extends AbstractOrganizableObject {
 
     private Date creationDate;
     private String creationUser;
-    private ObjectId creationUserId;
+    private String creationUserId;
 
     private Date lastModificationDate;
     private String lastModificationUser;
-    private ObjectId lastModificationUserId;
+    private String lastModificationUserId;
 
     public AbstractTrackedObject() {
         super();
@@ -73,19 +73,19 @@ public class AbstractTrackedObject extends AbstractOrganizableObject {
         this.lastModificationUser = lastModificationUser;
     }
 
-    public ObjectId getCreationUserId() {
+    public String getCreationUserId() {
         return creationUserId;
     }
 
-    public void setCreationUserId(ObjectId creationUserId) {
+    public void setCreationUserId(String creationUserId) {
         this.creationUserId = creationUserId;
     }
 
-    public ObjectId getLastModificationUserId() {
+    public String getLastModificationUserId() {
         return lastModificationUserId;
     }
 
-    public void setLastModificationUserId(ObjectId lastModificationUserId) {
+    public void setLastModificationUserId(String lastModificationUserId) {
         this.lastModificationUserId = lastModificationUserId;
     }
 }
