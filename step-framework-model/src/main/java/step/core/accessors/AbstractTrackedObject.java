@@ -18,8 +18,6 @@
  ******************************************************************************/
 package step.core.accessors;
 
-import org.bson.types.ObjectId;
-
 import java.util.Date;
 
 /**
@@ -31,11 +29,9 @@ public class AbstractTrackedObject extends AbstractOrganizableObject {
 
     private Date creationDate;
     private String creationUser;
-    private String creationUserId;
 
     private Date lastModificationDate;
     private String lastModificationUser;
-    private String lastModificationUserId;
 
     public AbstractTrackedObject() {
         super();
@@ -73,19 +69,5 @@ public class AbstractTrackedObject extends AbstractOrganizableObject {
         this.lastModificationUser = lastModificationUser;
     }
 
-    public String getCreationUserId() {
-        return creationUserId;
-    }
 
-    public void setCreationUserId(String creationUserId) {
-        this.creationUserId = creationUserId;
-    }
-
-    public String getLastModificationUserId() {
-        return lastModificationUserId;
-    }
-
-    public void setLastModificationUserId(String lastModificationUserId) {
-        this.lastModificationUserId = lastModificationUserId;
-    }
 }
