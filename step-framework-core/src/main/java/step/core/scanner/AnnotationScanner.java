@@ -223,6 +223,9 @@ public class AnnotationScanner implements AutoCloseable {
      * @return the URL of the JAR or directory that contains the class, or {@code null}
      */
     public URL getClasspathElementUrl(String className) {
+        if (className == null) {
+            throw new IllegalArgumentException("className must not be null");
+        }
         ClassInfo classInfo = scanResult.getClassInfo(className);
         return classInfo != null ? classInfo.getClasspathElementURL() : null;
     }
