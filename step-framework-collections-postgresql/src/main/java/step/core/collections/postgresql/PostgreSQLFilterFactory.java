@@ -117,9 +117,16 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 			Exists existsFilter = (Exists) filter;
 			// For exists filter we have no value to infer the type, so we still try to infer the type from the field type
 			return formatFieldForEntity(existsFilter.getField()) + " IS NOT NULL ";
-		} else {
-			throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
-		}
+		} else if (filter instanceof In) {
+            In inFilter = (In) filter;
+            //In filter values implementation only support comparison as Strings, so the field and values are formated to string
+            String values = inFilter.getValues().stream()
+                    .map(this::formatInValue) // Escape single quotes for SQL
+                    .collect(Collectors.joining(",", "(", ")"));
+            return formatField(inFilter.getField(), true) + " IN " + values + " ";
+        } else {
+            throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
+        }
 	}
 
 	private String notPsqlClause(Not notFilter, List<String> childerPojoFilters) {
@@ -131,6 +138,18 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 			return "NOT (" + childerPojoFilters.get(0) + ")";
 		}
 	}
+
+    private String formatInValue(Object expectedValue) {
+        String result;
+        if (expectedValue instanceof String) {
+            result = escapeValue((String) expectedValue);
+        } else if (expectedValue instanceof ObjectId) {
+            result = ((ObjectId) expectedValue).toHexString();
+        } else {
+            result = expectedValue.toString();
+        }
+        return "'" + result + "'";
+    }
 
 	private String escapeValue(String expectedValue) {
 		return expectedValue.replaceAll("'","''");

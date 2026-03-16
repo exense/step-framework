@@ -1,18 +1,18 @@
 /*******************************************************************************
  * Copyright (C) 2020, exense GmbH
- *  
+ *
  * This file is part of STEP
- *  
+ *
  * STEP is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * STEP is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with STEP.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
@@ -25,32 +25,32 @@ import java.util.Date;
 
 public class ControllerLog extends AbstractIdentifiableObject {
 
-	private Date start;
-	
-	private Version version;
+    private Date start;
 
-	public ControllerLog() {
-		super();
-	}
+    private Version version;
 
-	public Date getStart() {
-		return start;
-	}
+    public ControllerLog() {
+        super();
+    }
 
-	public void setStart(Date start) {
-		this.start = start;
-	}
+    public Date getStart() {
+        return start;
+    }
 
-	public Version getVersion() {
-		return version;
-	}
+    public void setStart(Date start) {
+        this.start = start;
+    }
 
-	public void setVersion(Version version) {
-		this.version = version;
-	}
+    public Version getVersion() {
+        return version;
+    }
 
-	@Override
-	public String toString() {
-		return "ControllerLog [start=" + start + ", version=" + version + "]";
-	}
+    public void setVersion(Version version) {
+        this.version = version;
+    }
+
+    @Override
+    public String toString() {
+        return "ControllerLog [start=" + start + ", version=" + version + "]";
+    }
 }

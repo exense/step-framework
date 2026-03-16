@@ -38,22 +38,22 @@ public class TimeSeriesFilterBuilder {
             return Filters.empty();
         }
         List<Filter> filters = attributes.entrySet().stream()
-                .map(e -> {
-                    Object value = e.getValue();
-                    String key = ATTRIBUTES_PREFIX + e.getKey();
-                    if (value == null) {
-                        return Filters.equals(key, (String) value);
-                    } else if (value instanceof Boolean) {
-                        return Filters.equals(key, (Boolean) value);
-                    } else if (value instanceof Integer) {
-                        return Filters.equals(key, ((Integer) value).longValue());
-                    } else if (value instanceof Long) {
-                        return Filters.equals(key, (Long) value);
-                    } else {
-                        return Filters.equals(key, value.toString());
-                    }
+            .map(e -> {
+                Object value = e.getValue();
+                String key = ATTRIBUTES_PREFIX + e.getKey();
+                if (value == null) {
+                    return Filters.equals(key, (String) value);
+                } else if (value instanceof Boolean) {
+                    return Filters.equals(key, (Boolean) value);
+                } else if (value instanceof Integer) {
+                    return Filters.equals(key, ((Integer) value).longValue());
+                } else if (value instanceof Long) {
+                    return Filters.equals(key, (Long) value);
+                } else {
+                    return Filters.equals(key, value.toString());
+                }
 
-                }).collect(Collectors.toList());
+            }).collect(Collectors.toList());
         return Filters.and(filters);
     }
 
@@ -62,7 +62,7 @@ public class TimeSeriesFilterBuilder {
 
         return Filters.and(Arrays.asList(query.getFilter(), timestampFilter));
     }
-    
+
     public static Filter buildFilter(TimeSeriesProcessedParams params) {
         Filter timestampFilter = TimeSeriesFilterBuilder.buildFilter(params.getFrom(), params.getTo());
 

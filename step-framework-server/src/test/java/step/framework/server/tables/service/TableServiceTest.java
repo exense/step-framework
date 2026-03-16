@@ -77,12 +77,12 @@ public class TableServiceTest {
         tableRegistry.register(FILTERED_TABLE, filteredTable);
 
         Table<Bean> tableWithFilterFactory = new Table<>(collection, null, false);
-        tableWithFilterFactory.withTableFiltersFactory(p->Filters.equals("property1", VALUE_1));
+        tableWithFilterFactory.withTableFiltersFactory(p -> Filters.equals("property1", VALUE_1));
         tableRegistry.register(TABLE_WITH_FILTER_FACTORY, tableWithFilterFactory);
 
         Table<Bean> tableWithFilterFactoryWithSession = new Table<>(collection, null, false);
         tableWithFilterFactoryWithSession.withTableFiltersFactory((p, session) -> Filters.and(List.of(Filters.equals("property1", VALUE_1),
-                (session != null && session.get(TEST_RIGHT) != null) ? Filters.empty() : Filters.falseFilter())));
+            (session != null && session.get(TEST_RIGHT) != null) ? Filters.empty() : Filters.falseFilter())));
         tableRegistry.register(TABLE_WITH_FILTER_FACTORY_WITH_SESSION, tableWithFilterFactoryWithSession);
 
         Table<Bean> tableWithAccessRight = new Table<>(collection, TEST_RIGHT, false);
@@ -396,7 +396,7 @@ public class TableServiceTest {
         // Test multiple filters
         processedIds.clear();
         parameters.setFilters(List.of(new FieldFilter("property1", "value1", true),
-                new FieldFilter("property1", "value2", true)));
+            new FieldFilter("property1", "value2", true)));
         exportStatus = tableService().performBulkOperation(table, parameters, processedIds::add, sessionWithRight());
         assertEquals(List.of(), processedIds);
         assertEquals(0, exportStatus.getCount());
@@ -483,6 +483,7 @@ public class TableServiceTest {
     private TableService tableService() {
         return tableService(() -> "");
     }
+
     private TableService tableService(ObjectFilter contextObjectFilter) {
         TableRegistry tableRegistry = new TableRegistry();
         tableRegistry.register(SIMPLE_TABLE, table);

@@ -28,19 +28,20 @@ import java.util.List;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(And.class),
-        @JsonSubTypes.Type(Equals.class),
-        @JsonSubTypes.Type(False.class),
-        @JsonSubTypes.Type(Fulltext.class),
-        @JsonSubTypes.Type(Gt.class),
-        @JsonSubTypes.Type(Gte.class),
-        @JsonSubTypes.Type(Lt.class),
-        @JsonSubTypes.Type(Lte.class),
-        @JsonSubTypes.Type(Not.class),
-        @JsonSubTypes.Type(Or.class),
-        @JsonSubTypes.Type(Regex.class),
-        @JsonSubTypes.Type(True.class),
-        @JsonSubTypes.Type(Exists.class)
+    @JsonSubTypes.Type(And.class),
+    @JsonSubTypes.Type(Equals.class),
+    @JsonSubTypes.Type(False.class),
+    @JsonSubTypes.Type(Fulltext.class),
+    @JsonSubTypes.Type(Gt.class),
+    @JsonSubTypes.Type(Gte.class),
+    @JsonSubTypes.Type(Lt.class),
+    @JsonSubTypes.Type(Lte.class),
+    @JsonSubTypes.Type(Not.class),
+    @JsonSubTypes.Type(Or.class),
+    @JsonSubTypes.Type(Regex.class),
+    @JsonSubTypes.Type(True.class),
+    @JsonSubTypes.Type(Exists.class),
+    @JsonSubTypes.Type(In.class)
 })
 public interface Filter {
 

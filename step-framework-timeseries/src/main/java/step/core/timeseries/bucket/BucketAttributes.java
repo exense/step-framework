@@ -17,7 +17,7 @@ public class BucketAttributes extends HashMap<String, Object> {
     public BucketAttributes subset(Set<String> keys) {
         BucketAttributes subset = new BucketAttributes();
         this.keySet().stream().filter(keys::contains).forEach(k -> {
-            subset.put(k ,get(k));
+            subset.put(k, get(k));
         });
         return subset;
     }

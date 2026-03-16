@@ -12,11 +12,11 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     // Group
     private Set<String> groupDimensions;
-    
+
     // Ideal number of buckets the interval will be split into
     @Nullable
     private Integer bucketsCount;
-    
+
     // custom resolution required. Optional. This resolution can be eventually rounded to match existing TS resolutions
     @Nullable
     private Long bucketsResolution;
@@ -28,15 +28,15 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     private int collectAttributesValuesLimit;
 
     protected TimeSeriesAggregationQuery(
-                                         Filter filter,
-                                         TimeSeriesOptimizationType optimizationType,
-                                         Set<String> groupDimensions,
-                                         Long bucketsResolution,
-                                         Long from,
-                                         Long to,
-                                         boolean shrink,
-                                         Integer bucketsCount,
-                                         Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
+        Filter filter,
+        TimeSeriesOptimizationType optimizationType,
+        Set<String> groupDimensions,
+        Long bucketsResolution,
+        Long from,
+        Long to,
+        boolean shrink,
+        Integer bucketsCount,
+        Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
         super(from, to, filter);
         this.shrink = shrink;
         this.optimizationType = optimizationType;

@@ -152,15 +152,15 @@ public class TableService {
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperationWithCustomPreview(
-            String tableName, TableBulkOperationRequest parameters, BiConsumer<String, Boolean> operationById,
-            Session<?> session) throws TableServiceException {
+        String tableName, TableBulkOperationRequest parameters, BiConsumer<String, Boolean> operationById,
+        Session<?> session) throws TableServiceException {
         Table<T> table = getTable(tableName);
         return performBulkOperationWithCustomPreview(table, parameters, operationById, session);
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperationWithCustomPreview(
-            Table<T> table, TableBulkOperationRequest parameters, BiConsumer<String, Boolean> operationById,
-            Session<?> session) throws TableServiceException {
+        Table<T> table, TableBulkOperationRequest parameters, BiConsumer<String, Boolean> operationById,
+        Session<?> session) throws TableServiceException {
         // assert rights
         assertSessionHasRequiredAccessRight(table, session);
         // validate parameters
@@ -215,20 +215,20 @@ public class TableService {
             errorCount.add(v.longValue());
         });
         TableBulkOperationReport tableBulkOperationReport = new TableBulkOperationReport(okCount.longValue(), skipped.longValue(),
-                errorCount.longValue(), warningMessages, errorMessages);
+            errorCount.longValue(), warningMessages, errorMessages);
         return tableBulkOperationReport;
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperation(
-            String tableName, TableBulkOperationRequest request, Consumer<String> operationById,
-            Session<?> session) throws TableServiceException {
+        String tableName, TableBulkOperationRequest request, Consumer<String> operationById,
+        Session<?> session) throws TableServiceException {
         Table<T> table = getTable(tableName);
         return performBulkOperation(table, request, operationById, session);
     }
 
     public <T extends AbstractIdentifiableObject> TableBulkOperationReport performBulkOperation(
-            Table<T> table, TableBulkOperationRequest request, Consumer<String> operationById,
-            Session<?> session) throws TableServiceException {
+        Table<T> table, TableBulkOperationRequest request, Consumer<String> operationById,
+        Session<?> session) throws TableServiceException {
         BiConsumer<String, Boolean> previewAwareOperationById = (id, preview) -> {
             if (!preview) {
                 operationById.accept(id);
@@ -271,7 +271,7 @@ public class TableService {
         }
     }
 
-    private <T>  SearchOrder getSearchOrder(TableRequest request) {
+    private <T> SearchOrder getSearchOrder(TableRequest request) {
         SearchOrder searchOrder = null;
         List<Sort> sort = request.getSort();
         if (sort != null && !sort.isEmpty()) {

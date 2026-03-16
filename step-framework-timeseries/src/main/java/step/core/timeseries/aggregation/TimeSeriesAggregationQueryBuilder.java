@@ -51,7 +51,7 @@ public class TimeSeriesAggregationQueryBuilder {
     /**
      * Optional: when providing a set of attribute keys to be collected, the aggregation pipeline will accumulate the unique values for each of these keys (per bucket).
      *
-     * @param collectAttributeKeys the set of attributes keys which will be collected
+     * @param collectAttributeKeys         the set of attributes keys which will be collected
      * @param collectAttributesValuesLimit the maximum unique values collected per attribute
      * @return the builder
      */

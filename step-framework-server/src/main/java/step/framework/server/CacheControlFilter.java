@@ -14,11 +14,12 @@ import java.io.IOException;
 public class CacheControlFilter implements Filter {
 
     @Override
-    public void init(FilterConfig filterConfig) {}
+    public void init(FilterConfig filterConfig) {
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+        throws IOException, ServletException {
         if (servletRequest instanceof Request && response instanceof HttpServletResponse) {
             Request request = (Request) servletRequest;
             HttpServletResponse httpResponse = (HttpServletResponse) response;
@@ -35,5 +36,6 @@ public class CacheControlFilter implements Filter {
     }
 
     @Override
-    public void destroy() {}
+    public void destroy() {
+    }
 }

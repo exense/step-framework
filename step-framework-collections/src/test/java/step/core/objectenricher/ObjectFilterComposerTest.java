@@ -11,6 +11,6 @@ public class ObjectFilterComposerTest {
     @Test
     public void compose() {
         ObjectFilter objectFilter = ObjectFilterComposer.compose(List.of(() -> "key1=\"value1\"", () -> "key2=\"value2\""));
-        assertEquals("key1=\"value1\" and key2=\"value2\"",objectFilter.getOQLFilter());
+        assertEquals("key1=\"value1\" and key2=\"value2\"", objectFilter.getOQLFilter());
     }
 }

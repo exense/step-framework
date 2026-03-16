@@ -59,7 +59,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         }
 
         //collection is null when overridden in TimeSeriesExecutionPlugin, in such case async processor is not required
-        this.asyncProcessor =  (collection == null)  ? null : new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), entity -> {
+        this.asyncProcessor = (collection == null) ? null : new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), entity -> {
             try {
                 collection.save(entity);
             } catch (Throwable e) {
@@ -91,8 +91,8 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
             BucketAttributes bucketAttributes = removeIgnoredAttributes(bucket.getAttributes());
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
             bucketsForTimestamp.computeIfAbsent(bucketAttributes, k ->
-                            BucketBuilder.create(index).withAttributes(bucketAttributes))
-                    .accumulate(bucket);
+                    BucketBuilder.create(index).withAttributes(bucketAttributes))
+                .accumulate(bucket);
             if (nextPipeline != null) {
                 nextPipeline.ingestBucket(bucket);
             }
@@ -119,8 +119,8 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
             long index = timestampToBucketTimestamp(timestamp, sourceResolution);
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
             bucketsForTimestamp.computeIfAbsent(bucketAttributes, k ->
-                            BucketBuilder.create(index).withAttributes(bucketAttributes))
-                    .ingest(value);
+                    BucketBuilder.create(index).withAttributes(bucketAttributes))
+                .ingest(value);
             if (nextPipeline != null) {
                 nextPipeline.ingestPoint(attributes, timestamp, value);
             }
@@ -139,8 +139,9 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     }
 
     /**
-     *  Flush is performed only for the current ingestion pipeline (not the nested ones)
-     *  It's usually only called directly by the schedule jobs flushing the time series on regular basis, it is also directly called for some Junit tests (located in different package)
+     * Flush is performed only for the current ingestion pipeline (not the nested ones)
+     * It's usually only called directly by the schedule jobs flushing the time series on regular basis, it is also directly called for some Junit tests (located in different package)
+     *
      * @param forceFlush if false, the flush is only performed is the time interval is complete (i.e. bigger than the resolution) or if the queue size limit is reached
      */
     public void flush(boolean forceFlush) {

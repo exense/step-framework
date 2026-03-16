@@ -33,14 +33,14 @@ import java.util.Properties;
 
 public class PostgreSQLCollectionFactory implements CollectionFactory {
 
-	private static final Logger logger = LoggerFactory.getLogger(PostgreSQLCollectionFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(PostgreSQLCollectionFactory.class);
 
-	private final HikariDataSource ds;
+    private final HikariDataSource ds;
 
-	public PostgreSQLCollectionFactory(Properties properties) {
-		super();
+    public PostgreSQLCollectionFactory(Properties properties) {
+        super();
 
-		ds = createConnectionPool(properties);
+        ds = createConnectionPool(properties);
 
 		//Init common functions
 		initCommonFunctions();
@@ -76,96 +76,96 @@ public class PostgreSQLCollectionFactory implements CollectionFactory {
 		} catch (SQLException e) {
 			throw new RuntimeException("Unable to initialize mandatory PSQL functions", e);
 		}
-	}
+    }
 
-	@Override
-	public <T> Collection<T> getCollection(String name, Class<T> entityClass) {
-		try {
-			return new PostgreSQLCollection<T>(ds, name, entityClass);
-		} catch (SQLException e) {
-			throw new RuntimeException("Unable to get Jdbc Collection", e);
-		}
-	}
+    @Override
+    public <T> Collection<T> getCollection(String name, Class<T> entityClass) {
+        try {
+            return new PostgreSQLCollection<T>(ds, name, entityClass);
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to get Jdbc Collection", e);
+        }
+    }
 
-	@Override
-	public Collection<EntityVersion> getVersionedCollection(String name) {
-		try {
-			return new PostgreSQLCollection(ds, name + CollectionFactory.VERSION_COLLECTION_SUFFIX,
-					EntityVersion.class);
-		} catch (SQLException e) {
-			throw new RuntimeException("Unable to get Jdbc Collection", e);
-		}
-	}
+    @Override
+    public Collection<EntityVersion> getVersionedCollection(String name) {
+        try {
+            return new PostgreSQLCollection(ds, name + CollectionFactory.VERSION_COLLECTION_SUFFIX,
+                EntityVersion.class);
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to get Jdbc Collection", e);
+        }
+    }
 
-	@Override
-	public void close() throws IOException {
-		ds.close();
-	}
+    @Override
+    public void close() throws IOException {
+        ds.close();
+    }
 
-	static HikariDataSource createConnectionPool(Properties properties) {
-		HikariConfig config = new HikariConfig();
-		String jdbcUrl = properties.getProperty("jdbcUrl");
-		config.setJdbcUrl(jdbcUrl);
-		config.setUsername( properties.getProperty("user") );
-		config.setPassword( properties.getProperty("password") );
-		if (properties.containsKey("minConnections")) {
-			config.setMinimumIdle(Integer.parseInt(properties.getProperty("minConnections")));
-		}
-		config.setMaximumPoolSize(Integer.parseInt(properties.getProperty("maxConnections","50")));
-		config.addDataSourceProperty( "cachePrepStmts" , "true" );
-		config.addDataSourceProperty( "prepStmtCacheSize" , "250" );
-		config.addDataSourceProperty( "prepStmtCacheSqlLimit" , "2048" );
-		// Just to make the default explicit: every connection acquired from the data source will initially have auto-commit on.
-		// (this is also the case if the connection is re-used: it will be reset with auto-commit on before being returned)
-		config.setAutoCommit( true );
-		HikariDataSource hikariDataSource = null;
-		try {
-			hikariDataSource = new HikariDataSource(config);
-			logger.info("Connected to database " + jdbcUrl + ".");
-		} catch (HikariPool.PoolInitializationException e ) {
-			logger.warn("Unable to connect to the database '"+ jdbcUrl + "', trying to connect to the DB server and create the DB if it does not exist.");
-			try {
-				createDatabase(properties, jdbcUrl);
-				hikariDataSource = new HikariDataSource(config);
-			} catch (SQLException ex) {
-				logger.error("JDBC connection for url " + jdbcUrl + " failed.",e);
-				logger.error("Unable to create the database", ex);
-			}
+    static HikariDataSource createConnectionPool(Properties properties) {
+        HikariConfig config = new HikariConfig();
+        String jdbcUrl = properties.getProperty("jdbcUrl");
+        config.setJdbcUrl(jdbcUrl);
+        config.setUsername(properties.getProperty("user"));
+        config.setPassword(properties.getProperty("password"));
+        if (properties.containsKey("minConnections")) {
+            config.setMinimumIdle(Integer.parseInt(properties.getProperty("minConnections")));
+        }
+        config.setMaximumPoolSize(Integer.parseInt(properties.getProperty("maxConnections", "50")));
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        // Just to make the default explicit: every connection acquired from the data source will initially have auto-commit on.
+        // (this is also the case if the connection is re-used: it will be reset with auto-commit on before being returned)
+        config.setAutoCommit(true);
+        HikariDataSource hikariDataSource = null;
+        try {
+            hikariDataSource = new HikariDataSource(config);
+            logger.info("Connected to database " + jdbcUrl + ".");
+        } catch (HikariPool.PoolInitializationException e) {
+            logger.warn("Unable to connect to the database '" + jdbcUrl + "', trying to connect to the DB server and create the DB if it does not exist.");
+            try {
+                createDatabase(properties, jdbcUrl);
+                hikariDataSource = new HikariDataSource(config);
+            } catch (SQLException ex) {
+                logger.error("JDBC connection for url " + jdbcUrl + " failed.", e);
+                logger.error("Unable to create the database", ex);
+            }
 
-		}
-		return hikariDataSource;
-	}
+        }
+        return hikariDataSource;
+    }
 
-	private static void createDatabase(Properties properties, String jdbcUrl) throws SQLException {
-		int lastSlash = jdbcUrl.lastIndexOf("/");
-		String serverUrl = jdbcUrl.substring(0,lastSlash+1);
-		String dbName = jdbcUrl.replace(serverUrl,"").replaceFirst("\\?.*","");
-		HikariConfig serverConfig = new HikariConfig();
-		serverConfig.setJdbcUrl(serverUrl);
-		serverConfig.setUsername( properties.getProperty("user") );
-		serverConfig.setPassword( properties.getProperty("password") );
-		try (HikariDataSource serverDataSource = new HikariDataSource(serverConfig);
-			 Connection connection = serverDataSource.getConnection()) {
-			//Connect to DB server
+    private static void createDatabase(Properties properties, String jdbcUrl) throws SQLException {
+        int lastSlash = jdbcUrl.lastIndexOf("/");
+        String serverUrl = jdbcUrl.substring(0, lastSlash + 1);
+        String dbName = jdbcUrl.replace(serverUrl, "").replaceFirst("\\?.*", "");
+        HikariConfig serverConfig = new HikariConfig();
+        serverConfig.setJdbcUrl(serverUrl);
+        serverConfig.setUsername(properties.getProperty("user"));
+        serverConfig.setPassword(properties.getProperty("password"));
+        try (HikariDataSource serverDataSource = new HikariDataSource(serverConfig);
+             Connection connection = serverDataSource.getConnection()) {
+            //Connect to DB server
 
-			//Check  the DB is found
-			boolean found = false;
-			try (ResultSet resultSet = connection.getMetaData().getCatalogs()) {
-				while (resultSet.next() && !found) {
-					// Get the database name, which is at position 1
-					found = resultSet.getString(1).equals(dbName);
-				}
-			}
-			if (found) {
-				throw new RuntimeException("Database " + dbName + " already exist.");
-			} else {
-				try (Statement statement = connection.createStatement()){
-					statement.executeUpdate("CREATE DATABASE \"" + dbName + "\"");
-					logger.info("Database " + dbName + " successfully created.");
-				}
-			}
-		}
-	}
+            //Check  the DB is found
+            boolean found = false;
+            try (ResultSet resultSet = connection.getMetaData().getCatalogs()) {
+                while (resultSet.next() && !found) {
+                    // Get the database name, which is at position 1
+                    found = resultSet.getString(1).equals(dbName);
+                }
+            }
+            if (found) {
+                throw new RuntimeException("Database " + dbName + " already exist.");
+            } else {
+                try (Statement statement = connection.createStatement()) {
+                    statement.executeUpdate("CREATE DATABASE \"" + dbName + "\"");
+                    logger.info("Database " + dbName + " successfully created.");
+                }
+            }
+        }
+    }
 
 
 }

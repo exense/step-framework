@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 
 
-
 public class MetricAggregation {
     @NotNull
     private MetricAggregationType type;
@@ -13,7 +12,7 @@ public class MetricAggregation {
 
     public MetricAggregation() {
     }
-    
+
     public MetricAggregation(MetricAggregationType type) {
         this.type = type;
     }

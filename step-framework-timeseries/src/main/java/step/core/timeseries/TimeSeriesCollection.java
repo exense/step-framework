@@ -30,8 +30,8 @@ public class TimeSeriesCollection {
 
     public TimeSeriesCollection(Collection<Bucket> mainCollection, long resolution) {
         this(mainCollection, new TimeSeriesCollectionSettings()
-                .setResolution(resolution)
-                .setIngestionFlushSeriesQueueSize(20000)
+            .setResolution(resolution)
+            .setIngestionFlushSeriesQueueSize(20000)
         );
     }
 
@@ -44,18 +44,23 @@ public class TimeSeriesCollection {
         validateTtl(settings.getTtl());
         this.ttl = settings.getTtl();
         TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
-                .setResolution(settings.getResolution())
-                .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
-                .setFlushSeriesQueueSize(settings.getIngestionFlushSeriesQueueSize())
-                .setFlushAsyncQueueSize(settings.getIngestionFlushAsyncQueueSize())
-                .setIgnoredAttributes(settings.getIgnoredAttributes());
+            .setResolution(settings.getResolution())
+            .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
+            .setFlushSeriesQueueSize(settings.getIngestionFlushSeriesQueueSize())
+            .setFlushAsyncQueueSize(settings.getIngestionFlushAsyncQueueSize())
+            .setIgnoredAttributes(settings.getIgnoredAttributes());
         this.ingestionPipeline = new TimeSeriesIngestionPipeline(this, ingestionSettings);
         this.ignoredAttributes = settings.getIgnoredAttributes();
+    }
+
+    public Collection<Bucket> getUnderlyingCollection() {
+        return mainCollection;
     }
 
     /**
      * This method check if the collection isEmpty in the backend database.
      * Currently used to detect if the collection needs to be rebuilds based on higher resolution collection
+     *
      * @return true if empty
      */
     protected boolean isEmpty() {
@@ -65,6 +70,7 @@ public class TimeSeriesCollection {
     /**
      * This is the one used by the aggregation pipeline querying both the data from the ingestion pipeline (i.e. not yet flushed)
      * and the data already persisted
+     *
      * @param queryParameters the query parameters
      * @return a stream of buckets matching the query parameters
      */
@@ -72,7 +78,7 @@ public class TimeSeriesCollection {
         InMemoryCollection<Bucket> inMemoryCollection = ingestionPipeline.getCurrenStateToInMemoryCollection(queryParameters.getTo());
         Filter filter = TimeSeriesFilterBuilder.buildFilter(queryParameters);
         return Stream.concat(inMemoryCollection.findLazy(filter, null, null, null, 0),
-                mainCollection.findLazy(filter, null, null, null, 0));
+            mainCollection.findLazy(filter, null, null, null, 0));
     }
 
     protected void performHousekeeping() {
@@ -108,17 +114,19 @@ public class TimeSeriesCollection {
 
     /**
      * Creates separate indexes on the given attributes.
+     *
      * @param indexFields attribute names to be indexed (one index per attribute)
      */
     protected void createIndexes(Set<IndexField> indexFields) {
         mainCollection.createOrUpdateIndex(TimeSeriesConstants.TIMESTAMP_ATTRIBUTE);
         Set<IndexField> renamedFieldIndexes = indexFields.stream().map(i -> new IndexField("attributes." + i.fieldName,
-                i.order, i.fieldClass)).collect(Collectors.toSet());
+            i.order, i.fieldClass)).collect(Collectors.toSet());
         renamedFieldIndexes.forEach(mainCollection::createOrUpdateIndex);
     }
 
     /**
      * Creates a compound index on the underlying raw collection.
+     *
      * @param indexFields fields to create a compound index on
      */
     public void createCompoundIndex(LinkedHashSet<IndexField> indexFields) {
@@ -143,8 +151,9 @@ public class TimeSeriesCollection {
 
     /**
      * Only used by Junit to check persisted bucket count
+     *
      * @param filter query filter
-     * @param limit maximum results fetched and returned (0 unlimited)
+     * @param limit  maximum results fetched and returned (0 unlimited)
      * @return the count of matching object or the provided limit and if more objects matched
      */
     protected long count(Filter filter, Integer limit) {
@@ -153,6 +162,7 @@ public class TimeSeriesCollection {
 
     /**
      * Only used by Junit to check persisted data
+     *
      * @param filter the filter of the query
      * @return a stream of matching buckets
      */
@@ -164,7 +174,7 @@ public class TimeSeriesCollection {
     /**
      *
      * @param filter the filter of the query
-     * @param order the order of the query
+     * @param order  the order of the query
      * @return a stream of matching buckets sorted by the provided order parameter
      */
     protected Stream<Bucket> findLazy(Filter filter, SearchOrder order) {

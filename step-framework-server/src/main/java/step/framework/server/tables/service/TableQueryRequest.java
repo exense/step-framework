@@ -5,6 +5,7 @@ import java.util.List;
 public class TableQueryRequest {
     private List<TableFilter> filters;
     private TableParameters tableParameters;
+
     public List<TableFilter> getFilters() {
         return filters;
     }

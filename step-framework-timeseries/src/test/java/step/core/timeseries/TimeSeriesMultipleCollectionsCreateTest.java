@@ -25,8 +25,8 @@ public class TimeSeriesMultipleCollectionsCreateTest {
     public void validMultipleResolutionsTest(List<Long> resolutions) {
         List<TimeSeriesCollection> collections = resolutions.stream().map(r -> getCollection(r)).collect(Collectors.toList());
         new TimeSeriesBuilder()
-                .registerCollections(collections)
-                .build();
+            .registerCollections(collections)
+            .build();
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -34,8 +34,8 @@ public class TimeSeriesMultipleCollectionsCreateTest {
     public void invalidMultipleResolutionsTest(List<Long> resolutions) {
         List<TimeSeriesCollection> collections = resolutions.stream().map(r -> getCollection(r)).collect(Collectors.toList());
         new TimeSeriesBuilder()
-                .registerCollections(collections)
-                .build();
+            .registerCollections(collections)
+            .build();
     }
 
 
@@ -43,8 +43,8 @@ public class TimeSeriesMultipleCollectionsCreateTest {
     public void hasCollectionCheckTest() {
         List<Long> resolutions = Arrays.asList(10L, 20L, 40L, 80L, 160L, 320L);
         TimeSeries timeSeries = new TimeSeriesBuilder()
-                .registerCollections(resolutions.stream().map(this::getCollection).collect(Collectors.toList()))
-                .build();
+            .registerCollections(resolutions.stream().map(this::getCollection).collect(Collectors.toList()))
+            .build();
         resolutions.forEach(r -> Assert.assertTrue(timeSeries.hasCollection(r)));
         Assert.assertFalse(timeSeries.hasCollection(0));
         Assert.assertFalse(timeSeries.hasCollection(9));
@@ -56,26 +56,26 @@ public class TimeSeriesMultipleCollectionsCreateTest {
 
     private static Object[] validResolutionsData() {
         return new Object[]{
-                Arrays.asList(10L),
-                Arrays.asList(10L, 20L),
-                Arrays.asList(10L, 100L),
-                Arrays.asList(10L, 100L, 200L, 1000L),
-                Arrays.asList(500L, 1000L),
+            Arrays.asList(10L),
+            Arrays.asList(10L, 20L),
+            Arrays.asList(10L, 100L),
+            Arrays.asList(10L, 100L, 200L, 1000L),
+            Arrays.asList(500L, 1000L),
 
         };
     }
 
     private static Object[] invalidResolutionsData() {
         return new Object[]{
-                Arrays.asList(100L, 200L, 300L),
-                Arrays.asList(100L, 200L, 401L),
-                Arrays.asList(100L, 100L),
-                Arrays.asList(100L, 201L),
-                Arrays.asList(-100L, 200L),
-                Arrays.asList(-200L, -100L),
-                Arrays.asList(0L),
-                Arrays.asList(0L, 100),
-                Arrays.asList(100L, 110L, 120L),
+            Arrays.asList(100L, 200L, 300L),
+            Arrays.asList(100L, 200L, 401L),
+            Arrays.asList(100L, 100L),
+            Arrays.asList(100L, 201L),
+            Arrays.asList(-100L, 200L),
+            Arrays.asList(-200L, -100L),
+            Arrays.asList(0L),
+            Arrays.asList(0L, 100),
+            Arrays.asList(100L, 110L, 120L),
 
         };
     }

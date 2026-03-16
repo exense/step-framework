@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MetricType extends AbstractIdentifiableObject {
-    
+
     @NotNull
     private String name;
     @NotNull
@@ -94,5 +94,5 @@ public class MetricType extends AbstractIdentifiableObject {
         this.defaultGroupingAttributes = defaultGroupingAttributes;
         return this;
     }
-    
+
 }
