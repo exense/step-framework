@@ -42,40 +42,40 @@ public class PostgreSQLCollectionFactory implements CollectionFactory {
 
         ds = createConnectionPool(properties);
 
-		//Init common functions
-		initCommonFunctions();
-	}
+        //Init common functions
+        initCommonFunctions();
+    }
 
-	private void initCommonFunctions() {
-		String safeCastNumeric =
-				"CREATE OR REPLACE FUNCTION safe_cast_to_numeric(json_val jsonb) " +
-						"RETURNS numeric AS $$ " +
-						"BEGIN " +
-						"  RETURN (json_val#>>'{}')::numeric; " +
-						"EXCEPTION WHEN OTHERS THEN " +
-						"  RETURN NULL; " +
-						"END; " +
-						"$$ LANGUAGE plpgsql IMMUTABLE;";
+    private void initCommonFunctions() {
+        String safeCastNumeric =
+            "CREATE OR REPLACE FUNCTION safe_cast_to_numeric(json_val jsonb) " +
+                "RETURNS numeric AS $$ " +
+                "BEGIN " +
+                "  RETURN (json_val#>>'{}')::numeric; " +
+                "EXCEPTION WHEN OTHERS THEN " +
+                "  RETURN NULL; " +
+                "END; " +
+                "$$ LANGUAGE plpgsql IMMUTABLE;";
 
-		String safeCastBool =
-				"CREATE OR REPLACE FUNCTION safe_cast_to_bool(json_val jsonb) " +
-						"RETURNS boolean AS $$ " +
-						"BEGIN " +
-						"  RETURN json_val::boolean; " +
-						"EXCEPTION WHEN OTHERS THEN " +
-						"  RETURN NULL; " +
-						"END; " +
-						"$$ LANGUAGE plpgsql IMMUTABLE;";
+        String safeCastBool =
+            "CREATE OR REPLACE FUNCTION safe_cast_to_bool(json_val jsonb) " +
+                "RETURNS boolean AS $$ " +
+                "BEGIN " +
+                "  RETURN json_val::boolean; " +
+                "EXCEPTION WHEN OTHERS THEN " +
+                "  RETURN NULL; " +
+                "END; " +
+                "$$ LANGUAGE plpgsql IMMUTABLE;";
 
-		try (Connection connection = ds.getConnection()) {
-			try (Statement statement = connection.createStatement()) {
-				// Execute both function creations
-				statement.executeUpdate(safeCastNumeric);
-				statement.executeUpdate(safeCastBool);
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException("Unable to initialize mandatory PSQL functions", e);
-		}
+        try (Connection connection = ds.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                // Execute both function creations
+                statement.executeUpdate(safeCastNumeric);
+                statement.executeUpdate(safeCastBool);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to initialize mandatory PSQL functions", e);
+        }
     }
 
     @Override

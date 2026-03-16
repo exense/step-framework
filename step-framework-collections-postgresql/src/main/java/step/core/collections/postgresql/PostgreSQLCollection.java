@@ -164,40 +164,40 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
         });
     }
 
-	/**
-	 * Only used in Junit to run an explain query and validate index usages.
-	 *
-	 * @param filter filter to build the where clause
-	 * @param order order to build the order by clauss
-	 * @param skip to apply offset
-	 * @param limit to apply a limit
-	 * @return the explain results
-	 */
-	protected String explain(Filter filter, SearchOrder order, Integer skip, Integer limit) {
-		String query = buildQuery(filter, order, skip, limit);
-		logger.info("Explain {}", query);
-		query = "explain analyse " + query;
-		StringBuilder explainOutput = new StringBuilder();
-		try (Connection connection = ds.getConnection();
-			 Statement statement = connection.createStatement();
-			 ResultSet rs = statement.executeQuery(query)) {
-			while (rs.next()) {
-				// EXPLAIN output usually comes back in a single column
-				explainOutput.append(rs.getString(1)).append("\n");
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException("Unable to create index, query: " + query, e);
-		}
-		return explainOutput.toString();
-	}
+    /**
+     * Only used in Junit to run an explain query and validate index usages.
+     *
+     * @param filter filter to build the where clause
+     * @param order  order to build the order by clauss
+     * @param skip   to apply offset
+     * @param limit  to apply a limit
+     * @return the explain results
+     */
+    protected String explain(Filter filter, SearchOrder order, Integer skip, Integer limit) {
+        String query = buildQuery(filter, order, skip, limit);
+        logger.info("Explain {}", query);
+        query = "explain analyse " + query;
+        StringBuilder explainOutput = new StringBuilder();
+        try (Connection connection = ds.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet rs = statement.executeQuery(query)) {
+            while (rs.next()) {
+                // EXPLAIN output usually comes back in a single column
+                explainOutput.append(rs.getString(1)).append("\n");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to create index, query: " + query, e);
+        }
+        return explainOutput.toString();
+    }
 
     private String buildQuery(Filter filter, SearchOrder order, Integer skip, Integer limit) {
-		StringBuilder query = new StringBuilder();
+        StringBuilder query = new StringBuilder();
         query.append("SELECT * FROM ").append(collectionNameStr).append(" WHERE ").append(filterToWhereClause(filter));
         if (order != null && !order.getFieldsSearchOrder().isEmpty()) {
             query.append(" ORDER BY ");
             query.append(order.getFieldsSearchOrder().stream()
-					.map(o -> formatField(o.attributeName) + (o.order >= 0 ? " ASC" : " DESC"))
+                .map(o -> formatField(o.attributeName) + (o.order >= 0 ? " ASC" : " DESC"))
                 .collect(Collectors.joining(", ")));
         }
         if (skip != null) {
@@ -341,11 +341,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
     @Override
     public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
         StringBuffer indexId = new StringBuffer().append("idx_").append(collectionName);
-		String index = formatIndex(fields, indexId);
-		createIndex(indexId.toString().toLowerCase(), index);
-	}
+        String index = formatIndex(fields, indexId);
+        createIndex(indexId.toString().toLowerCase(), index);
+    }
 
-	protected @NonNull String formatIndex(LinkedHashSet<IndexField> fields, StringBuffer indexId) {
+    protected @NonNull String formatIndex(LinkedHashSet<IndexField> fields, StringBuffer indexId) {
         StringBuffer index = new StringBuffer().append("(");
         fields.forEach(i -> {
             String fieldName = i.fieldName;
@@ -359,13 +359,13 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
         });
         //finally replace the last comma by the closing parenthesis
         index.deleteCharAt(index.length() - 1).append(")");
-		return index.toString();
+        return index.toString();
     }
 
     private void createIndex(String indexId, String index) {
-		cleanIndexIfRequired(indexId, index);
+        cleanIndexIfRequired(indexId, index);
         String query = "CREATE INDEX IF NOT EXISTS " + indexId + " ON " + collectionNameStr + " " + index;
-		logger.debug("Creating index {} with query {}", indexId, index);
+        logger.debug("Creating index {} with query {}", indexId, index);
         if (index.contains("$**")) {
             logger.error("The wildcard is not supported for index in postgres, skipping index creation for: {}", query);
         } else {
@@ -380,27 +380,27 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
         }
     }
 
-	private void cleanIndexIfRequired(String indexId, String index) {
-		//In case the index should use casing, but existing one doesn't use it yet, we drop the current index
-		if (useCasting(index)) {
-			String query = "SELECT indexname, indexdef FROM pg_indexes WHERE indexname='" + indexId + "' AND tablename = '" + collectionName + "';";
-			String indexDef = null;
-			try (Connection connection = ds.getConnection();
-				 Statement statement = connection.createStatement();
-				 ResultSet rs = statement.executeQuery(query)) {
-				while (rs.next()) {
-					// EXPLAIN output usually comes back in a single column
-					indexDef = rs.getString(2);
-				}
-			} catch (SQLException e) {
-				throw new RuntimeException("Unable to determine if the index " + indexId + " exists.", e);
-			}
-			if (indexDef != null && !useCasting(indexDef)) {
-				logger.info("Legacy Postgresql index syntax detected, the index will be rebuilt...");
-				dropIndex(indexId);
-			}
-		}
-	}
+    private void cleanIndexIfRequired(String indexId, String index) {
+        //In case the index should use casing, but existing one doesn't use it yet, we drop the current index
+        if (useCasting(index)) {
+            String query = "SELECT indexname, indexdef FROM pg_indexes WHERE indexname='" + indexId + "' AND tablename = '" + collectionName + "';";
+            String indexDef = null;
+            try (Connection connection = ds.getConnection();
+                 Statement statement = connection.createStatement();
+                 ResultSet rs = statement.executeQuery(query)) {
+                while (rs.next()) {
+                    // EXPLAIN output usually comes back in a single column
+                    indexDef = rs.getString(2);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException("Unable to determine if the index " + indexId + " exists.", e);
+            }
+            if (indexDef != null && !useCasting(indexDef)) {
+                logger.info("Legacy Postgresql index syntax detected, the index will be rebuilt...");
+                dropIndex(indexId);
+            }
+        }
+    }
 
     /**
      * Recursively find the field passed in argument in the entityClass of this Collection and return its class
@@ -412,11 +412,11 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
      * @return the Class of the field
      */
     protected Class<?> getFieldClass(String field) {
-		return PostgreSQLFilterFactory.getFieldClassOfEntity(field, entityClass);
+        return PostgreSQLFilterFactory.getFieldClassOfEntity(field, entityClass);
     }
 
-	protected String formatField(String field) {
-		return PostgreSQLFilterFactory.formatField(field, getFieldClass(field));
+    protected String formatField(String field) {
+        return PostgreSQLFilterFactory.formatField(field, getFieldClass(field));
     }
 
     @Override
@@ -442,21 +442,21 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
         executeUpdateQuery("DROP INDEX IF EXISTS " + indexName);
     }
 
-	protected Map<String, String> getAllIndexes() {
-		String query = "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = '" + collectionName + "';";
-		Map<String, String> indexes = new LinkedHashMap<>();
-		try (Connection connection = ds.getConnection();
-			 Statement statement = connection.createStatement();
-			 ResultSet rs = statement.executeQuery(query)) {
-			while (rs.next()) {
-				// EXPLAIN output usually comes back in a single column
-				indexes.put(rs.getString(1), rs.getString(2));
-			}
-		} catch (SQLException e) {
-			throw new RuntimeException("Unable to create index, query: " + query, e);
-		}
-		return indexes;
-	}
+    protected Map<String, String> getAllIndexes() {
+        String query = "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = '" + collectionName + "';";
+        Map<String, String> indexes = new LinkedHashMap<>();
+        try (Connection connection = ds.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet rs = statement.executeQuery(query)) {
+            while (rs.next()) {
+                // EXPLAIN output usually comes back in a single column
+                indexes.put(rs.getString(1), rs.getString(2));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to create index, query: " + query, e);
+        }
+        return indexes;
+    }
 
     private void executeUpdateQuery(String query) {
         try (Connection connection = ds.getConnection();
@@ -468,7 +468,7 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
     }
 
     private String filterToWhereClause(Filter filter) {
-		return new PostgreSQLFilterFactory(entityClass).buildFilter(filter);
+        return new PostgreSQLFilterFactory(entityClass).buildFilter(filter);
     }
 
     public static boolean isTimeoutException(SQLException e) {
@@ -477,17 +477,18 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
         return e != null && "57014".equals(e.getSQLState());
     }
 
-	/**
-	 * Warning for Junit tests only: "force" PostgreSQL to ignore its own cost estimation by disabling sequential scans in your current session:
-	 * Can be used to validate usage of indexes, otherwise with low volume or cardinality PSQL would choose seq scan which is more performant in such cases
-	 * @param off true to turn off, false to turn on
-	 */
-	protected void turnSeqScanOffForTest(boolean off) {
-		String query = (off) ? "SET enable_seqscan = off;" : "SET enable_seqscan = on;";
-		try (Connection connection = ds.getConnection();
-			 Statement statement = connection.createStatement()) {
-		} catch (SQLException e) {
-			throw new RuntimeException("Unable to turn seq scan on/off: " + query, e);
-		}
-	}
+    /**
+     * Warning for Junit tests only: "force" PostgreSQL to ignore its own cost estimation by disabling sequential scans in your current session:
+     * Can be used to validate usage of indexes, otherwise with low volume or cardinality PSQL would choose seq scan which is more performant in such cases
+     *
+     * @param off true to turn off, false to turn on
+     */
+    protected void turnSeqScanOffForTest(boolean off) {
+        String query = (off) ? "SET enable_seqscan = off;" : "SET enable_seqscan = on;";
+        try (Connection connection = ds.getConnection();
+             Statement statement = connection.createStatement()) {
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to turn seq scan on/off: " + query, e);
+        }
+    }
 }
