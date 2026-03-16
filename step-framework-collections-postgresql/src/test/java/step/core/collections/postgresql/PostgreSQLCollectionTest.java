@@ -25,22 +25,21 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import step.core.accessors.AbstractOrganizableObject;
-import step.core.collections.AbstractCollectionTest;
+import step.core.collections.*;
 import step.core.collections.Collection;
-import step.core.collections.Filters;
 import step.core.entities.Bean;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -84,7 +83,7 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 	@Ignore
 	public void benchmarkBulkInsert() {
 		Collection<Bean> beanCollection = collectionFactory.getCollection("Beans", Bean.class);
-		beanCollection.remove(Filters.empty());
+		//beanCollection.remove(Filters.empty());
 		int total = 50000;
 		int bulkSize = 100;
 
@@ -149,7 +148,13 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 		assertEquals("id",test);
 
 		test = formatField("test",Long.class);
-		assertEquals("object->'test'",test);
+		assertEquals("safe_cast_to_numeric(object->'test')",test);
+
+		test = formatField("test", BigDecimal.class);
+		assertEquals("safe_cast_to_numeric(object->'test')",test);
+
+		test = formatField("test", float.class);
+		assertEquals("safe_cast_to_numeric(object->'test')",test);
 
 		test = formatField("test",String.class);
 		assertEquals("object->>'test'",test);
@@ -161,7 +166,10 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 		assertEquals("object->'test'->>'nested'",test);
 
 		test = formatField("test.nested",Boolean.class);
-		assertEquals("object->'test'->'nested'",test);
+		assertEquals("safe_cast_to_bool(object->'test'->'nested')",test);
+
+		test = formatField("test.nested", boolean.class);
+		assertEquals("safe_cast_to_bool(object->'test'->'nested')",test);
 
 		test = formatFieldForValueAsText("test.nested");
 		assertEquals("object->'test'->>'nested'",test);
@@ -285,4 +293,90 @@ public class PostgreSQLCollectionTest extends AbstractCollectionTest {
 		}
 	}
 
+	@Test
+	public void testIndexFormatting(){
+		PostgreSQLCollection<Bean> beanCollection = (PostgreSQLCollection<Bean>) collectionFactory.getCollection("Beans", Bean.class);
+		StringBuffer indexId = new StringBuffer();
+		LinkedHashSet<IndexField> indexFields = new LinkedHashSet<>();
+		indexFields.add(new IndexField("property1", Order.ASC, null));
+		indexFields.add(new IndexField("longProperty", Order.ASC, null));
+		indexFields.add(new IndexField("booleanProperty", Order.ASC, null));
+		indexFields.add(new IndexField("jsonObject.jsonObjectStringField", Order.ASC, String.class));
+		indexFields.add(new IndexField("jsonObject.jsonObjectNumberField", Order.ASC, Integer.class));
+		String s = beanCollection.formatIndex(indexFields, indexId);
+		assertEquals("((object->>'property1') ASC," +
+				"(safe_cast_to_numeric(object->'longProperty')) ASC," +
+				"(safe_cast_to_bool(object->'booleanProperty')) ASC," +
+				"(object->'jsonObject'->>'jsonObjectStringField') ASC," +
+				"(safe_cast_to_numeric(object->'jsonObject'->'jsonObjectNumberField')) ASC)", s);
+	}
+
+	@Test
+	@Ignore
+	public void testIndexUsage(){
+		PostgreSQLCollection<Bean> beanCollection = (PostgreSQLCollection<Bean>) collectionFactory.getCollection("indexTestTable", Bean.class);
+		try {
+			//Creating the dataset takes time, keep the code in case we need to recreate it, but comment it out
+			//beanCollection.remove(Filters.empty());
+			//beanCollection.dropIndex("");
+			beanCollection.createOrUpdateIndex("property1");
+			beanCollection.createOrUpdateIndex("longProperty");
+			beanCollection.createOrUpdateIndex("booleanProperty");
+
+			assertEquals("{indexTestTable_pkey=CREATE UNIQUE INDEX \"indexTestTable_pkey\" ON public.\"indexTestTable\" USING btree (id), " +
+							"idx_indextesttable_property1asc=CREATE INDEX idx_indextesttable_property1asc ON public.\"indexTestTable\" USING btree (((object ->> 'property1'::text))), " +
+							"idx_indextesttable_longpropertyasc=CREATE INDEX idx_indextesttable_longpropertyasc ON public.\"indexTestTable\" USING btree (safe_cast_to_numeric((object -> 'longProperty'::text))), " +
+							"idx_indextesttable_booleanpropertyasc=CREATE INDEX idx_indextesttable_booleanpropertyasc ON public.\"indexTestTable\" USING btree (safe_cast_to_bool((object -> 'booleanProperty'::text)))}",
+					beanCollection.getAllIndexes().toString());
+
+			//Creating the dataset takes time, keep the code in case we need to recreate it, but comment it out
+			//Create some data, otherwise psql will just do a seq scan
+//			for (int j = 0; j< 10 ; j++){
+//				for (long i = 0; i < 1000; i++) {
+//					Bean bean1 = new Bean("value" + 1);
+//					bean1.setBooleanProperty(true);
+//					bean1.setLongProperty(i);
+//					beanCollection.save(bean1);
+//					Bean bean2 = new Bean("value2");
+//					bean2.setBooleanProperty(false);
+//					bean2.setLongProperty(i + 2L);
+//					beanCollection.save(bean2);
+//					beanCollection.save(new Bean(null));
+//				}
+//			}
+
+			beanCollection.turnSeqScanOffForTest(true);
+			//Quick dataset valiodation
+			List<Bean> collect = beanCollection.find(Filters.empty(), null, null, null, 0).collect(Collectors.toList());
+			assertEquals(30000, collect.size());
+			//Test index usage for ordering
+			explainQuery(beanCollection, new SearchOrder("property1", 1), "property1asc");
+			explainQuery(beanCollection, new SearchOrder("booleanProperty", 1), "booleanpropertyasc");
+			explainQuery(beanCollection, new SearchOrder("longProperty", 1), "longpropertyasc");
+
+			//Test index usage for where clause
+			explainQuery(beanCollection, Filters.equals("property1", "value999"), "property1asc");
+			explainQuery(beanCollection, Filters.equals("booleanProperty", true), "booleanpropertyasc");
+			explainQuery(beanCollection, Filters.equals("booleanProperty", false), "booleanpropertyasc");
+			explainQuery(beanCollection, Filters.equals("booleanProperty", (String) null), "booleanpropertyasc");
+			explainQuery(beanCollection, Filters.equals("longProperty", 1L), "longpropertyasc");
+		} finally {
+			beanCollection.turnSeqScanOffForTest(false);
+		}
+	}
+
+	private static void explainQuery(PostgreSQLCollection<Bean> beanCollection, SearchOrder searchOrder, String expectedIndexSuffix) {
+		explainQuery(beanCollection, Filters.empty(), searchOrder, null, expectedIndexSuffix);
+
+	}
+
+	private static void explainQuery(PostgreSQLCollection<Bean> beanCollection, Filter filter, String expectedIndexSuffix) {
+		//Use a limit otherwise PSQL with use a bitmap index scan
+		explainQuery(beanCollection, filter, null, 5, expectedIndexSuffix);
+	}
+
+	private static void explainQuery(PostgreSQLCollection<Bean> beanCollection, Filter filter, SearchOrder searchOrder, Integer limit, String expectedIndexSuffix) {
+		String explain = beanCollection.explain(filter, searchOrder, null, limit);
+		assertTrue(explain.contains("Index Scan using idx_indextesttable_" + expectedIndexSuffix + " on \"indexTestTable\""));
+	}
 }
