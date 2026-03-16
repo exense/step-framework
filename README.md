@@ -3,7 +3,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.txt)
 [![Maven Central](https://img.shields.io/maven-central/v/ch.exense.step/step-framework)](https://central.sonatype.com/artifact/ch.exense.step/step-framework)
 
-A modular Java framework providing reusable infrastructure components for building robust, production-grade applications. Originally developed at [exense](https://exense.ch) to power the [Step automation platform](https://step.exense.ch), the framework is open for external use and contributions.
+A modular Java framework providing reusable infrastructure components for building robust, production-grade applications. Originally developed at [exense](https://exense.ch) to power the [Step automation platform](https://step.dev), the framework is open for external use and contributions.
+
+For full documentation, architecture details, and getting started guides, see the main repository:
+**[github.com/exense/step](https://github.com/exense/step)**
 
 ## Overview
 
