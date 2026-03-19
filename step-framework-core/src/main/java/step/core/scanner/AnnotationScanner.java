@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.github.classgraph.ClassInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -207,6 +208,26 @@ public class AnnotationScanner implements AutoCloseable {
             }
         });
         return result;
+    }
+
+    /**
+     * Returns the URL of the classpath element (JAR or directory) from which the given class was
+     * loaded during scanning.
+     *
+     * <p>This is determined from ClassGraph's scan metadata at scan time — before the class is
+     * actually loaded by the JVM — and is therefore not affected by {@link SecurityManager}
+     * restrictions on {@link Class#getProtectionDomain()} nor by JDK version differences.
+     * Returns {@code null} if the class name is not present in the scan result.
+     *
+     * @param className the binary class name (e.g. {@code "com.example.MyKeywords"})
+     * @return the URL of the JAR or directory that contains the class, or {@code null}
+     */
+    public URL getClasspathElementUrl(String className) {
+        if (className == null) {
+            throw new IllegalArgumentException("className must not be null");
+        }
+        ClassInfo classInfo = scanResult.getClassInfo(className);
+        return classInfo != null ? classInfo.getClasspathElementURL() : null;
     }
 
     /**

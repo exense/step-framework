@@ -19,10 +19,14 @@
 package step.core.scanner;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -94,6 +98,57 @@ public class AnnotationScannerTest {
             List<Method> methods = annotationScanner.getMethodsWithAnnotation(TestAnnotation.class).stream().collect(Collectors.toList());
             assertEquals(1, methods.size());
             assertEquals("testMethod", methods.get(0).getName());
+        }
+    }
+
+    @Test
+    public void testGetClasspathElementUrl_found() {
+        File file = FileHelper.getClassLoaderResourceAsFile(this.getClass().getClassLoader(), "annotation-test.jar");
+        try (AnnotationScanner annotationScanner = AnnotationScanner.forSpecificJar(file)) {
+            URL url = annotationScanner.getClasspathElementUrl("step.core.scanner.AnnotatedClass");
+            assertNotNull(url);
+            assertEquals(file.toURI().toURL(), url);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testGetClasspathElementUrl_notFound() {
+        File file = FileHelper.getClassLoaderResourceAsFile(this.getClass().getClassLoader(), "annotation-test.jar");
+        try (AnnotationScanner annotationScanner = AnnotationScanner.forSpecificJar(file)) {
+            URL url = annotationScanner.getClasspathElementUrl("com.example.NonExistentClass");
+            assertNull(url);
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetClasspathElementUrl_nullClassName() {
+        try (AnnotationScanner annotationScanner = AnnotationScanner.forAllClassesFromContextClassLoader()) {
+            annotationScanner.getClasspathElementUrl(null);
+        }
+    }
+
+    @Test
+    public void testGetClasspathElementUrl_multipleJars_returnsCorrectJar() throws Exception {
+        File annotationTestJar = FileHelper.getClassLoaderResourceAsFile(this.getClass().getClassLoader(), "annotation-test.jar");
+        // Use the classgraph JAR (already a compile dependency) as a second distinct JAR
+        URL classgraphJarUrl = io.github.classgraph.ClassGraph.class.getProtectionDomain().getCodeSource().getLocation();
+        File classgraphJar = new File(classgraphJarUrl.toURI());
+
+        URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{
+                annotationTestJar.toURI().toURL(),
+                classgraphJarUrl
+        }, null);
+
+        try (AnnotationScanner annotationScanner = AnnotationScanner.forSpecificJarFromURLClassLoader(urlClassLoader)) {
+            URL annotatedClassUrl = annotationScanner.getClasspathElementUrl("step.core.scanner.AnnotatedClass");
+            assertNotNull(annotatedClassUrl);
+            assertEquals(annotationTestJar.getCanonicalFile(), new File(annotatedClassUrl.toURI()).getCanonicalFile());
+
+            URL classgraphClassUrl = annotationScanner.getClasspathElementUrl("io.github.classgraph.ClassGraph");
+            assertNotNull(classgraphClassUrl);
+            assertEquals(classgraphJar.getCanonicalFile(), new File(classgraphClassUrl.toURI()).getCanonicalFile());
         }
     }
 
