@@ -18,9 +18,6 @@
  ******************************************************************************/
 package step.versionmanager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import step.core.AbstractContext;
 import step.core.plugins.Plugin;
 import step.framework.server.ServerPlugin;
@@ -28,39 +25,12 @@ import step.framework.server.ServerPlugin;
 @Plugin()
 public class VersionManagerPlugin<C extends AbstractContext> implements ServerPlugin<C> {
 
-    private static final Logger logger = LoggerFactory.getLogger(VersionManagerPlugin.class);
-
     @Override
-    public void serverStart(C context) throws Exception {
-        VersionManager versionManager = new VersionManager(context);
+    public void init(C context) throws Exception {
+        VersionManager<C> versionManager = new VersionManager<>(context);
         context.put(VersionManager.class, versionManager);
 
         versionManager.readLatestControllerLog();
         versionManager.insertControllerLog();
-    }
-
-    @Override
-    public void migrateData(C context) throws Exception {
-
-    }
-
-    @Override
-    public void initializeData(C context) throws Exception {
-
-    }
-
-    @Override
-    public void afterInitializeData(C context) throws Exception {
-
-    }
-
-    @Override
-    public void serverStop(C context) {
-
-    }
-
-    @Override
-    public boolean canBeDisabled() {
-        return true;
     }
 }
