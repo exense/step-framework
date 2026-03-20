@@ -28,7 +28,7 @@ public interface AuthorizationManager<U extends AbstractUser, S extends Session<
     void setRoleResolver(RoleResolver roleResolver);
 
     /**
-     * Check if the give right is granted for the provided context (Session)
+     * Checks if the given right is granted for the provided context (Session)
      * @param session the session to check against
      * @param right the right to be validated
      * @return true when the session is granted the provided right
@@ -36,7 +36,7 @@ public interface AuthorizationManager<U extends AbstractUser, S extends Session<
     boolean checkRightInContext(S session, String right);
 
     /**
-     * Check if the right is defined in the system. If it isn't the right is automatically granted, otherwise it falls back to the checkRightInContext
+     * Checks if the right is defined in the system. If not, the right is automatically granted. Otherwise, it delegates to {@link #checkRightInContext(S, String)}.
      * @param session the session to check against
      * @param right the right to be validated
      * @return true when the session is granted the provided right
