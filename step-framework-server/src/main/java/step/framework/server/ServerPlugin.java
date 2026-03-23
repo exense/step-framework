@@ -27,7 +27,7 @@ import step.core.AbstractContext;
  *
  * <p>The startup sequence is:
  * <ol>
- *   <li>{@link #checkPreconditions(AbstractContext)} — earliest phase; used to validate
+ *   <li>{@link #bootstrapAndValidate(AbstractContext)} — earliest phase; used to validate
  *       environment requirements or register infrastructure objects (e.g. a
  *       {@link step.core.plugins.ModuleChecker}) into the context before the final plugin
  *       set is determined.</li>
@@ -60,7 +60,7 @@ public interface ServerPlugin<C extends AbstractContext> {
      * objects into the context (e.g. a {@link step.core.plugins.ModuleChecker}) that must be
      * available before the final set of enabled plugins is determined.
      */
-    default void checkPreconditions(C context) throws Exception {
+    default void bootstrapAndValidate(C context) throws Exception {
     }
 
     /**

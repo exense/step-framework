@@ -305,13 +305,14 @@ public class ControllerServer {
         serverContext.put(ServiceRegistrationCallback.class, serviceRegistrationCallback);
         serverContext.put(Configuration.class, configuration);
 
-        // Phase 1: scan classpath once with no moduleChecker, run checkPreconditions so that
-        // the providing plugin can register the ModuleChecker into the context
+        // Phase 1: scan classpath once with no moduleChecker, run bootstrapAndValidate so that
+        // plugins can register core services (e.g. ModuleChecker) into the context and validate
+        // their preconditions (e.g. license checks) before the final plugin set is determined.
         ServerPluginManager bootstrapManager = new ServerPluginManager(configuration, null);
         pluginProxy = bootstrapManager.getProxy();
 
-        logger.info("Checking preconditions...");
-        pluginProxy.checkPreconditions(serverContext);
+        logger.info("Bootstrapping and validating preconditions...");
+        pluginProxy.bootstrapAndValidate(serverContext);
 
         // Phase 2: rebuild from the already-scanned plugin list using the now-registered moduleChecker
         ModuleChecker moduleChecker = serverContext.get(ModuleChecker.class);
