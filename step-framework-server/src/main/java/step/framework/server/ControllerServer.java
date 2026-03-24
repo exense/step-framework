@@ -72,19 +72,17 @@ public class ControllerServer {
     public static final String UI_CONTEXT_ROOT_DEFAULT_VALUE = "/";
     private final String contextRoot;
     private final boolean defaultServlet;
-    private Configuration configuration;
+    private final Configuration configuration;
 
     private Server server;
 
     private ContextHandlerCollection handlers;
 
-    private Integer port;
+    private final Integer port;
 
     private static final Logger logger = LoggerFactory.getLogger(ControllerServer.class);
 
-    private ServerPlugin pluginProxy;
-
-    ControllerInitializationPlugin initPluginProxy;
+    private ServerPlugin<AbstractContext> pluginProxy;
 
     private AbstractContext serverContext;
 
@@ -161,10 +159,12 @@ public class ControllerServer {
         }
         stopping = true;
 
-        try {
-            initPluginProxy.preShutdownHook(serverContext);
-        } catch (Exception e) {
-            logger.error("Error while calling plugin pre-shutdown hooks");
+        if (pluginProxy != null) {
+            try {
+                pluginProxy.preShutdownHook(serverContext);
+            } catch (Exception e) {
+                logger.error("Error while calling plugin pre-shutdown hooks");
+            }
         }
         try {
             server.stop();
@@ -192,10 +192,12 @@ public class ControllerServer {
             }
         }
 
-        try {
-            initPluginProxy.postShutdownHook(serverContext);
-        } catch (Exception e) {
-            logger.error("Error while calling plugin post-shutdown hooks");
+        if (pluginProxy != null) {
+            try {
+                pluginProxy.postShutdownHook();
+            } catch (Exception e) {
+                logger.error("Error while calling plugin post-shutdown hooks");
+            }
         }
     }
 
@@ -303,24 +305,27 @@ public class ControllerServer {
         serverContext.put(ServiceRegistrationCallback.class, serviceRegistrationCallback);
         serverContext.put(Configuration.class, configuration);
 
-        //Initialization plugins check preconditions and recover
-        PluginManager<ControllerInitializationPlugin> initPluginManager = (new ServerPluginManager(configuration, null))
-            .cloneAs(ControllerInitializationPlugin.class);
-        initPluginProxy = initPluginManager.getProxy();
-        logger.info("Checking preconditions...");
-        initPluginProxy.checkPreconditions(serverContext);
+        // Phase 1: scan classpath once with no moduleChecker, run bootstrapAndValidate so that
+        // plugins can register core services (e.g. ModuleChecker) into the context and validate
+        // their preconditions (e.g. license checks) before the final plugin set is determined.
+        ServerPluginManager bootstrapManager = new ServerPluginManager(configuration, null);
+        pluginProxy = bootstrapManager.getProxy();
 
-        //module checker must be created in the checkPreconditions phase of the ControllerInitializationPlugin plugins
+        logger.info("Bootstrapping and validating preconditions...");
+        pluginProxy.bootstrapAndValidate(serverContext);
+
+        // Phase 2: rebuild from the already-scanned plugin list using the now-registered moduleChecker
         ModuleChecker moduleChecker = serverContext.get(ModuleChecker.class);
-        //Create plugins manager for all plugins and add it to context (required for init phases)
-        ServerPluginManager serverPluginManager = new ServerPluginManager(configuration, moduleChecker);
+        ServerPluginManager serverPluginManager = moduleChecker != null
+                ? bootstrapManager.rebuild(moduleChecker)
+                : bootstrapManager;
         serverContext.put(ServerPluginManager.class, serverPluginManager);
         pluginProxy = serverPluginManager.getProxy();
 
         logger.info("Initializing...");
-        initPluginProxy.init(serverContext);
+        pluginProxy.init(serverContext);
         logger.info("Recovering controller...");
-        initPluginProxy.recover(serverContext);
+        pluginProxy.recover(serverContext);
 
         //start all plugins and init data
         logger.info("Starting controller...");
@@ -333,7 +338,7 @@ public class ControllerServer {
         pluginProxy.afterInitializeData(serverContext);
 
         //Initialization plugins cal final steps
-        initPluginProxy.finalizeStart(serverContext);
+        pluginProxy.finalizeStart(serverContext);
 
         //Http session management
         SessionHandler s = new SessionHandler();
