@@ -317,8 +317,8 @@ public class ControllerServer {
         // Phase 2: rebuild from the already-scanned plugin list using the now-registered moduleChecker
         ModuleChecker moduleChecker = serverContext.get(ModuleChecker.class);
         ServerPluginManager serverPluginManager = moduleChecker != null
-                ? bootstrapManager.rebuild(moduleChecker)
-                : bootstrapManager;
+            ? bootstrapManager.rebuild(moduleChecker)
+            : bootstrapManager;
         serverContext.put(ServerPluginManager.class, serverPluginManager);
         pluginProxy = serverPluginManager.getProxy();
 

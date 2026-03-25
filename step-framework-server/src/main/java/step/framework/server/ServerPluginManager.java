@@ -36,7 +36,7 @@ public class ServerPluginManager {
     // is safe here because we only ever use it to parameterize the PluginManager builder.
     @SuppressWarnings("unchecked")
     private static final Class<ServerPlugin<?>> SERVER_PLUGIN_CLASS =
-            (Class<ServerPlugin<?>>) (Class<?>) ServerPlugin.class;
+        (Class<ServerPlugin<?>>) (Class<?>) ServerPlugin.class;
 
     protected Configuration configuration;
 
@@ -50,7 +50,7 @@ public class ServerPluginManager {
         this.configuration = configuration;
         this.moduleChecker = moduleChecker;
         Builder<ServerPlugin<?>> builder = new PluginManager.Builder<>(SERVER_PLUGIN_CLASS)
-                .withPluginsFromClasspath();
+            .withPluginsFromClasspath();
         this.allPlugins = new ArrayList<>(builder.getPlugins());
         this.pluginManager = builder.withPluginFilter(this::isPluginEnabled).build();
     }
@@ -60,9 +60,9 @@ public class ServerPluginManager {
         this.moduleChecker = moduleChecker;
         this.allPlugins = allPlugins;
         this.pluginManager = new PluginManager.Builder<>(SERVER_PLUGIN_CLASS)
-                .withPlugins(allPlugins)
-                .withPluginFilter(this::isPluginEnabled)
-                .build();
+            .withPlugins(allPlugins)
+            .withPluginFilter(this::isPluginEnabled)
+            .build();
     }
 
     public ServerPluginManager rebuild(ModuleChecker moduleChecker) throws CircularDependencyException {
@@ -79,7 +79,7 @@ public class ServerPluginManager {
     protected boolean isPluginEnabled(ServerPlugin<?> plugin) {
         String pluginName = plugin.getClass().getSimpleName();
         boolean enabled = configuration.getPropertyAsBoolean("plugins." + pluginName + ".enabled", true)
-                && (moduleChecker == null || moduleChecker.apply(plugin));
+            && (moduleChecker == null || moduleChecker.apply(plugin));
         if (!enabled && !plugin.canBeDisabled()) {
             throw new PluginCriticalException("The plugin " + pluginName + " cannot be disabled");
         }
@@ -97,7 +97,7 @@ public class ServerPluginManager {
     public <P extends ServerPlugin<?>> PluginManager<P> cloneAs(Class<P> pluginClass) throws CircularDependencyException {
         PluginManager.Builder<P> builder = new PluginManager.Builder<>(pluginClass);
         List<P> collect = this.getPluginManager().getPlugins().stream()
-                .filter(pluginClass::isInstance).map(pluginClass::cast).collect(Collectors.toList());
+            .filter(pluginClass::isInstance).map(pluginClass::cast).collect(Collectors.toList());
         return builder.withPlugins(collect).build();
     }
 }
