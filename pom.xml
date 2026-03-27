@@ -48,7 +48,6 @@
     <exense-commons.version>0.0.0-SED-4631-SNAPSHOT</exense-commons.version>
 
     <!-- external dependencies -->
-    <dep.jaxb.version>4.0.7</dep.jaxb.version>
     <dep.antlr.version>4.5.3</dep.antlr.version>
     <dep.classgraph.version>4.8.165</dep.classgraph.version>
     <dep.swagger-ui.version>5.17.14</dep.swagger-ui.version>
@@ -178,12 +177,6 @@
         <version>${dependencies.version}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.glassfish.jaxb</groupId>
-        <artifactId>jaxb-runtime</artifactId>
-        <version>${dep.jaxb.version}</version>
       </dependency>
 
       <dependency>
