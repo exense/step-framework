@@ -19,35 +19,64 @@
 package step.framework.server;
 
 import ch.exense.commons.app.Configuration;
+import step.core.AbstractContext;
 import step.core.plugins.ModuleChecker;
 import step.core.plugins.PluginManager;
 import step.core.plugins.PluginManager.Builder;
 import step.core.plugins.PluginManager.Builder.CircularDependencyException;
 import step.core.plugins.exceptions.PluginCriticalException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ServerPluginManager<P extends ServerPlugin> {
+public class ServerPluginManager {
+
+    // ServerPlugin.class is Class<ServerPlugin> due to erasure; the cast to Class<ServerPlugin<?>>
+    // is safe here because we only ever use it to parameterize the PluginManager builder.
+    @SuppressWarnings("unchecked")
+    private static final Class<ServerPlugin<?>> SERVER_PLUGIN_CLASS =
+        (Class<ServerPlugin<?>>) (Class<?>) ServerPlugin.class;
 
     protected Configuration configuration;
 
     protected ModuleChecker moduleChecker;
 
-    protected PluginManager<ServerPlugin> pluginManager;
+    protected PluginManager<ServerPlugin<?>> pluginManager;
+
+    private final List<ServerPlugin<?>> allPlugins;
 
     public ServerPluginManager(Configuration configuration, ModuleChecker moduleChecker) throws CircularDependencyException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         this.configuration = configuration;
         this.moduleChecker = moduleChecker;
-        Builder<ServerPlugin> builder = new PluginManager.Builder<ServerPlugin>(ServerPlugin.class);
-        this.pluginManager = builder.withPluginsFromClasspath().withPluginFilter(this::isPluginEnabled).build();
+        Builder<ServerPlugin<?>> builder = new PluginManager.Builder<>(SERVER_PLUGIN_CLASS)
+            .withPluginsFromClasspath();
+        this.allPlugins = new ArrayList<>(builder.getPlugins());
+        this.pluginManager = builder.withPluginFilter(this::isPluginEnabled).build();
     }
 
-    public ServerPlugin getProxy() {
-        return pluginManager.getProxy(ServerPlugin.class);
+    private ServerPluginManager(Configuration configuration, ModuleChecker moduleChecker, List<ServerPlugin<?>> allPlugins) throws CircularDependencyException {
+        this.configuration = configuration;
+        this.moduleChecker = moduleChecker;
+        this.allPlugins = allPlugins;
+        this.pluginManager = new PluginManager.Builder<>(SERVER_PLUGIN_CLASS)
+            .withPlugins(allPlugins)
+            .withPluginFilter(this::isPluginEnabled)
+            .build();
     }
 
-    protected boolean isPluginEnabled(ServerPlugin plugin) {
+    public ServerPluginManager rebuild(ModuleChecker moduleChecker) throws CircularDependencyException {
+        return new ServerPluginManager(configuration, moduleChecker, allPlugins);
+    }
+
+    // The proxy implements ServerPlugin<?> at runtime; the cast to ServerPlugin<AbstractContext>
+    // is safe because all lifecycle calls go through the reflection-based PluginManager proxy.
+    @SuppressWarnings("unchecked")
+    public ServerPlugin<AbstractContext> getProxy() {
+        return (ServerPlugin<AbstractContext>) pluginManager.getProxy();
+    }
+
+    protected boolean isPluginEnabled(ServerPlugin<?> plugin) {
         String pluginName = plugin.getClass().getSimpleName();
         boolean enabled = configuration.getPropertyAsBoolean("plugins." + pluginName + ".enabled", true)
             && (moduleChecker == null || moduleChecker.apply(plugin));
@@ -61,14 +90,14 @@ public class ServerPluginManager<P extends ServerPlugin> {
         return configuration;
     }
 
-    public PluginManager<ServerPlugin> getPluginManager() {
+    public PluginManager<ServerPlugin<?>> getPluginManager() {
         return pluginManager;
     }
 
-
-    public PluginManager<P> cloneAs(Class<P> pluginClass) throws CircularDependencyException {
-        PluginManager.Builder<P> builder = new PluginManager.Builder(pluginClass);
-        List<P> collect = this.getPluginManager().getPlugins().stream().filter(pluginClass::isInstance).map(pluginClass::cast).collect(Collectors.toList());
+    public <P extends ServerPlugin<?>> PluginManager<P> cloneAs(Class<P> pluginClass) throws CircularDependencyException {
+        PluginManager.Builder<P> builder = new PluginManager.Builder<>(pluginClass);
+        List<P> collect = this.getPluginManager().getPlugins().stream()
+            .filter(pluginClass::isInstance).map(pluginClass::cast).collect(Collectors.toList());
         return builder.withPlugins(collect).build();
     }
 }

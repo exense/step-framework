@@ -118,6 +118,10 @@ public class PluginManager<T> {
             return this;
         }
 
+        public List<T> getPlugins() {
+            return plugins;
+        }
+
         public Builder<T> withPluginsFromClasspath() throws InstantiationException, IllegalAccessException, ClassNotFoundException {
             return withPluginsFromClasspath(null);
         }
