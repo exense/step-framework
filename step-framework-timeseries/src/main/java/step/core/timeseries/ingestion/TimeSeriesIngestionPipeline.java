@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import step.core.async.AsyncProcessor;
 import step.core.collections.inmemory.InMemoryCollection;
 import step.core.timeseries.TimeSeriesCollection;
+import step.core.timeseries.TimeSeriesCollectionConfig;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
@@ -26,12 +27,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class TimeSeriesIngestionPipeline implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesIngestionPipeline.class);
-    private static final long FLUSH_OFFSET = 10000; // buckets created in the last FLUSH_OFFSET ms will not be flushed.
     private static final BasicThreadFactory threadFactory = new BasicThreadFactory.Builder().namingPattern("timeseries-flush-%d").build();
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final TimeSeriesCollection collection;
     private final long sourceResolution;
+    private final long flushOffsetMs;
     private final ConcurrentHashMap<Long, Map<Map<String, Object>, BucketBuilder>> seriesQueue = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private final LongAdder flushCount = new LongAdder();
@@ -41,16 +42,16 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     private long lastFlush = 0;
     private final int seriesQueueSizeflush;
 
-    public TimeSeriesIngestionPipeline(TimeSeriesCollection collection, TimeSeriesIngestionPipelineSettings settings) {
+    public TimeSeriesIngestionPipeline(TimeSeriesCollection collection, TimeSeriesCollectionConfig settings) {
         validateSettings(settings);
         this.collection = collection;
         this.sourceResolution = settings.getResolution();
-        this.seriesQueueSizeflush = settings.getFlushSeriesQueueSize();
+        this.seriesQueueSizeflush = settings.getIngestionFlushSeriesQueueSize();
+        this.flushOffsetMs = settings.getIngestionFlushOffsetMs();
         this.ignoredAttributes = settings.getIgnoredAttributes();
-        this.nextPipeline = settings.getNextPipeline();
 
         //Enable periodical flush when configured
-        long flushingPeriodMs = settings.getFlushingPeriodMs();
+        long flushingPeriodMs = settings.getIngestionFlushingPeriodMs();
         if (flushingPeriodMs > 0) {
             scheduler = Executors.newScheduledThreadPool(1, threadFactory);
             scheduler.scheduleAtFixedRate(() -> flush(false), flushingPeriodMs, flushingPeriodMs, TimeUnit.MILLISECONDS);
@@ -59,7 +60,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         }
 
         //collection is null when overridden in TimeSeriesExecutionPlugin, in such case async processor is not required
-        this.asyncProcessor = (collection == null) ? null : new AsyncProcessor<>(settings.getFlushAsyncQueueSize(), entity -> {
+        this.asyncProcessor = (collection == null) ? null : new AsyncProcessor<>(settings.getIngestionFlushAsyncQueueSize(), entity -> {
             try {
                 collection.save(entity);
             } catch (Throwable e) {
@@ -68,11 +69,11 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         });
     }
 
-    public void validateSettings(TimeSeriesIngestionPipelineSettings settings) {
+    public void validateSettings(TimeSeriesCollectionConfig settings) {
         if (settings.getResolution() <= 0) {
             throw new IllegalArgumentException("The resolution parameter must be greater than zero");
         }
-        if (settings.getFlushingPeriodMs() > 0 && settings.getFlushSeriesQueueSize() <= 1) {
+        if (settings.getIngestionFlushingPeriodMs() > 0 && settings.getIngestionFlushSeriesQueueSize() <= 1) {
             throw new IllegalArgumentException("The ingestion series queue size must be greater than 1 when flushing periodically (flushing period greater than 0)");
         }
     }
@@ -151,7 +152,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
             long now = System.currentTimeMillis();
 
             seriesQueue.forEach((k, v) -> {
-                if (forceFlush || ((k + sourceResolution) < (now - FLUSH_OFFSET)) || v.size() >= seriesQueueSizeflush) {
+                if (forceFlush || ((k + sourceResolution) < (now - flushOffsetMs)) || v.size() >= seriesQueueSizeflush) {
                     // Remove the entry from the map and iterate over it afterwards
                     // This enables concurrent execution of flushing and ingestion
                     seriesQueue.remove(k).forEach((attributes, bucketBuilder) -> {

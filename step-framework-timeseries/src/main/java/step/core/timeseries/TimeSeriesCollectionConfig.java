@@ -2,11 +2,12 @@ package step.core.timeseries;
 
 import java.util.Set;
 
-public class TimeSeriesCollectionSettings {
+public class TimeSeriesCollectionConfig {
 
     private long resolution;
     private long ttl;
     private long ingestionFlushingPeriodMs;
+    private long ingestionFlushOffsetMs = 10000; // buckets created in the last flushOffsetMs will not be flushed during periodic flush
     private int ingestionFlushAsyncQueueSize;
     private int ingestionFlushSeriesQueueSize;
     private Set<String> ignoredAttributes;
@@ -23,18 +24,27 @@ public class TimeSeriesCollectionSettings {
         return ingestionFlushingPeriodMs;
     }
 
-    public TimeSeriesCollectionSettings setResolution(long resolution) {
+    public TimeSeriesCollectionConfig setResolution(long resolution) {
         this.resolution = resolution;
         return this;
     }
 
-    public TimeSeriesCollectionSettings setTtl(long ttl) {
+    public TimeSeriesCollectionConfig setTtl(long ttl) {
         this.ttl = ttl;
         return this;
     }
 
-    public TimeSeriesCollectionSettings setIngestionFlushingPeriodMs(long ingestionFlushingPeriodMs) {
+    public TimeSeriesCollectionConfig setIngestionFlushingPeriodMs(long ingestionFlushingPeriodMs) {
         this.ingestionFlushingPeriodMs = ingestionFlushingPeriodMs;
+        return this;
+    }
+
+    public long getIngestionFlushOffsetMs() {
+        return ingestionFlushOffsetMs;
+    }
+
+    public TimeSeriesCollectionConfig setIngestionFlushOffsetMs(long ingestionFlushOffsetMs) {
+        this.ingestionFlushOffsetMs = ingestionFlushOffsetMs;
         return this;
     }
 
@@ -42,7 +52,7 @@ public class TimeSeriesCollectionSettings {
         return ingestionFlushSeriesQueueSize;
     }
 
-    public TimeSeriesCollectionSettings setIngestionFlushSeriesQueueSize(int ingestionFlushSeriesQueueSize) {
+    public TimeSeriesCollectionConfig setIngestionFlushSeriesQueueSize(int ingestionFlushSeriesQueueSize) {
         this.ingestionFlushSeriesQueueSize = ingestionFlushSeriesQueueSize;
         return this;
     }
@@ -51,7 +61,7 @@ public class TimeSeriesCollectionSettings {
         return ingestionFlushAsyncQueueSize;
     }
 
-    public TimeSeriesCollectionSettings setIngestionFlushAsyncQueueSize(int ingestionFlushAsyncQueueSize) {
+    public TimeSeriesCollectionConfig setIngestionFlushAsyncQueueSize(int ingestionFlushAsyncQueueSize) {
         this.ingestionFlushAsyncQueueSize = ingestionFlushAsyncQueueSize;
         return this;
     }
@@ -60,7 +70,7 @@ public class TimeSeriesCollectionSettings {
         return ignoredAttributes;
     }
 
-    public TimeSeriesCollectionSettings setIgnoredAttributes(Set<String> ignoredAttributes) {
+    public TimeSeriesCollectionConfig setIgnoredAttributes(Set<String> ignoredAttributes) {
         this.ignoredAttributes = ignoredAttributes;
         return this;
     }
