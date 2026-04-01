@@ -112,7 +112,7 @@ public class ControllerServer {
         this.port = configuration.getPropertyAsInteger("port", 8080);
         this.defaultServlet = configuration.getPropertyAsBoolean("ui.defaultServlet", true);
         this.contextRoot = configuration.getProperty(UI_CONTEXT_ROOT_CFG_KEY, UI_CONTEXT_ROOT_DEFAULT_VALUE);
-        this.webAppRoots = new HashSet<>();
+        this.webAppRoots = new LinkedHashSet<>();
         this.webAppRoots.add(configuration.getProperty("ui.resource.root", "dist/step-app"));
     }
 
@@ -252,19 +252,34 @@ public class ControllerServer {
     }
 
     private void initWebapp() throws Exception {
+        // Note that Jetty 12 has changed the way to load webapps, and is much stricter
+        // than prior versions regarding non-existing resources or empty resource lists.
+
         // 1. Get a ResourceFactory tied to the lifecycle of the ServletContextHandler
         ResourceFactory resourceFactory = ResourceFactory.of(servletContextHandler);
 
-        // 2. Use the factory to create your class loader resources
+        // 2. Use the factory to create class loader resources.
         List<Resource> resources = webAppRoots.stream()
-            .map(r -> resourceFactory.newClassLoaderResource(r, true))
+            .map(resourceName -> {
+                Resource resource = resourceFactory.newClassLoaderResource(resourceName, true);
+                if (resource == null) {
+                    logger.warn("Unable to find WebApp resource \"{}\", ignoring", resourceName);
+                } else {
+                    logger.debug("Loaded WebApp resource \"{}\" from {}", resourceName, resource);
+                }
+                return resource;
+            })
+            .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
-        // 3. Combine the list of resources (Jetty 12's replacement for ResourceCollection)
-        Resource combinedResource = ResourceFactory.combine(resources);
-
-        // 4. Set the combined resource as the base
-        servletContextHandler.setBaseResource(combinedResource);
+        if (!resources.isEmpty()) {
+            // 3. Combine the list of resources (Jetty 12's replacement for ResourceCollection)
+            Resource combinedResource = ResourceFactory.combine(resources);
+            // 4. Set the combined resource as the base
+            servletContextHandler.setBaseResource(combinedResource);
+        } else {
+            logger.warn("Starting up without any WebApp resources");
+        }
         servletContextHandler.setContextPath(contextRoot);
 
         // Add the CacheControlFilter for resources
