@@ -25,11 +25,6 @@ public class AbstractPlugin implements OptionalPlugin {
     }
 
     @Override
-    public boolean validate() {
-        return true;
-    }
-
-    @Override
     public String toString() {
         return this.getClass().getSimpleName();
     }
