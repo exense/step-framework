@@ -14,16 +14,16 @@ For full documentation, architecture details, and getting started guides, see th
 
 ## Modules
 
-| Module | Artifact ID | Description |
-|--------|-------------|-------------|
-| Core | `step-framework-core` | Foundational utilities: async execution, plugin system, classpath scanning, and authentication abstractions |
-| Model | `step-framework-model` | Shared data model: entity definitions, accessors, collection filters, and object enrichers |
-| Collections | `step-framework-collections` | Database-agnostic collection API with in-memory and filesystem implementations, a query language (QL), and schema migration support |
-| Collections – MongoDB | `step-framework-collections-mongodb` | MongoDB backend for the collections API (via MongoJack) |
-| Collections – PostgreSQL | `step-framework-collections-postgresql` | PostgreSQL backend for the collections API (via HikariCP + JDBC) |
-| Server | `step-framework-server` | RESTful server framework built on Jersey/Jetty with Swagger/OpenAPI, access control, security, and audit logging |
-| Server Plugins | `step-framework-server-plugins` | Plugin and version management infrastructure for server extensions |
-| Time Series | `step-framework-timeseries` | Time series engine: metric definitions, time bucketing, data ingestion, aggregation, and querying |
+| Module                   | Artifact ID                             | Description                                                                                                                         |
+|--------------------------|-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| Core                     | `step-framework-core`                   | Foundational utilities: async execution, plugin system, classpath scanning, and authentication abstractions                         |
+| Model                    | `step-framework-model`                  | Shared data model: entity definitions, accessors, collection filters, and object enrichers                                          |
+| Collections              | `step-framework-collections`            | Database-agnostic collection API with in-memory and filesystem implementations, a query language (QL), and schema migration support |
+| Collections – MongoDB    | `step-framework-collections-mongodb`    | MongoDB backend for the collections API (via MongoJack)                                                                             |
+| Collections – PostgreSQL | `step-framework-collections-postgresql` | PostgreSQL backend for the collections API (via HikariCP + JDBC)                                                                    |
+| Server                   | `step-framework-server`                 | RESTful server framework built on Jersey/Jetty with Swagger/OpenAPI, access control, security, and audit logging                    |
+| Server Plugins           | `step-framework-server-plugins`         | Plugin and version management infrastructure for server extensions                                                                  |
+| Time Series              | `step-framework-timeseries`             | Time series engine: metric definitions, time bucketing, data ingestion, aggregation, and querying                                   |
 
 ## Requirements
 
@@ -90,11 +90,11 @@ mvn clean install -DskipTests
 
 `step-framework` is part of the [Step](https://step.dev) open-source automation platform. Related repositories:
 
-| Repository | Description |
-|------------|-------------|
-| [step](https://github.com/exense/step) | Core backend — the main Step orchestration platform built on top of this framework |
-| [step-grid](https://github.com/exense/step-grid) | Distributed execution grid for agent-based keyword execution |
-| [step-api](https://github.com/exense/step-api) | Java API for writing Step Keywords |
+| Repository                                       | Description                                                                        |
+|--------------------------------------------------|------------------------------------------------------------------------------------|
+| [step](https://github.com/exense/step)           | Core backend — the main Step orchestration platform built on top of this framework |
+| [step-grid](https://github.com/exense/step-grid) | Distributed execution grid for agent-based keyword execution                       |
+| [step-api](https://github.com/exense/step-api)   | Java API for writing Step Keywords                                                 |
 
 For platform-level documentation see the [Step knowledgebase](https://step.dev/knowledgebase).
 
