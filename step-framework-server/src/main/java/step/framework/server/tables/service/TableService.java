@@ -267,7 +267,7 @@ public class TableService {
         String requiredAccessRight = table.getRequiredAccessRight();
         boolean hasRequiredRight = requiredAccessRight == null || authorizationManager.checkRightInContext(session, requiredAccessRight);
         if (!hasRequiredRight) {
-            throw new TableServiceException("Missing right " + requiredAccessRight + " to access table");
+            throw new TableServiceAuthorizationException("Missing right " + requiredAccessRight + " to access table");
         }
     }
 
