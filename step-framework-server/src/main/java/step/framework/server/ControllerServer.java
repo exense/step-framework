@@ -18,27 +18,31 @@
  ******************************************************************************/
 package step.framework.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.logging.LogManager;
-import java.util.stream.Collectors;
-
+import ch.exense.commons.app.ArgumentParser;
+import ch.exense.commons.app.Configuration;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
 import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -47,23 +51,28 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
-
-import ch.exense.commons.app.ArgumentParser;
-import ch.exense.commons.app.Configuration;
 import step.core.AbstractContext;
 import step.core.OverrideServerContext;
 import step.core.plugins.ModuleChecker;
-import step.core.plugins.PluginManager;
 import step.core.scanner.CachedAnnotationScanner;
 import step.framework.server.audit.AuditLogger;
 import step.framework.server.audit.AuditResponseFilter;
 import step.framework.server.security.SessionFilter;
 import step.framework.server.swagger.Swagger;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.http.HttpSessionEvent;
-import jakarta.servlet.http.HttpSessionListener;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.logging.LogManager;
+import java.util.stream.Collectors;
 
 
 public class ControllerServer {
@@ -119,7 +128,7 @@ public class ControllerServer {
         this.port = configuration.getPropertyAsInteger("port", 8080);
         this.defaultServlet = configuration.getPropertyAsBoolean("ui.defaultServlet", true);
         this.contextRoot = configuration.getProperty(UI_CONTEXT_ROOT_CFG_KEY, UI_CONTEXT_ROOT_DEFAULT_VALUE);
-        this.webAppRoots = new HashSet<>();
+        this.webAppRoots = new LinkedHashSet<>();
         this.webAppRoots.add(configuration.getProperty("ui.resource.root", "dist/step-app"));
     }
 
@@ -259,14 +268,39 @@ public class ControllerServer {
     }
 
     private void initWebapp() throws Exception {
-        List<Resource> resources = webAppRoots.stream().map(r -> Resource.newClassPathResource(r)).collect(Collectors.toList());
-        ResourceCollection resourceCollection = new ResourceCollection(resources);
-        servletContextHandler.setBaseResource(resourceCollection);
+        // Note that Jetty 12 has changed the way to load webapps, and is much stricter
+        // than prior versions regarding non-existing resources or empty resource lists.
+
+        // 1. Get a ResourceFactory tied to the lifecycle of the ServletContextHandler
+        ResourceFactory resourceFactory = ResourceFactory.of(servletContextHandler);
+
+        // 2. Use the factory to create class loader resources.
+        List<Resource> resources = webAppRoots.stream()
+            .map(resourceName -> {
+                Resource resource = resourceFactory.newClassLoaderResource(resourceName, true);
+                if (resource == null) {
+                    logger.warn("Unable to find WebApp resource \"{}\", ignoring", resourceName);
+                } else {
+                    logger.debug("Loaded WebApp resource \"{}\" from {}", resourceName, resource);
+                }
+                return resource;
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        if (!resources.isEmpty()) {
+            // 3. Combine the list of resources (Jetty 12's replacement for ResourceCollection)
+            Resource combinedResource = ResourceFactory.combine(resources);
+            // 4. Set the combined resource as the base
+            servletContextHandler.setBaseResource(combinedResource);
+        } else {
+            logger.warn("Starting up without any WebApp resources");
+        }
         servletContextHandler.setContextPath(contextRoot);
+
         // Add the CacheControlFilter for resources
         FilterHolder cacheControlFilter = new FilterHolder(new CacheControlFilter());
         servletContextHandler.addFilter(cacheControlFilter, "/*", null);
-        addHandler(servletContextHandler);
     }
 
     private void initController() throws Exception {
@@ -344,10 +378,14 @@ public class ControllerServer {
         SessionHandler s = new SessionHandler();
         Integer timeout = configuration.getPropertyAsInteger("ui.sessiontimeout.minutes", 180) * 60;
         s.setMaxInactiveInterval(timeout);
-        s.setUsingCookies(true);
-        s.setSessionCookie("sessionid");
+
+        // 1. Use standard Jakarta Servlet API for standard cookie settings
+        s.getSessionCookieConfig().setName("sessionid");
+        s.getSessionCookieConfig().setHttpOnly(true);
+
+        // 2. Use Jetty's handler for Jetty-specific extensions like SameSite
         s.setSameSite(HttpCookie.SameSite.LAX);
-        s.setHttpOnly(true);
+
         servletContextHandler.setSessionHandler(s);
         servletContextHandler.addEventListener(new HttpSessionListener() {
             @Override
