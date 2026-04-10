@@ -20,7 +20,6 @@ package step.migration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import step.core.Version;
 import step.core.collections.Collection;
 import step.core.collections.CollectionFactory;
@@ -53,7 +52,8 @@ public abstract class MigrationTask {
     /**
      * Script to be executed when migrating from the version asOfVersion to a version lower than asOfVersion
      */
-    public abstract void runDowngradeScript();
+    public void runDowngradeScript() {
+    }
 
     protected Collection<Document> getDocumentCollection(String name) {
         return collectionFactory.getCollection(name, Document.class);

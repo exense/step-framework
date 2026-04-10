@@ -18,13 +18,12 @@
  ******************************************************************************/
 package step.framework.server;
 
-import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletHolder;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
+import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.server.Handler;
 
 import java.util.EnumSet;
 
