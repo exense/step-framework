@@ -207,7 +207,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
 
     @Test
     public void ingestionIncorrectSettings() throws InterruptedException {
-        TimeSeriesCollectionSettings timeSeriesCollectionSettings = new TimeSeriesCollectionSettings();
+        TimeSeriesCollectionConfig timeSeriesCollectionSettings = new TimeSeriesCollectionConfig();
         timeSeriesCollectionSettings.setIngestionFlushAsyncQueueSize(500);
         timeSeriesCollectionSettings.setIngestionFlushingPeriodMs(100);
         timeSeriesCollectionSettings.setResolution(30_000);
@@ -220,7 +220,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
 
     @Test
     public void ingestionExceedingQueueSizeTest() throws InterruptedException {
-        TimeSeriesCollectionSettings timeSeriesCollectionSettings = new TimeSeriesCollectionSettings();
+        TimeSeriesCollectionConfig timeSeriesCollectionSettings = new TimeSeriesCollectionConfig();
         timeSeriesCollectionSettings.setIngestionFlushAsyncQueueSize(500);
         timeSeriesCollectionSettings.setIngestionFlushSeriesQueueSize(1000);
         timeSeriesCollectionSettings.setIngestionFlushingPeriodMs(0); //flush is called directly in the test

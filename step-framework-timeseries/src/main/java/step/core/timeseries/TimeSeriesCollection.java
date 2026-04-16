@@ -7,7 +7,6 @@ import step.core.collections.inmemory.InMemoryCollection;
 import step.core.timeseries.aggregation.TimeSeriesProcessedParams;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
-import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
@@ -29,13 +28,13 @@ public class TimeSeriesCollection {
     private final Set<String> ignoredAttributes;
 
     public TimeSeriesCollection(Collection<Bucket> mainCollection, long resolution) {
-        this(mainCollection, new TimeSeriesCollectionSettings()
+        this(mainCollection, new TimeSeriesCollectionConfig()
             .setResolution(resolution)
             .setIngestionFlushSeriesQueueSize(20000)
         );
     }
 
-    public TimeSeriesCollection(Collection<Bucket> mainCollection, TimeSeriesCollectionSettings settings) {
+    public TimeSeriesCollection(Collection<Bucket> mainCollection, TimeSeriesCollectionConfig settings) {
         this.mainCollection = Objects.requireNonNull(mainCollection);
         if (settings.getResolution() <= 0) {
             throw new IllegalArgumentException("The resolution parameter must be greater than zero");
@@ -43,13 +42,7 @@ public class TimeSeriesCollection {
         this.resolution = settings.getResolution();
         validateTtl(settings.getTtl());
         this.ttl = settings.getTtl();
-        TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
-            .setResolution(settings.getResolution())
-            .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
-            .setFlushSeriesQueueSize(settings.getIngestionFlushSeriesQueueSize())
-            .setFlushAsyncQueueSize(settings.getIngestionFlushAsyncQueueSize())
-            .setIgnoredAttributes(settings.getIgnoredAttributes());
-        this.ingestionPipeline = new TimeSeriesIngestionPipeline(this, ingestionSettings);
+        this.ingestionPipeline = new TimeSeriesIngestionPipeline(this, settings);
         this.ignoredAttributes = settings.getIgnoredAttributes();
     }
 

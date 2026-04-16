@@ -4,7 +4,9 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static org.junit.Assert.*;
 
@@ -24,6 +26,11 @@ public class ObjectEnricherComposerTest {
             }
 
             @Override
+            public TreeSet<String> getAdditionalAttributeKeys() {
+                return new TreeSet<>(Set.of(KEY_1));
+            }
+
+            @Override
             public void accept(EnricheableObject enricheableObject) {
                 enricheableObject.addAttribute(KEY_1, VALUE_1);
             }
@@ -31,6 +38,11 @@ public class ObjectEnricherComposerTest {
             @Override
             public TreeMap<String, String> getAdditionalAttributes() {
                 return new TreeMap<>(Map.of(KEY_2, VALUE_2));
+            }
+
+            @Override
+            public TreeSet<String> getAdditionalAttributeKeys() {
+                return new TreeSet<>(Set.of(KEY_2));
             }
 
             @Override

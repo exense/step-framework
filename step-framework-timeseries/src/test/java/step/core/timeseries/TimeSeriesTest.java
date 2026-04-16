@@ -344,7 +344,7 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
     private void testResolutionFor10Points(int resolutionMs, int expectedBucketCount) {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeriesCollectionSettings timeSeriesCollectionSettings = new TimeSeriesCollectionSettings()
+        TimeSeriesCollectionConfig timeSeriesCollectionSettings = new TimeSeriesCollectionConfig()
             .setResolution(resolutionMs)
             .setIngestionFlushingPeriodMs(resolutionMs)
             .setIngestionFlushSeriesQueueSize(100);
