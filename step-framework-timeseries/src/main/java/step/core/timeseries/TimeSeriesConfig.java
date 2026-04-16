@@ -127,7 +127,7 @@ public class TimeSeriesConfig {
         return this;
     }
 
-    private TimeSeriesConfig setFlushAsyncQueueSize(int flushAsyncQueueSize) {
+    public TimeSeriesConfig setFlushAsyncQueueSize(int flushAsyncQueueSize) {
         this.flushAsyncQueueSize = flushAsyncQueueSize;
         return this;
     }
@@ -209,13 +209,16 @@ public class TimeSeriesConfig {
     }
 
     private static String property(String propertyValue, String collectionName) {
-        return propertyValue.replaceAll("\\{collectionName\\}", collectionName);
+        return propertyValue.replace("{collectionName}", collectionName);
     }
 
     private static void validateMainResolutionParam(long resolution) {
-        double msInMinute = TimeUnit.MINUTES.toMillis(1);
-        if (msInMinute % resolution != 0) {
-            throw new IllegalArgumentException("Invalid interval: " + resolution + " seconds. The interval must be a divisor of one minute (60 seconds).");
+        if (resolution <= 0) {
+            throw new IllegalArgumentException("The main resolution must be greater than zero");
+        }
+        long oneMinuteInMs = TimeUnit.MINUTES.toMillis(1);
+        if (oneMinuteInMs % resolution != 0) {
+            throw new IllegalArgumentException("Invalid interval: " + resolution + " ms. The interval must be a divisor of one minute (" + oneMinuteInMs + " ms).");
         }
     }
 
