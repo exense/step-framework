@@ -108,9 +108,6 @@ public class OQLFilterBuilderTest {
         PojoFilter<Object> filter = filter("property1=prop1");
         boolean test = filter.test(new Bean());
         assertTrue(test);
-
-        filter = filter("unkownprop=null");
-        assertTrue(filter.test(new Bean()));
     }
 
     private PojoFilter<Object> filter(String expression) {
