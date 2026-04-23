@@ -27,7 +27,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesIngestionPipeline.class);
     private static final long FLUSH_OFFSET = 10000; // buckets created in the last FLUSH_OFFSET ms will not be flushed.
-    private static final BasicThreadFactory threadFactory = new BasicThreadFactory.Builder().namingPattern("timeseries-flush-%d").build();
+    private static final BasicThreadFactory threadFactory = BasicThreadFactory.builder().namingPattern("timeseries-flush-%d").daemon().build();
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final TimeSeriesCollection collection;
