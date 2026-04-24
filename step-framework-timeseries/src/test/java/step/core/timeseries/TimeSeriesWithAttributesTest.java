@@ -183,7 +183,7 @@ public class TimeSeriesWithAttributesTest extends TimeSeriesBaseTest {
                 getCollectionWithTTL(10000, 5000L, Set.of("a", "b")),
                 getCollectionWithTTL(20000, 10_000L, Set.of("a", "b", "c"))
             ))
-            .setSettings(new TimeSeriesSettings()
+            .setAggregationConfig(new TimeSeriesAggregationConfig()
                 .setTtlEnabled(true))
             .build();
         Bucket bucket = getRandomBucket();

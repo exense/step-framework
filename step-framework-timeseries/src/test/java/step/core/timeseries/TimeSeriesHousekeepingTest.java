@@ -34,8 +34,8 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
 
     @Test
     public void ttlNotCoveringTest() {
-        TimeSeriesCollection tsCol1 = new TimeSeriesCollection(new InMemoryCollection<>(), new TimeSeriesCollectionSettings().setResolution(10).setTtl(40)); // this live longer
-        TimeSeriesCollection tsCol2 = new TimeSeriesCollection(new InMemoryCollection<>(), new TimeSeriesCollectionSettings().setResolution(100).setTtl(10_000)); // this should not cover the request
+        TimeSeriesCollection tsCol1 = new TimeSeriesCollection(new InMemoryCollection<>(), new TimeSeriesCollectionConfig().setResolution(10).setTtl(40)); // this live longer
+        TimeSeriesCollection tsCol2 = new TimeSeriesCollection(new InMemoryCollection<>(), new TimeSeriesCollectionConfig().setResolution(100).setTtl(10_000)); // this should not cover the request
         long now = System.currentTimeMillis();
         for (int i = 0; i < 5; i++) {
             Bucket bucket = new Bucket();
@@ -51,7 +51,7 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
         tsCol2.save(col2Bucket);
         TimeSeries timeSeries = new TimeSeriesBuilder()
             .registerCollections(Arrays.asList(tsCol1, tsCol2))
-            .setSettings(new TimeSeriesSettings()
+            .setAggregationConfig(new TimeSeriesAggregationConfig()
                 .setTtlEnabled(true))
             .build();
         TimeSeriesAggregationQuery query = new TimeSeriesAggregationQueryBuilder()
@@ -73,7 +73,7 @@ public class TimeSeriesHousekeepingTest extends TimeSeriesBaseTest {
         long now = System.currentTimeMillis();
         TimeSeries timeSeries = new TimeSeriesBuilder()
             .registerCollection(collection)
-            .setSettings(new TimeSeriesSettings()
+            .setAggregationConfig(new TimeSeriesAggregationConfig()
                 .setTtlEnabled(true))
             .build();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();

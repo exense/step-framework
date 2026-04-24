@@ -19,6 +19,7 @@
 package step.core.objectenricher;
 
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 
 /**
@@ -29,5 +30,19 @@ import java.util.function.Consumer;
  */
 public interface ObjectEnricher extends Consumer<EnricheableObject> {
 
-    TreeMap<String, String> getAdditionalAttributes();
+    /**
+     * Return contextual attributes of the object enricher implementation
+     * @return the context attributes (key/value) in a natural order (identical order as getAdditionalAttributeKeys)
+     */
+    default TreeMap<String, String> getAdditionalAttributes() {
+        return new TreeMap<>();
+    }
+
+    /**
+     * Return contextual attributes of the object enricher implementation
+     * @return the context attributes key in a natural order (identical order as getAdditionalAttributes)
+     */
+    default TreeSet<String> getAdditionalAttributeKeys() {
+        return new TreeSet<>();
+    }
 }

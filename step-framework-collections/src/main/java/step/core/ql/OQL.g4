@@ -15,6 +15,8 @@ expr
  | expr AND expr                        #andExpr
  | expr OR expr                         #orExpr
  | expr IN OPAR (STRING (COMMA STRING)* )? CPAR            #inExpr
+ | expr IS NOT NULL_LITERAL             #isNotNullExpr
+ | expr IS NULL_LITERAL                 #isNullExpr
  | atom                                 #atomExpr
  ;    
 
@@ -30,7 +32,9 @@ REGEX : '~';
 OR : 'or';
 AND : 'and';
 IN : 'in';
+IS : 'is';
 NOT : 'not';
+NULL_LITERAL : 'null';
 LT : '<';
 LTE : '<=';
 GT : '>';

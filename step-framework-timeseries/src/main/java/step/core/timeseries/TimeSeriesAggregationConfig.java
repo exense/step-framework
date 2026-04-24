@@ -1,6 +1,6 @@
 package step.core.timeseries;
 
-public class TimeSeriesSettings {
+public class TimeSeriesAggregationConfig {
 
     public static final int DEFAULT_RESPONSE_MAX_INTERVALS = 4000;
     public static final int DEFAULT_IDEAL_RESPONSE_INTERVALS = 100;
@@ -21,7 +21,7 @@ public class TimeSeriesSettings {
         return responseMaxIntervals;
     }
 
-    public TimeSeriesSettings setResponseMaxIntervals(int responseMaxIntervals) {
+    public TimeSeriesAggregationConfig setResponseMaxIntervals(int responseMaxIntervals) {
         this.responseMaxIntervals = responseMaxIntervals;
         return this;
     }
@@ -30,7 +30,7 @@ public class TimeSeriesSettings {
         return idealResponseIntervals;
     }
 
-    public TimeSeriesSettings setIdealResponseIntervals(int idealResponseIntervals) {
+    public TimeSeriesAggregationConfig setIdealResponseIntervals(int idealResponseIntervals) {
         this.idealResponseIntervals = idealResponseIntervals;
         return this;
     }
@@ -39,7 +39,7 @@ public class TimeSeriesSettings {
         return ttlEnabled;
     }
 
-    public TimeSeriesSettings setTtlEnabled(boolean ttlEnabled) {
+    public TimeSeriesAggregationConfig setTtlEnabled(boolean ttlEnabled) {
         this.ttlEnabled = ttlEnabled;
         return this;
     }
