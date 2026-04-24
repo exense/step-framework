@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class TimeSeriesIngestionPipeline implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesIngestionPipeline.class);
-    private static final BasicThreadFactory threadFactory = new BasicThreadFactory.Builder().namingPattern("timeseries-flush-%d").build();
+    private static final BasicThreadFactory threadFactory = BasicThreadFactory.builder().namingPattern("timeseries-flush-%d").daemon().build();
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final TimeSeriesCollection collection;
