@@ -144,19 +144,20 @@ public class ControllerServer {
 
             server.setHandler(handlers);
             server.start();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                logger.info("Shutdown hook called. Stopping...");
+                try {
+                    stop();
+                } catch (Exception e) {
+                    logger.error("Unexpected error while stopping server", e);
+                }
+            }));
+
         } catch (Exception e) {
             logger.error("Unexpected exception on server start", e);
             stop();
         }
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            logger.info("Shutdown hook called. Stopping...");
-            try {
-                stop();
-            } catch (Exception e) {
-                logger.error("Unexpected error while stopping server", e);
-            }
-        }));
     }
 
     private boolean stopping = false;
@@ -172,7 +173,7 @@ public class ControllerServer {
             try {
                 pluginProxy.preShutdownHook(serverContext);
             } catch (Exception e) {
-                logger.error("Error while calling plugin pre-shutdown hooks");
+                logger.error("Error while calling plugin pre-shutdown hooks", e);
             }
         }
         try {
