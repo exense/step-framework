@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
@@ -152,7 +153,7 @@ public class ControllerServer {
                 } catch (Exception e) {
                     logger.error("Unexpected error while stopping server", e);
                 }
-            }));
+            }, "controller-shutdown-hook"));
 
         } catch (Exception e) {
             logger.error("Unexpected exception on server start", e);
@@ -160,14 +161,14 @@ public class ControllerServer {
         }
     }
 
-    private boolean stopping = false;
+    private final AtomicBoolean stopping = new AtomicBoolean(false);
 
     private void stop() {
         // prevent multiple executions of shutdown hooks when stopped programmatically
-        if (stopping) {
+        // sets the flag to true, and returns whether it was ALREADY true before
+        if (stopping.getAndSet(true)) {
             return;
         }
-        stopping = true;
 
         if (pluginProxy != null) {
             try {
