@@ -21,6 +21,7 @@ package step.core.objectenricher;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 public class ObjectEnricherComposer {
@@ -38,6 +39,13 @@ public class ObjectEnricherComposer {
                 TreeMap<String, String> attributes = new TreeMap<>();
                 nonNullList(list).forEach(enricher -> attributes.putAll(enricher.getAdditionalAttributes()));
                 return attributes;
+            }
+
+            @Override
+            public TreeSet<String> getAdditionalAttributeKeys() {
+                TreeSet<String> keys = new TreeSet<>();
+                nonNullList(list).forEach(enricher -> keys.addAll(enricher.getAdditionalAttributeKeys()));
+                return keys;
             }
 
             private Stream<ObjectEnricher> nonNullList(List<ObjectEnricher> list) {
