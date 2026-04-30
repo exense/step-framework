@@ -26,31 +26,34 @@ import java.util.concurrent.TimeUnit;
 
 public class TimeSeriesConfig {
 
-    public static final String TIME_SERIES_MAIN_COLLECTION_FLUSH_PERIOD = "{collectionName}.flush.period";
+    public static final int DEFAULT_FLUSH_OFFSET_MS = 10000;
+    public static final int DEFAULT_INGESTION_FLUSH_SERIES_QUEUE_SIZE = 20000;
+    public static final int DEFAULT_FLUSH_ASYNC_QUEUE_SIZE = 5000;
+    public static final long DEFAULT_MAIN_RESOLUTION_MS = 5000L;
+
+    public static final String TIME_SERIES_MAIN_COLLECTION_FLUSH_PERIOD_MS = "{collectionName}.flush.period";
     public static final String TIME_SERIES_COLLECTION_FLUSH_ASYNC_QUEUE_SIZE = "{collectionName}.flush.async.queue.size";
     public static final String TIME_SERIES_COLLECTION_FLUSH_SERIES_QUEUE_SIZE = "{collectionName}.flush.series.queue.size";
-    public static final String TIME_SERIES_MAIN_RESOLUTION = "{collectionName}.resolution";
+    public static final String TIME_SERIES_MAIN_RESOLUTION_MS = "{collectionName}.resolution";
     public static final String TIME_SERIES_MINUTE_COLLECTION_ENABLED = "{collectionName}.collections.minute.enabled";
-    public static final String TIME_SERIES_MINUTE_COLLECTION_FLUSH_PERIOD = "{collectionName}.collections.minute.flush.period";
+    public static final String TIME_SERIES_MINUTE_COLLECTION_FLUSH_PERIOD_MS = "{collectionName}.collections.minute.flush.period";
     public static final String TIME_SERIES_HOUR_COLLECTION_ENABLED = "{collectionName}.collections.hour.enabled";
-    public static final String TIME_SERIES_HOUR_COLLECTION_FLUSH_PERIOD = "{collectionName}.collections.hour.flush.period";
+    public static final String TIME_SERIES_HOUR_COLLECTION_FLUSH_PERIOD_MS = "{collectionName}.collections.hour.flush.period";
     public static final String TIME_SERIES_DAY_COLLECTION_ENABLED = "{collectionName}.collections.day.enabled";
-    public static final String TIME_SERIES_DAY_COLLECTION_FLUSH_PERIOD = "{collectionName}.collections.day.flush.period";
+    public static final String TIME_SERIES_DAY_COLLECTION_FLUSH_PERIOD_MS = "{collectionName}.collections.day.flush.period";
     public static final String TIME_SERIES_WEEK_COLLECTION_ENABLED = "{collectionName}.collections.week.enabled";
-    public static final String TIME_SERIES_WEEK_COLLECTION_FLUSH_PERIOD = "{collectionName}.collections.week.flush.period";
-    public static final String TIME_SERIES_FLUSH_OFFSET = "{collectionName}.flush.offset";
+    public static final String TIME_SERIES_WEEK_COLLECTION_FLUSH_PERIOD_MS = "{collectionName}.collections.week.flush.period";
+    public static final String TIME_SERIES_FLUSH_OFFSET_MS = "{collectionName}.flush.offset";
 
     private long mainResolution;
     //Define the interval of the flushing job for the main ingestion pipeline (highest resolution)
-    //Note that flush is only actually performed by the job if the bucket time interval is complete (i.e. full resolution interval) or
-    //if the max series queue size is reached (to limit and control memory usage)
     private long mainFlushInterval;
     //Define the max queue size for series, if the usage is over the limit flush is performed even for partial time interval
     private int flushSeriesQueueSize;
     //flushing do not write to DB directly but to a linked blocking queue in memory which is processed by an asynchronous processor, the queue size is limited to prevent excessive memory usage
     //While the queue is full, ingesting new buckets is blocked
     private int flushAsyncQueueSize;
-    private long flushOffsetMs = 10000;
+    private long flushOffsetMs = DEFAULT_FLUSH_OFFSET_MS;
     private boolean perMinuteEnabled;
     private long perMinuteFlushInterval;
     private boolean hourlyEnabled;
@@ -178,22 +181,22 @@ public class TimeSeriesConfig {
     }
 
     public static TimeSeriesConfig fromConfiguration(Configuration configuration, String collectionName) {
-        long mainResolution = getPropertyAsLong(configuration, TIME_SERIES_MAIN_RESOLUTION, collectionName, 5000L);
+        long mainResolution = getPropertyAsLong(configuration, TIME_SERIES_MAIN_RESOLUTION_MS, collectionName, DEFAULT_MAIN_RESOLUTION_MS);
         validateMainResolutionParam(mainResolution);
         return new TimeSeriesConfig()
             .setMainResolution(mainResolution)
-            .setMainFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_MAIN_COLLECTION_FLUSH_PERIOD, collectionName, Duration.ofSeconds(1).toMillis()))
-            .setFlushSeriesQueueSize(getPropertyAsInteger(configuration, TIME_SERIES_COLLECTION_FLUSH_SERIES_QUEUE_SIZE, collectionName, 20000))
-            .setFlushAsyncQueueSize(getPropertyAsInteger(configuration, TIME_SERIES_COLLECTION_FLUSH_ASYNC_QUEUE_SIZE, collectionName, 5000))
-            .setFlushOffsetMs(getPropertyAsLong(configuration, TIME_SERIES_FLUSH_OFFSET, collectionName, 10000L))
+            .setMainFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_MAIN_COLLECTION_FLUSH_PERIOD_MS, collectionName, Duration.ofSeconds(1).toMillis()))
+            .setFlushSeriesQueueSize(getPropertyAsInteger(configuration, TIME_SERIES_COLLECTION_FLUSH_SERIES_QUEUE_SIZE, collectionName, DEFAULT_INGESTION_FLUSH_SERIES_QUEUE_SIZE))
+            .setFlushAsyncQueueSize(getPropertyAsInteger(configuration, TIME_SERIES_COLLECTION_FLUSH_ASYNC_QUEUE_SIZE, collectionName, DEFAULT_FLUSH_ASYNC_QUEUE_SIZE))
+            .setFlushOffsetMs(getPropertyAsLong(configuration, TIME_SERIES_FLUSH_OFFSET_MS, collectionName, DEFAULT_FLUSH_OFFSET_MS))
             .setPerMinuteEnabled(getPropertyAsBoolean(configuration, TIME_SERIES_MINUTE_COLLECTION_ENABLED, collectionName, true))
-            .setPerMinuteFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_MINUTE_COLLECTION_FLUSH_PERIOD, collectionName, Duration.ofMinutes(1).toMillis()))
+            .setPerMinuteFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_MINUTE_COLLECTION_FLUSH_PERIOD_MS, collectionName, Duration.ofMinutes(1).toMillis()))
             .setHourlyEnabled(getPropertyAsBoolean(configuration, TIME_SERIES_HOUR_COLLECTION_ENABLED, collectionName, true))
-            .setHourlyFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_HOUR_COLLECTION_FLUSH_PERIOD, collectionName, Duration.ofMinutes(5).toMillis()))
+            .setHourlyFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_HOUR_COLLECTION_FLUSH_PERIOD_MS, collectionName, Duration.ofMinutes(5).toMillis()))
             .setDailyEnabled(getPropertyAsBoolean(configuration, TIME_SERIES_DAY_COLLECTION_ENABLED, collectionName, true))
-            .setDailyFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_DAY_COLLECTION_FLUSH_PERIOD, collectionName, Duration.ofHours(1).toMillis()))
+            .setDailyFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_DAY_COLLECTION_FLUSH_PERIOD_MS, collectionName, Duration.ofHours(1).toMillis()))
             .setWeeklyEnabled(getPropertyAsBoolean(configuration, TIME_SERIES_WEEK_COLLECTION_ENABLED, collectionName, true))
-            .setWeeklyFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_WEEK_COLLECTION_FLUSH_PERIOD, collectionName, Duration.ofHours(2).toMillis()));
+            .setWeeklyFlushInterval(getPropertyAsLong(configuration, TIME_SERIES_WEEK_COLLECTION_FLUSH_PERIOD_MS, collectionName, Duration.ofHours(2).toMillis()));
     }
 
     private static Long getPropertyAsLong(Configuration configuration, String property, String collectionName, long defaultValue) {
@@ -223,6 +226,9 @@ public class TimeSeriesConfig {
     }
 
     public static TimeSeriesConfig buildSingleResolutionConfig(long mainResolution, long mainFlushInterval) {
+        if (mainResolution <= 0) {
+            throw new IllegalArgumentException("The main resolution must be greater than zero");
+        }
         return new TimeSeriesConfig()
             .setDailyEnabled(false)
             .setHourlyEnabled(false)

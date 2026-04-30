@@ -45,7 +45,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     public TimeSeriesIngestionPipeline(TimeSeriesCollection collection, TimeSeriesCollectionConfig settings) {
         validateSettings(settings);
         this.collection = collection;
-        this.sourceResolution = settings.getResolution();
+        this.sourceResolution = settings.getResolutionMs();
         this.seriesQueueSizeflush = settings.getIngestionFlushSeriesQueueSize();
         this.flushOffsetMs = settings.getIngestionFlushOffsetMs();
         this.ignoredAttributes = settings.getIgnoredAttributes();
@@ -70,7 +70,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
     }
 
     public void validateSettings(TimeSeriesCollectionConfig settings) {
-        if (settings.getResolution() <= 0) {
+        if (settings.getResolutionMs() <= 0) {
             throw new IllegalArgumentException("The resolution parameter must be greater than zero");
         }
         if (settings.getIngestionFlushingPeriodMs() > 0 && settings.getIngestionFlushSeriesQueueSize() <= 1) {

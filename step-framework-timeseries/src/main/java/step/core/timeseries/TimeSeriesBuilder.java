@@ -29,9 +29,9 @@ public class TimeSeriesBuilder {
      * Creates and registers all enabled collections from the given config.
      * Replaces the separate TimeSeriesCollectionsBuilder step.
      *
-     * @param config                            multi-resolution configuration
-     * @param collectionFactory                 factory used to create underlying collections
-     * @param mainCollectionName                name of the main (highest resolution) collection
+     * @param config                             multi-resolution configuration
+     * @param collectionFactory                  factory used to create underlying collections
+     * @param mainCollectionName                 name of the main (highest resolution) collection
      * @param ignoredAttributesForHighResolution attributes to omit from hour/day/week collections
      */
     public TimeSeriesBuilder withConfig(TimeSeriesConfig config, CollectionFactory collectionFactory,
@@ -39,30 +39,30 @@ public class TimeSeriesBuilder {
         int flushSeriesQueueSize = config.getFlushSeriesQueueSize();
         int flushAsyncQueueSize = config.getFlushAsyncQueueSize();
         long flushOffsetMs = config.getFlushOffsetMs();
-        addIfEnabled(mainCollectionName, Duration.ofMillis(config.getMainResolution()), config.getMainFlushInterval(),
-                flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, null, true, collectionFactory);
-        addIfEnabled(mainCollectionName + "_minute", Duration.ofMinutes(1), config.getPerMinuteFlushInterval(),
-                flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, null, config.isPerMinuteEnabled(), collectionFactory);
-        addIfEnabled(mainCollectionName + "_hour", Duration.ofHours(1), config.getHourlyFlushInterval(),
-                flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, ignoredAttributesForHighResolution, config.isHourlyEnabled(), collectionFactory);
-        addIfEnabled(mainCollectionName + "_day", Duration.ofDays(1), config.getDailyFlushInterval(),
-                flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, ignoredAttributesForHighResolution, config.isDailyEnabled(), collectionFactory);
-        addIfEnabled(mainCollectionName + "_week", Duration.ofDays(7), config.getWeeklyFlushInterval(),
-                flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, ignoredAttributesForHighResolution, config.isWeeklyEnabled(), collectionFactory);
+        addIfEnabled(true, mainCollectionName, Duration.ofMillis(config.getMainResolution()), config.getMainFlushInterval(),
+            flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, null, collectionFactory);
+        addIfEnabled(config.isPerMinuteEnabled(), mainCollectionName + "_minute", Duration.ofMinutes(1), config.getPerMinuteFlushInterval(),
+            flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, null, collectionFactory);
+        addIfEnabled(config.isHourlyEnabled(), mainCollectionName + "_hour", Duration.ofHours(1), config.getHourlyFlushInterval(),
+            flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, ignoredAttributesForHighResolution, collectionFactory);
+        addIfEnabled(config.isDailyEnabled(), mainCollectionName + "_day", Duration.ofDays(1), config.getDailyFlushInterval(),
+            flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, ignoredAttributesForHighResolution, collectionFactory);
+        addIfEnabled(config.isWeeklyEnabled(), mainCollectionName + "_week", Duration.ofDays(7), config.getWeeklyFlushInterval(),
+            flushSeriesQueueSize, flushAsyncQueueSize, flushOffsetMs, ignoredAttributesForHighResolution, collectionFactory);
         return this;
     }
 
-    private void addIfEnabled(String collectionName, Duration resolution, long flushInterval,
-                               int flushSeriesQueueSizeThreshold, int flushAsyncQueueSize, long flushOffsetMs,
-                               Set<String> ignoredAttributes, boolean enabled, CollectionFactory collectionFactory) {
-        TimeSeriesCollectionConfig settings = new TimeSeriesCollectionConfig()
-            .setResolution(resolution.toMillis())
-            .setIngestionFlushingPeriodMs(flushInterval)
-            .setIngestionFlushSeriesQueueSize(flushSeriesQueueSizeThreshold)
-            .setIngestionFlushAsyncQueueSize(flushAsyncQueueSize)
-            .setIngestionFlushOffsetMs(flushOffsetMs)
-            .setIgnoredAttributes(ignoredAttributes);
+    private void addIfEnabled(boolean enabled, String collectionName, Duration resolution, long flushInterval,
+                              int flushSeriesQueueSizeThreshold, int flushAsyncQueueSize, long flushOffsetMs,
+                              Set<String> ignoredAttributes, CollectionFactory collectionFactory) {
         if (enabled) {
+            TimeSeriesCollectionConfig settings = new TimeSeriesCollectionConfig()
+                .setResolutionMs(resolution.toMillis())
+                .setIngestionFlushingPeriodMs(flushInterval)
+                .setIngestionFlushSeriesQueueSize(flushSeriesQueueSizeThreshold)
+                .setIngestionFlushAsyncQueueSize(flushAsyncQueueSize)
+                .setIngestionFlushOffsetMs(flushOffsetMs)
+                .setIgnoredAttributes(ignoredAttributes);
             TimeSeriesCollection collection = new TimeSeriesCollection(collectionFactory.getCollection(collectionName, Bucket.class), settings);
             handledCollections.add(collection);
         }
@@ -73,7 +73,7 @@ public class TimeSeriesBuilder {
      */
     private void validateResolutions() {
         List<Long> sortedResolutions = handledCollections.stream()
-            .map(TimeSeriesCollection::getResolution)
+            .map(TimeSeriesCollection::getResolutionMs)
             .sorted()
             .collect(Collectors.toList());
         for (int i = 1; i < sortedResolutions.size(); i++) {
@@ -111,20 +111,16 @@ public class TimeSeriesBuilder {
         }
     }
 
-    public TimeSeriesBuilder setAggregationConfig(TimeSeriesAggregationConfig aggregationConfig) {
+    public TimeSeriesBuilder withAggregationConfig(TimeSeriesAggregationConfig aggregationConfig) {
         this.aggregationConfig = aggregationConfig;
         return this;
-    }
-
-    public TimeSeriesAggregationConfig getAggregationConfig() {
-        return aggregationConfig;
     }
 
     public TimeSeries build() {
         if (handledCollections.isEmpty()) {
             throw new IllegalArgumentException("At least one time series collection must be registered");
         }
-        handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolution));
+        handledCollections.sort(Comparator.comparingLong(TimeSeriesCollection::getResolutionMs));
         validateResolutions();
         validateCollectionsIgnoredAttributes();
         linkIngestionPipelines();

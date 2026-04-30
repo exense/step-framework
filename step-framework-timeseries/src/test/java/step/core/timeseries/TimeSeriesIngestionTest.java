@@ -210,7 +210,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
         TimeSeriesCollectionConfig timeSeriesCollectionSettings = new TimeSeriesCollectionConfig();
         timeSeriesCollectionSettings.setIngestionFlushAsyncQueueSize(500);
         timeSeriesCollectionSettings.setIngestionFlushingPeriodMs(100);
-        timeSeriesCollectionSettings.setResolution(30_000);
+        timeSeriesCollectionSettings.setResolutionMs(30_000);
         try (TimeSeries timeSeries = getTimeSeriesWithSettings(timeSeriesCollectionSettings)) {
             fail("Flush queue size should be mandatory");
         } catch (IllegalArgumentException e) {
@@ -224,7 +224,7 @@ public class TimeSeriesIngestionTest extends TimeSeriesBaseTest {
         timeSeriesCollectionSettings.setIngestionFlushAsyncQueueSize(500);
         timeSeriesCollectionSettings.setIngestionFlushSeriesQueueSize(1000);
         timeSeriesCollectionSettings.setIngestionFlushingPeriodMs(0); //flush is called directly in the test
-        timeSeriesCollectionSettings.setResolution(30_000);
+        timeSeriesCollectionSettings.setResolutionMs(30_000);
         try (TimeSeries timeSeries = getTimeSeriesWithSettings(timeSeriesCollectionSettings)) {
             List<Bucket> collect = timeSeries.getDefaultCollection().find(Filters.empty()).collect(Collectors.toList());
             Assert.assertEquals(0, collect.size());

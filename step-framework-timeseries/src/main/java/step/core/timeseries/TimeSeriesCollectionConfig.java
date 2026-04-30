@@ -2,35 +2,41 @@ package step.core.timeseries;
 
 import java.util.Set;
 
+import static step.core.timeseries.TimeSeriesConfig.DEFAULT_FLUSH_OFFSET_MS;
+
 public class TimeSeriesCollectionConfig {
 
-    private long resolution;
-    private long ttl;
+    private long resolutionMs;
+    private long ttlMs;
     private long ingestionFlushingPeriodMs;
-    private long ingestionFlushOffsetMs = 10000; // buckets created in the last flushOffsetMs will not be flushed during periodic flush
+    // Grace period for the periodic flush thread: a bucket is only flushed once its end time
+    // (bucket start + resolution) is at least ingestionFlushOffsetMs in the past. This ensures
+    // that late-arriving data points whose timestamp falls within an already-ended bucket are
+    // still captured before it is written to the collection.
+    private long ingestionFlushOffsetMs = DEFAULT_FLUSH_OFFSET_MS;
     private int ingestionFlushAsyncQueueSize;
     private int ingestionFlushSeriesQueueSize;
     private Set<String> ignoredAttributes;
 
-    public long getResolution() {
-        return resolution;
+    public long getResolutionMs() {
+        return resolutionMs;
     }
 
-    public long getTtl() {
-        return ttl;
+    public long getTtlMs() {
+        return ttlMs;
     }
 
     public long getIngestionFlushingPeriodMs() {
         return ingestionFlushingPeriodMs;
     }
 
-    public TimeSeriesCollectionConfig setResolution(long resolution) {
-        this.resolution = resolution;
+    public TimeSeriesCollectionConfig setResolutionMs(long resolutionMs) {
+        this.resolutionMs = resolutionMs;
         return this;
     }
 
-    public TimeSeriesCollectionConfig setTtl(long ttl) {
-        this.ttl = ttl;
+    public TimeSeriesCollectionConfig setTtlMs(long ttlMs) {
+        this.ttlMs = ttlMs;
         return this;
     }
 

@@ -25,7 +25,7 @@ public class TimeSeriesBaseTest {
     protected TimeSeriesCollection getCollection(long resolution, Set<String> ignoredAttributes) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>("resolution_" + resolution);
         TimeSeriesCollectionConfig settings = new TimeSeriesCollectionConfig()
-            .setResolution(resolution)
+            .setResolutionMs(resolution)
             .setIgnoredAttributes(ignoredAttributes);
         return new TimeSeriesCollection(col, settings);
     }
@@ -37,8 +37,8 @@ public class TimeSeriesBaseTest {
     protected TimeSeriesCollection getCollectionWithTTL(long resolution, long ttl, Set<String> ignoredAttributes) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>();
         TimeSeriesCollectionConfig settings = new TimeSeriesCollectionConfig()
-            .setTtl(ttl)
-            .setResolution(resolution)
+            .setTtlMs(ttl)
+            .setResolutionMs(resolution)
             .setIgnoredAttributes(ignoredAttributes);
         return new TimeSeriesCollection(col, settings);
     }
@@ -63,7 +63,7 @@ public class TimeSeriesBaseTest {
     protected TimeSeries getTimeSeriesWithResolutions(long... resolutions) {
         return new TimeSeriesBuilder()
             .registerCollections(Arrays.stream(resolutions).mapToObj(this::getCollection).collect(Collectors.toList()))
-            .setAggregationConfig(new TimeSeriesAggregationConfig()
+            .withAggregationConfig(new TimeSeriesAggregationConfig()
                 .setTtlEnabled(true))
             .build();
     }
@@ -71,7 +71,7 @@ public class TimeSeriesBaseTest {
     protected TimeSeries getTimeSeriesWithSettings(TimeSeriesCollectionConfig... settings) {
         return new TimeSeriesBuilder()
             .registerCollections(Arrays.stream(settings).map(this::getCollectionWithSettings).collect(Collectors.toList()))
-            .setAggregationConfig(new TimeSeriesAggregationConfig()
+            .withAggregationConfig(new TimeSeriesAggregationConfig()
                 .setTtlEnabled(true))
             .build();
     }

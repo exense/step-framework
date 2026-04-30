@@ -120,7 +120,7 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
         TimeSeriesCollection collection = getCollection(200);
         TimeSeries timeSeries = new TimeSeriesBuilder()
             .registerCollection(collection)
-            .setAggregationConfig(new TimeSeriesAggregationConfig().setResponseMaxIntervals(1000))
+            .withAggregationConfig(new TimeSeriesAggregationConfig().setResponseMaxIntervals(1000))
             .build();
         long now = System.currentTimeMillis();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();
@@ -138,7 +138,7 @@ public class TimeSeriesAggergationQueryTest extends TimeSeriesBaseTest {
         TimeSeriesCollection collection = getCollection(200);
         TimeSeries timeSeries = new TimeSeriesBuilder()
             .registerCollection(collection)
-            .setAggregationConfig(new TimeSeriesAggregationConfig().setResponseMaxIntervals(1000))
+            .withAggregationConfig(new TimeSeriesAggregationConfig().setResponseMaxIntervals(1000))
             .build();
         long now = System.currentTimeMillis();
         TimeSeriesAggregationPipeline aggregationPipeline = timeSeries.getAggregationPipeline();

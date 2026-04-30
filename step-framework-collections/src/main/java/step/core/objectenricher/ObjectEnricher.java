@@ -31,16 +31,29 @@ import java.util.function.Consumer;
 public interface ObjectEnricher extends Consumer<EnricheableObject> {
 
     /**
-     * Return contextual attributes of the object enricher implementation
-     * @return the context attributes (key/value) in a natural order (identical order as getAdditionalAttributeKeys)
+     * Returns the context attributes (key/value pairs) contributed by this enricher.
+     * <p>
+     * The key order is guaranteed to be consistent across all invocations (ensured by
+     * {@link TreeMap}), and matches the order of {@link #getAdditionalAttributeKeys()}.
+     * Consistent ordering is essential for callers that register a structure (such as a
+     * label schema) based on the keys on a first call, and then populate it by position
+     * on subsequent calls — without this guarantee, callers would have to re-sort or
+     * perform individual key lookups on every invocation. The contract is enforced at
+     * the interface level so that all implementations remain consistent.
+     *
+     * @return the context attributes in natural key order
      */
     default TreeMap<String, String> getAdditionalAttributes() {
         return new TreeMap<>();
     }
 
     /**
-     * Return contextual attributes of the object enricher implementation
-     * @return the context attributes key in a natural order (identical order as getAdditionalAttributes)
+     * Returns the keys of the context attributes contributed by this enricher.
+     * <p>
+     * Keys are in natural order (guaranteed by {@link TreeSet}), consistent across all
+     * invocations and matching the key order of {@link #getAdditionalAttributes()}.
+     *
+     * @return the context attribute keys in natural order
      */
     default TreeSet<String> getAdditionalAttributeKeys() {
         return new TreeSet<>();
