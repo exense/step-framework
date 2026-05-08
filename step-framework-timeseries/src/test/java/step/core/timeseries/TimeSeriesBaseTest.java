@@ -24,8 +24,8 @@ public class TimeSeriesBaseTest {
 
     protected TimeSeriesCollection getCollection(long resolution, Set<String> ignoredAttributes) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>("resolution_" + resolution);
-        TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
-            .setResolution(resolution)
+        TimeSeriesCollectionConfig settings = new TimeSeriesCollectionConfig()
+            .setResolutionMs(resolution)
             .setIgnoredAttributes(ignoredAttributes);
         return new TimeSeriesCollection(col, settings);
     }
@@ -36,14 +36,14 @@ public class TimeSeriesBaseTest {
 
     protected TimeSeriesCollection getCollectionWithTTL(long resolution, long ttl, Set<String> ignoredAttributes) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>();
-        TimeSeriesCollectionSettings settings = new TimeSeriesCollectionSettings()
-            .setTtl(ttl)
-            .setResolution(resolution)
+        TimeSeriesCollectionConfig settings = new TimeSeriesCollectionConfig()
+            .setTtlMs(ttl)
+            .setResolutionMs(resolution)
             .setIgnoredAttributes(ignoredAttributes);
         return new TimeSeriesCollection(col, settings);
     }
 
-    protected TimeSeriesCollection getCollectionWithSettings(TimeSeriesCollectionSettings settings) {
+    protected TimeSeriesCollection getCollectionWithSettings(TimeSeriesCollectionConfig settings) {
         InMemoryCollection<Bucket> col = new InMemoryCollection<>();
         return new TimeSeriesCollection(col, settings);
     }
@@ -63,15 +63,15 @@ public class TimeSeriesBaseTest {
     protected TimeSeries getTimeSeriesWithResolutions(long... resolutions) {
         return new TimeSeriesBuilder()
             .registerCollections(Arrays.stream(resolutions).mapToObj(this::getCollection).collect(Collectors.toList()))
-            .setSettings(new TimeSeriesSettings()
+            .withAggregationConfig(new TimeSeriesAggregationConfig()
                 .setTtlEnabled(true))
             .build();
     }
 
-    protected TimeSeries getTimeSeriesWithSettings(TimeSeriesCollectionSettings... settings) {
+    protected TimeSeries getTimeSeriesWithSettings(TimeSeriesCollectionConfig... settings) {
         return new TimeSeriesBuilder()
             .registerCollections(Arrays.stream(settings).map(this::getCollectionWithSettings).collect(Collectors.toList()))
-            .setSettings(new TimeSeriesSettings()
+            .withAggregationConfig(new TimeSeriesAggregationConfig()
                 .setTtlEnabled(true))
             .build();
     }

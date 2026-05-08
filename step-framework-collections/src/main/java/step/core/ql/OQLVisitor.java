@@ -39,6 +39,15 @@ public interface OQLVisitor<T> extends ParseTreeVisitor<T> {
     T visitParse(OQLParser.ParseContext ctx);
 
     /**
+     * Visit a parse tree produced by the {@code isNotNullExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitIsNotNullExpr(OQLParser.IsNotNullExprContext ctx);
+
+    /**
      * Visit a parse tree produced by the {@code notExpr}
      * labeled alternative in {@link OQLParser#expr}.
      *
@@ -55,6 +64,15 @@ public interface OQLVisitor<T> extends ParseTreeVisitor<T> {
      * @return the visitor result
      */
     T visitInExpr(OQLParser.InExprContext ctx);
+
+    /**
+     * Visit a parse tree produced by the {@code isNullExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitIsNullExpr(OQLParser.IsNullExprContext ctx);
 
     /**
      * Visit a parse tree produced by the {@code atomExpr}

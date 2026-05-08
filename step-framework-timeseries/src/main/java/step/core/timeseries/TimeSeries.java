@@ -9,7 +9,6 @@ import step.core.collections.SearchOrder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationPipeline;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
-import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 
 import java.util.*;
@@ -17,11 +16,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static step.core.timeseries.TimeSeriesConfig.DEFAULT_FLUSH_ASYNC_QUEUE_SIZE;
+import static step.core.timeseries.TimeSeriesConfig.DEFAULT_INGESTION_FLUSH_SERIES_QUEUE_SIZE;
 import static step.core.timeseries.TimeSeriesConstants.TIMESTAMP_ATTRIBUTE;
 
 public class TimeSeries implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeries.class);
+    public static final int INITIAL_INGESTION_FOR_EMPTY_RESOLUTION_FLUSH_PERIOD_SECONDS = 30;
 
     private final List<TimeSeriesCollection> handledCollections;
     private final TimeSeriesAggregationPipeline aggregationPipeline;
@@ -29,13 +31,13 @@ public class TimeSeries implements AutoCloseable {
     private boolean ttlEnabled;
 
     TimeSeries(List<TimeSeriesCollection> handledCollections) {
-        this(handledCollections, new TimeSeriesSettings());
+        this(handledCollections, new TimeSeriesAggregationConfig());
     }
 
-    TimeSeries(List<TimeSeriesCollection> handledCollections, TimeSeriesSettings settings) {
+    TimeSeries(List<TimeSeriesCollection> handledCollections, TimeSeriesAggregationConfig aggregationConfig) {
         this.handledCollections = handledCollections;
-        this.ttlEnabled = settings.isTtlEnabled();
-        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, settings.getResponseMaxIntervals(), settings.getIdealResponseIntervals(), settings.isTtlEnabled());
+        this.ttlEnabled = aggregationConfig.isTtlEnabled();
+        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, aggregationConfig.getResponseMaxIntervals(), aggregationConfig.getIdealResponseIntervals(), aggregationConfig.isTtlEnabled());
     }
 
     public boolean isTtlEnabled() {
@@ -65,15 +67,15 @@ public class TimeSeries implements AutoCloseable {
                 String collectionName = collection.getName();
                 logger.info("Populating empty time-series collection: " + collectionName);
                 TimeSeriesCollection previousCollection = handledCollections.get(i - 1);
-                TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
+                TimeSeriesCollectionConfig ingestionConfig = new TimeSeriesCollectionConfig()
                     .setIgnoredAttributes(collection.getIgnoredAttributes())
-                    .setResolution(collection.getResolution())
-                    .setFlushingPeriodMs(TimeUnit.SECONDS.toMillis(30))
-                    .setFlushAsyncQueueSize(5000)
-                    .setFlushSeriesQueueSize(20000);
-                try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionSettings)) {
+                    .setResolutionMs(collection.getResolutionMs())
+                    .setIngestionFlushingPeriodMs(TimeUnit.SECONDS.toMillis(INITIAL_INGESTION_FOR_EMPTY_RESOLUTION_FLUSH_PERIOD_SECONDS))
+                    .setIngestionFlushAsyncQueueSize(DEFAULT_FLUSH_ASYNC_QUEUE_SIZE)
+                    .setIngestionFlushSeriesQueueSize(DEFAULT_INGESTION_FLUSH_SERIES_QUEUE_SIZE);
+                try (TimeSeriesIngestionPipeline ingestionPipeline = new TimeSeriesIngestionPipeline(collection, ingestionConfig)) {
                     SearchOrder searchOrder = new SearchOrder(TIMESTAMP_ATTRIBUTE, 1);
-                    Filter filter = collection.getTtl() > 0 ? Filters.gte("begin", System.currentTimeMillis() - collection.getTtl()) : Filters.empty();
+                    Filter filter = collection.getTtlMs() > 0 ? Filters.gte("begin", System.currentTimeMillis() - collection.getTtlMs()) : Filters.empty();
                     try (Stream<Bucket> bucketStream = previousCollection.findLazy(filter, searchOrder)) {
                         bucketStream.forEach(ingestionPipeline::ingestBucket);
                         ingestionPipeline.flush();
@@ -94,13 +96,13 @@ public class TimeSeries implements AutoCloseable {
     }
 
     public boolean hasCollection(long resolution) {
-        return handledCollections.stream().anyMatch(c -> c.getResolution() == resolution);
+        return handledCollections.stream().anyMatch(c -> c.getResolutionMs() == resolution);
     }
 
     public TimeSeriesCollection getCollection(long resolution) {
         return handledCollections
             .stream()
-            .filter(collection -> collection.getResolution() == resolution)
+            .filter(collection -> collection.getResolutionMs() == resolution)
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Collection with resolution not found " + resolution));
     }
