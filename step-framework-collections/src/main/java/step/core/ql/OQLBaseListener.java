@@ -55,6 +55,24 @@ public class OQLBaseListener implements OQLListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
+    public void enterIsNotNullExpr(OQLParser.IsNotNullExprContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitIsNotNullExpr(OQLParser.IsNotNullExprContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
     public void enterNotExpr(OQLParser.NotExprContext ctx) {
     }
 
@@ -83,6 +101,24 @@ public class OQLBaseListener implements OQLListener {
      */
     @Override
     public void exitInExpr(OQLParser.InExprContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterIsNullExpr(OQLParser.IsNullExprContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitIsNullExpr(OQLParser.IsNullExprContext ctx) {
     }
 
     /**

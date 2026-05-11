@@ -14,6 +14,8 @@ public class MetricType extends AbstractIdentifiableObject {
     private String displayName;
     private String description;
     @NotNull
+    private String instrumentType;
+    @NotNull
     private List<MetricAttribute> attributes = new ArrayList<>();
     private String unit;
     @NotNull
@@ -47,6 +49,15 @@ public class MetricType extends AbstractIdentifiableObject {
 
     public MetricType setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getInstrumentType() {
+        return instrumentType;
+    }
+
+    public MetricType setInstrumentType(String instrumentType) {
+        this.instrumentType = instrumentType;
         return this;
     }
 

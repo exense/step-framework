@@ -102,7 +102,7 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
     public void invalidResolutionsTest() {
         TimeSeriesCollection collection = getCollection(1);
         collection.createIndexes(Set.of(new IndexField("name", Order.ASC, String.class)));
-        Assert.assertEquals(0, collection.getTtl());
+        Assert.assertEquals(0, collection.getTtlMs());
         Assert.assertTrue(collection.isEmpty());
         new TimeSeriesBuilder()
             .registerCollections(Arrays.asList(
@@ -344,8 +344,8 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
     private void testResolutionFor10Points(int resolutionMs, int expectedBucketCount) {
         // Create ingestion pipeline
         InMemoryCollection<Bucket> bucketCollection = new InMemoryCollection<>();
-        TimeSeriesCollectionSettings timeSeriesCollectionSettings = new TimeSeriesCollectionSettings()
-            .setResolution(resolutionMs)
+        TimeSeriesCollectionConfig timeSeriesCollectionSettings = new TimeSeriesCollectionConfig()
+            .setResolutionMs(resolutionMs)
             .setIngestionFlushingPeriodMs(resolutionMs)
             .setIngestionFlushSeriesQueueSize(100);
         TimeSeriesCollection collection = new TimeSeriesCollection(bucketCollection, timeSeriesCollectionSettings);
@@ -632,10 +632,10 @@ public class TimeSeriesTest extends TimeSeriesBaseTest {
             .registerCollections(Arrays.asList(col2, col1, col3))
             .build();
         TimeSeriesCollection defaultCollection = timeSeries.getDefaultCollection();
-        Assert.assertEquals(col1.getResolution(), defaultCollection.getResolution());
-        Assert.assertEquals(10, timeSeries.getCollection(10).getResolution());
-        Assert.assertEquals(20, timeSeries.getCollection(20).getResolution());
-        Assert.assertEquals(40, timeSeries.getCollection(40).getResolution());
+        Assert.assertEquals(col1.getResolutionMs(), defaultCollection.getResolutionMs());
+        Assert.assertEquals(10, timeSeries.getCollection(10).getResolutionMs());
+        Assert.assertEquals(20, timeSeries.getCollection(20).getResolutionMs());
+        Assert.assertEquals(40, timeSeries.getCollection(40).getResolutionMs());
     }
 
     @Test(expected = IllegalArgumentException.class)

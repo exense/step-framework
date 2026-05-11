@@ -7,7 +7,6 @@ import step.core.collections.inmemory.InMemoryCollection;
 import step.core.timeseries.aggregation.TimeSeriesProcessedParams;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
-import step.core.timeseries.ingestion.TimeSeriesIngestionPipelineSettings;
 import step.core.timeseries.query.TimeSeriesQuery;
 import step.core.timeseries.query.TimeSeriesQueryBuilder;
 
@@ -17,39 +16,35 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static step.core.timeseries.TimeSeriesConfig.DEFAULT_INGESTION_FLUSH_SERIES_QUEUE_SIZE;
+
 
 public class TimeSeriesCollection {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeSeriesCollection.class);
 
     private final Collection<Bucket> mainCollection;
-    private final long resolution;
+    private final long resolutionMs;
     private final TimeSeriesIngestionPipeline ingestionPipeline;
-    private long ttl; // In milliseconds. set to 0 in case deletion is never required
+    private long ttlMs; // In milliseconds. set to 0 in case deletion is never required
     private final Set<String> ignoredAttributes;
 
-    public TimeSeriesCollection(Collection<Bucket> mainCollection, long resolution) {
-        this(mainCollection, new TimeSeriesCollectionSettings()
-            .setResolution(resolution)
-            .setIngestionFlushSeriesQueueSize(20000)
+    public TimeSeriesCollection(Collection<Bucket> mainCollection, long resolutionMs) {
+        this(mainCollection, new TimeSeriesCollectionConfig()
+            .setResolutionMs(resolutionMs)
+            .setIngestionFlushSeriesQueueSize(DEFAULT_INGESTION_FLUSH_SERIES_QUEUE_SIZE)
         );
     }
 
-    public TimeSeriesCollection(Collection<Bucket> mainCollection, TimeSeriesCollectionSettings settings) {
+    public TimeSeriesCollection(Collection<Bucket> mainCollection, TimeSeriesCollectionConfig settings) {
         this.mainCollection = Objects.requireNonNull(mainCollection);
-        if (settings.getResolution() <= 0) {
+        if (settings.getResolutionMs() <= 0) {
             throw new IllegalArgumentException("The resolution parameter must be greater than zero");
         }
-        this.resolution = settings.getResolution();
-        validateTtl(settings.getTtl());
-        this.ttl = settings.getTtl();
-        TimeSeriesIngestionPipelineSettings ingestionSettings = new TimeSeriesIngestionPipelineSettings()
-            .setResolution(settings.getResolution())
-            .setFlushingPeriodMs(settings.getIngestionFlushingPeriodMs())
-            .setFlushSeriesQueueSize(settings.getIngestionFlushSeriesQueueSize())
-            .setFlushAsyncQueueSize(settings.getIngestionFlushAsyncQueueSize())
-            .setIgnoredAttributes(settings.getIgnoredAttributes());
-        this.ingestionPipeline = new TimeSeriesIngestionPipeline(this, ingestionSettings);
+        this.resolutionMs = settings.getResolutionMs();
+        validateTtl(settings.getTtlMs());
+        this.ttlMs = settings.getTtlMs();
+        this.ingestionPipeline = new TimeSeriesIngestionPipeline(this, settings);
         this.ignoredAttributes = settings.getIgnoredAttributes();
     }
 
@@ -82,9 +77,9 @@ public class TimeSeriesCollection {
     }
 
     protected void performHousekeeping() {
-        if (ttl > 0) {
+        if (ttlMs > 0) {
             long cleanupRangeStart = 0;
-            long cleanupRangeEnd = System.currentTimeMillis() - ttl;
+            long cleanupRangeEnd = System.currentTimeMillis() - ttlMs;
             TimeSeriesQuery query = new TimeSeriesQueryBuilder().range(cleanupRangeStart, cleanupRangeEnd).build();
             Filter filter = TimeSeriesFilterBuilder.buildFilter(query);
             this.mainCollection.remove(filter);
@@ -97,13 +92,13 @@ public class TimeSeriesCollection {
         this.mainCollection.remove(filter);
     }
 
-    public long getTtl() {
-        return ttl;
+    public long getTtlMs() {
+        return ttlMs;
     }
 
-    public void setTtl(long ttlInMs) {
+    public void setTtlMs(long ttlInMs) {
         validateTtl(ttlInMs);
-        this.ttl = ttlInMs;
+        this.ttlMs = ttlInMs;
     }
 
     private void validateTtl(long ttl) {
@@ -137,8 +132,8 @@ public class TimeSeriesCollection {
         return ingestionPipeline;
     }
 
-    public long getResolution() {
-        return resolution;
+    public long getResolutionMs() {
+        return resolutionMs;
     }
 
     public Set<String> getIgnoredAttributes() {

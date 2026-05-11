@@ -42,6 +42,22 @@ public interface OQLListener extends ParseTreeListener {
     void exitParse(OQLParser.ParseContext ctx);
 
     /**
+     * Enter a parse tree produced by the {@code isNotNullExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterIsNotNullExpr(OQLParser.IsNotNullExprContext ctx);
+
+    /**
+     * Exit a parse tree produced by the {@code isNotNullExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitIsNotNullExpr(OQLParser.IsNotNullExprContext ctx);
+
+    /**
      * Enter a parse tree produced by the {@code notExpr}
      * labeled alternative in {@link OQLParser#expr}.
      *
@@ -72,6 +88,22 @@ public interface OQLListener extends ParseTreeListener {
      * @param ctx the parse tree
      */
     void exitInExpr(OQLParser.InExprContext ctx);
+
+    /**
+     * Enter a parse tree produced by the {@code isNullExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterIsNullExpr(OQLParser.IsNullExprContext ctx);
+
+    /**
+     * Exit a parse tree produced by the {@code isNullExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitIsNullExpr(OQLParser.IsNullExprContext ctx);
 
     /**
      * Enter a parse tree produced by the {@code atomExpr}

@@ -40,8 +40,9 @@ public class OQLParser extends Parser {
     protected static final PredictionContextCache _sharedContextCache =
         new PredictionContextCache();
     public static final int
-        EQ = 1, NEQ = 2, REGEX = 3, OR = 4, AND = 5, IN = 6, NOT = 7, LT = 8, LTE = 9, GT = 10, GTE = 11,
-        OPAR = 12, CPAR = 13, COMMA = 14, NONQUOTEDSTRING = 15, STRING = 16, SPACE = 17;
+        EQ = 1, NEQ = 2, REGEX = 3, OR = 4, AND = 5, IN = 6, IS = 7, NOT = 8, NULL_LITERAL = 9,
+        LT = 10, LTE = 11, GT = 12, GTE = 13, OPAR = 14, CPAR = 15, COMMA = 16, NONQUOTEDSTRING = 17,
+        STRING = 18, SPACE = 19;
     public static final int
         RULE_parse = 0, RULE_expr = 1, RULE_atom = 2;
     public static final String[] ruleNames = {
@@ -49,12 +50,13 @@ public class OQLParser extends Parser {
     };
 
     private static final String[] _LITERAL_NAMES = {
-        null, "'='", "'!='", "'~'", "'or'", "'and'", "'in'", "'not'", "'<'", "'<='",
-        "'>'", "'>='", "'('", "')'", "','"
+        null, "'='", "'!='", "'~'", "'or'", "'and'", "'in'", "'is'", "'not'",
+        "'null'", "'<'", "'<='", "'>'", "'>='", "'('", "')'", "','"
     };
     private static final String[] _SYMBOLIC_NAMES = {
-        null, "EQ", "NEQ", "REGEX", "OR", "AND", "IN", "NOT", "LT", "LTE", "GT",
-        "GTE", "OPAR", "CPAR", "COMMA", "NONQUOTEDSTRING", "STRING", "SPACE"
+        null, "EQ", "NEQ", "REGEX", "OR", "AND", "IN", "IS", "NOT", "NULL_LITERAL",
+        "LT", "LTE", "GT", "GTE", "OPAR", "CPAR", "COMMA", "NONQUOTEDSTRING",
+        "STRING", "SPACE"
     };
     public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -197,6 +199,44 @@ public class OQLParser extends Parser {
         }
     }
 
+    public static class IsNotNullExprContext extends ExprContext {
+        public ExprContext expr() {
+            return getRuleContext(ExprContext.class, 0);
+        }
+
+        public TerminalNode IS() {
+            return getToken(OQLParser.IS, 0);
+        }
+
+        public TerminalNode NOT() {
+            return getToken(OQLParser.NOT, 0);
+        }
+
+        public TerminalNode NULL_LITERAL() {
+            return getToken(OQLParser.NULL_LITERAL, 0);
+        }
+
+        public IsNotNullExprContext(ExprContext ctx) {
+            copyFrom(ctx);
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof OQLListener) ((OQLListener) listener).enterIsNotNullExpr(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof OQLListener) ((OQLListener) listener).exitIsNotNullExpr(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof OQLVisitor) return ((OQLVisitor<? extends T>) visitor).visitIsNotNullExpr(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
     public static class NotExprContext extends ExprContext {
         public TerminalNode NOT() {
             return getToken(OQLParser.NOT, 0);
@@ -277,6 +317,40 @@ public class OQLParser extends Parser {
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
             if (visitor instanceof OQLVisitor) return ((OQLVisitor<? extends T>) visitor).visitInExpr(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public static class IsNullExprContext extends ExprContext {
+        public ExprContext expr() {
+            return getRuleContext(ExprContext.class, 0);
+        }
+
+        public TerminalNode IS() {
+            return getToken(OQLParser.IS, 0);
+        }
+
+        public TerminalNode NULL_LITERAL() {
+            return getToken(OQLParser.NULL_LITERAL, 0);
+        }
+
+        public IsNullExprContext(ExprContext ctx) {
+            copyFrom(ctx);
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof OQLListener) ((OQLListener) listener).enterIsNullExpr(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof OQLListener) ((OQLListener) listener).exitIsNullExpr(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof OQLVisitor) return ((OQLVisitor<? extends T>) visitor).visitIsNullExpr(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -493,7 +567,7 @@ public class OQLParser extends Parser {
                         setState(12);
                         match(NOT);
                         setState(13);
-                        expr(7);
+                        expr(9);
                     }
                     break;
                     case OPAR:
@@ -510,7 +584,7 @@ public class OQLParser extends Parser {
                         throw new NoViableAltException(this);
                 }
                 _ctx.stop = _input.LT(-1);
-                setState(45);
+                setState(52);
                 _errHandler.sync(this);
                 _alt = getInterpreter().adaptivePredict(_input, 5, _ctx);
                 while (_alt != 2 && _alt != org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER) {
@@ -518,14 +592,14 @@ public class OQLParser extends Parser {
                         if (_parseListeners != null) triggerExitRuleEvent();
                         _prevctx = _localctx;
                         {
-                            setState(43);
+                            setState(50);
                             _errHandler.sync(this);
                             switch (getInterpreter().adaptivePredict(_input, 4, _ctx)) {
                                 case 1: {
                                     _localctx = new EqualityExprContext(new ExprContext(_parentctx, _parentState));
                                     pushNewRecursionContext(_localctx, _startState, RULE_expr);
                                     setState(17);
-                                    if (!(precpred(_ctx, 6))) throw new FailedPredicateException(this, "precpred(_ctx, 6)");
+                                    if (!(precpred(_ctx, 8))) throw new FailedPredicateException(this, "precpred(_ctx, 8)");
                                     setState(18);
                                     ((EqualityExprContext) _localctx).op = _input.LT(1);
                                     _la = _input.LA(1);
@@ -535,14 +609,14 @@ public class OQLParser extends Parser {
                                         consume();
                                     }
                                     setState(19);
-                                    expr(7);
+                                    expr(9);
                                 }
                                 break;
                                 case 2: {
                                     _localctx = new ComparisonExprContext(new ExprContext(_parentctx, _parentState));
                                     pushNewRecursionContext(_localctx, _startState, RULE_expr);
                                     setState(20);
-                                    if (!(precpred(_ctx, 5))) throw new FailedPredicateException(this, "precpred(_ctx, 5)");
+                                    if (!(precpred(_ctx, 7))) throw new FailedPredicateException(this, "precpred(_ctx, 7)");
                                     setState(21);
                                     ((ComparisonExprContext) _localctx).op = _input.LT(1);
                                     _la = _input.LA(1);
@@ -552,36 +626,36 @@ public class OQLParser extends Parser {
                                         consume();
                                     }
                                     setState(22);
-                                    expr(6);
+                                    expr(8);
                                 }
                                 break;
                                 case 3: {
                                     _localctx = new AndExprContext(new ExprContext(_parentctx, _parentState));
                                     pushNewRecursionContext(_localctx, _startState, RULE_expr);
                                     setState(23);
-                                    if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
+                                    if (!(precpred(_ctx, 6))) throw new FailedPredicateException(this, "precpred(_ctx, 6)");
                                     setState(24);
                                     match(AND);
                                     setState(25);
-                                    expr(5);
+                                    expr(7);
                                 }
                                 break;
                                 case 4: {
                                     _localctx = new OrExprContext(new ExprContext(_parentctx, _parentState));
                                     pushNewRecursionContext(_localctx, _startState, RULE_expr);
                                     setState(26);
-                                    if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
+                                    if (!(precpred(_ctx, 5))) throw new FailedPredicateException(this, "precpred(_ctx, 5)");
                                     setState(27);
                                     match(OR);
                                     setState(28);
-                                    expr(4);
+                                    expr(6);
                                 }
                                 break;
                                 case 5: {
                                     _localctx = new InExprContext(new ExprContext(_parentctx, _parentState));
                                     pushNewRecursionContext(_localctx, _startState, RULE_expr);
                                     setState(29);
-                                    if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
+                                    if (!(precpred(_ctx, 4))) throw new FailedPredicateException(this, "precpred(_ctx, 4)");
                                     setState(30);
                                     match(IN);
                                     setState(31);
@@ -615,10 +689,34 @@ public class OQLParser extends Parser {
                                     match(CPAR);
                                 }
                                 break;
+                                case 6: {
+                                    _localctx = new IsNotNullExprContext(new ExprContext(_parentctx, _parentState));
+                                    pushNewRecursionContext(_localctx, _startState, RULE_expr);
+                                    setState(43);
+                                    if (!(precpred(_ctx, 3))) throw new FailedPredicateException(this, "precpred(_ctx, 3)");
+                                    setState(44);
+                                    match(IS);
+                                    setState(45);
+                                    match(NOT);
+                                    setState(46);
+                                    match(NULL_LITERAL);
+                                }
+                                break;
+                                case 7: {
+                                    _localctx = new IsNullExprContext(new ExprContext(_parentctx, _parentState));
+                                    pushNewRecursionContext(_localctx, _startState, RULE_expr);
+                                    setState(47);
+                                    if (!(precpred(_ctx, 2))) throw new FailedPredicateException(this, "precpred(_ctx, 2)");
+                                    setState(48);
+                                    match(IS);
+                                    setState(49);
+                                    match(NULL_LITERAL);
+                                }
+                                break;
                             }
                         }
                     }
-                    setState(47);
+                    setState(54);
                     _errHandler.sync(this);
                     _alt = getInterpreter().adaptivePredict(_input, 5, _ctx);
                 }
@@ -741,17 +839,17 @@ public class OQLParser extends Parser {
         AtomContext _localctx = new AtomContext(_ctx, getState());
         enterRule(_localctx, 4, RULE_atom);
         try {
-            setState(54);
+            setState(61);
             switch (_input.LA(1)) {
                 case OPAR:
                     _localctx = new ParExprContext(_localctx);
                     enterOuterAlt(_localctx, 1);
                 {
-                    setState(48);
+                    setState(55);
                     match(OPAR);
-                    setState(49);
+                    setState(56);
                     expr(0);
-                    setState(50);
+                    setState(57);
                     match(CPAR);
                 }
                 break;
@@ -759,7 +857,7 @@ public class OQLParser extends Parser {
                     _localctx = new NonQuotedStringAtomContext(_localctx);
                     enterOuterAlt(_localctx, 2);
                 {
-                    setState(52);
+                    setState(59);
                     match(NONQUOTEDSTRING);
                 }
                 break;
@@ -767,7 +865,7 @@ public class OQLParser extends Parser {
                     _localctx = new StringAtomContext(_localctx);
                     enterOuterAlt(_localctx, 3);
                 {
-                    setState(53);
+                    setState(60);
                     match(STRING);
                 }
                 break;
@@ -795,37 +893,43 @@ public class OQLParser extends Parser {
     private boolean expr_sempred(ExprContext _localctx, int predIndex) {
         switch (predIndex) {
             case 0:
-                return precpred(_ctx, 6);
+                return precpred(_ctx, 8);
             case 1:
-                return precpred(_ctx, 5);
+                return precpred(_ctx, 7);
             case 2:
-                return precpred(_ctx, 4);
+                return precpred(_ctx, 6);
             case 3:
-                return precpred(_ctx, 3);
+                return precpred(_ctx, 5);
             case 4:
+                return precpred(_ctx, 4);
+            case 5:
+                return precpred(_ctx, 3);
+            case 6:
                 return precpred(_ctx, 2);
         }
         return true;
     }
 
     public static final String _serializedATN =
-        "\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\23;\4\2\t\2\4\3\t" +
+        "\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\25B\4\2\t\2\4\3\t" +
             "\3\4\4\t\4\3\2\5\2\n\n\2\3\2\3\2\3\3\3\3\3\3\3\3\5\3\22\n\3\3\3\3\3\3" +
             "\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\7\3&\n" +
-            "\3\f\3\16\3)\13\3\5\3+\n\3\3\3\7\3.\n\3\f\3\16\3\61\13\3\3\4\3\4\3\4\3" +
-            "\4\3\4\3\4\5\49\n\4\3\4\2\3\4\5\2\4\6\2\4\3\2\3\5\3\2\n\rB\2\t\3\2\2\2" +
-            "\4\21\3\2\2\2\68\3\2\2\2\b\n\5\4\3\2\t\b\3\2\2\2\t\n\3\2\2\2\n\13\3\2" +
-            "\2\2\13\f\7\2\2\3\f\3\3\2\2\2\r\16\b\3\1\2\16\17\7\t\2\2\17\22\5\4\3\t" +
-            "\20\22\5\6\4\2\21\r\3\2\2\2\21\20\3\2\2\2\22/\3\2\2\2\23\24\f\b\2\2\24" +
-            "\25\t\2\2\2\25.\5\4\3\t\26\27\f\7\2\2\27\30\t\3\2\2\30.\5\4\3\b\31\32" +
-            "\f\6\2\2\32\33\7\7\2\2\33.\5\4\3\7\34\35\f\5\2\2\35\36\7\6\2\2\36.\5\4" +
-            "\3\6\37 \f\4\2\2 !\7\b\2\2!*\7\16\2\2\"\'\7\22\2\2#$\7\20\2\2$&\7\22\2" +
-            "\2%#\3\2\2\2&)\3\2\2\2\'%\3\2\2\2\'(\3\2\2\2(+\3\2\2\2)\'\3\2\2\2*\"\3" +
-            "\2\2\2*+\3\2\2\2+,\3\2\2\2,.\7\17\2\2-\23\3\2\2\2-\26\3\2\2\2-\31\3\2" +
-            "\2\2-\34\3\2\2\2-\37\3\2\2\2.\61\3\2\2\2/-\3\2\2\2/\60\3\2\2\2\60\5\3" +
-            "\2\2\2\61/\3\2\2\2\62\63\7\16\2\2\63\64\5\4\3\2\64\65\7\17\2\2\659\3\2" +
-            "\2\2\669\7\21\2\2\679\7\22\2\28\62\3\2\2\28\66\3\2\2\28\67\3\2\2\29\7" +
-            "\3\2\2\2\t\t\21\'*-/8";
+            "\3\f\3\16\3)\13\3\5\3+\n\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\7\3\65\n\3" +
+            "\f\3\16\38\13\3\3\4\3\4\3\4\3\4\3\4\3\4\5\4@\n\4\3\4\2\3\4\5\2\4\6\2\4" +
+            "\3\2\3\5\3\2\f\17K\2\t\3\2\2\2\4\21\3\2\2\2\6?\3\2\2\2\b\n\5\4\3\2\t\b" +
+            "\3\2\2\2\t\n\3\2\2\2\n\13\3\2\2\2\13\f\7\2\2\3\f\3\3\2\2\2\r\16\b\3\1" +
+            "\2\16\17\7\n\2\2\17\22\5\4\3\13\20\22\5\6\4\2\21\r\3\2\2\2\21\20\3\2\2" +
+            "\2\22\66\3\2\2\2\23\24\f\n\2\2\24\25\t\2\2\2\25\65\5\4\3\13\26\27\f\t" +
+            "\2\2\27\30\t\3\2\2\30\65\5\4\3\n\31\32\f\b\2\2\32\33\7\7\2\2\33\65\5\4" +
+            "\3\t\34\35\f\7\2\2\35\36\7\6\2\2\36\65\5\4\3\b\37 \f\6\2\2 !\7\b\2\2!" +
+            "*\7\20\2\2\"\'\7\24\2\2#$\7\22\2\2$&\7\24\2\2%#\3\2\2\2&)\3\2\2\2\'%\3" +
+            "\2\2\2\'(\3\2\2\2(+\3\2\2\2)\'\3\2\2\2*\"\3\2\2\2*+\3\2\2\2+,\3\2\2\2" +
+            ",\65\7\21\2\2-.\f\5\2\2./\7\t\2\2/\60\7\n\2\2\60\65\7\13\2\2\61\62\f\4" +
+            "\2\2\62\63\7\t\2\2\63\65\7\13\2\2\64\23\3\2\2\2\64\26\3\2\2\2\64\31\3" +
+            "\2\2\2\64\34\3\2\2\2\64\37\3\2\2\2\64-\3\2\2\2\64\61\3\2\2\2\658\3\2\2" +
+            "\2\66\64\3\2\2\2\66\67\3\2\2\2\67\5\3\2\2\28\66\3\2\2\29:\7\20\2\2:;\5" +
+            "\4\3\2;<\7\21\2\2<@\3\2\2\2=@\7\23\2\2>@\7\24\2\2?9\3\2\2\2?=\3\2\2\2" +
+            "?>\3\2\2\2@\7\3\2\2\2\t\t\21\'*\64\66?";
     public static final ATN _ATN =
         new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 

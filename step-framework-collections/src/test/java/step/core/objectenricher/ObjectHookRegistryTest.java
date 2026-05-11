@@ -3,10 +3,12 @@ package step.core.objectenricher;
 import org.junit.Test;
 import step.core.AbstractContext;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
-import java.util.List;
+import java.util.TreeSet;
 
 import static org.junit.Assert.*;
 
@@ -134,6 +136,11 @@ public class ObjectHookRegistryTest {
                 }
 
                 @Override
+                public TreeSet<String> getAdditionalAttributeKeys() {
+                    return new TreeSet<>(Set.of("att1"));
+                }
+
+                @Override
                 public void accept(EnricheableObject enricheableObject) {
                     enricheableObject.addAttribute("att1", "val1");
                 }
@@ -166,16 +173,8 @@ public class ObjectHookRegistryTest {
 
         @Override
         public ObjectEnricher getObjectEnricher(AbstractContext context) {
-            return new ObjectEnricher() {
-                @Override
-                public TreeMap<String, String> getAdditionalAttributes() {
-                    return new TreeMap<>();
-                }
-
-                @Override
-                public void accept(EnricheableObject enricheableObject) {
-                    // No-op
-                }
+            return enricheableObject -> {
+                // No-op
             };
         }
 
@@ -208,16 +207,8 @@ public class ObjectHookRegistryTest {
 
         @Override
         public ObjectEnricher getObjectEnricher(AbstractContext context) {
-            return new ObjectEnricher() {
-                @Override
-                public TreeMap<String, String> getAdditionalAttributes() {
-                    return new TreeMap<>();
-                }
-
-                @Override
-                public void accept(EnricheableObject enricheableObject) {
-                    // No-op
-                }
+            return enricheableObject -> {
+                // No-op
             };
         }
 

@@ -67,10 +67,10 @@ public class TimeSeriesMultipleCollectionsAggregateTest extends TimeSeriesBaseTe
             .build();
         TimeSeriesAggregationResponse response = aggregationPipeline.collect(query);
         Assert.assertEquals(1000, response.getCollectionResolution());
-        timeSeries.getCollections().get(0).setTtl(10_000);
+        timeSeries.getCollections().get(0).setTtlMs(10_000);
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(5000, response.getCollectionResolution());
-        timeSeries.getCollections().get(0).setTtl(100_000_000);
+        timeSeries.getCollections().get(0).setTtlMs(100_000_000);
         response = aggregationPipeline.collect(query);
         Assert.assertEquals(1000, response.getCollectionResolution());
     }

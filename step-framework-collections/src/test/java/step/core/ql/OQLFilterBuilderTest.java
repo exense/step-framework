@@ -291,4 +291,20 @@ public class OQLFilterBuilderTest {
         assertFalse(test);
     }
 
+    @Test
+    public void testIsNull() {
+        PojoFilter<Object> filter = filter("property1 is not null");
+        boolean test = filter.test(new Bean());
+        assertTrue(test);
+
+        filter = filter("property1 is null");
+        assertFalse(filter.test(new Bean()));
+
+        filter = filter("property3 is null");
+        assertTrue(filter.test(new Bean()));
+
+        filter = filter("property3 is not null");
+        assertFalse(filter.test(new Bean()));
+    }
+
 }

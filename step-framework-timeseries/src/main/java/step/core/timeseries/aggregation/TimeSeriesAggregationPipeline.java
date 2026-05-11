@@ -41,7 +41,7 @@ public class TimeSeriesAggregationPipeline {
         this.collections = collections;
         for (int i = 0; i < collections.size(); i++) {
             TimeSeriesCollection collection = collections.get(i);
-            resolutionsIndexes.put(collection.getResolution(), i);
+            resolutionsIndexes.put(collection.getResolutionMs(), i);
         }
     }
 
@@ -70,17 +70,17 @@ public class TimeSeriesAggregationPipeline {
         long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         long idealResolution = 0;
         if (query.getOptimizationType() == TimeSeriesOptimizationType.MOST_ACCURATE) {
-            idealResolution = collections.get(0).getResolution(); // first collection with the best resolution
+            idealResolution = collections.get(0).getResolutionMs(); // first collection with the best resolution
         } else { // most efficient
             idealResolution = this.roundDownToAvailableResolution(getIdealResolution(query));
         }
         TimeSeriesCollection idealAvailableCollection = ttlEnabled ? chooseFirstAvailableCollectionBasedOnTTL(idealResolution, query) : this.collections.get(this.resolutionsIndexes.get(idealResolution));
-        idealAvailableCollection = chooseLastCollectionWhichHandleAttributes(idealAvailableCollection.getResolution(), usedAttributes);
+        idealAvailableCollection = chooseLastCollectionWhichHandleAttributes(idealAvailableCollection.getResolutionMs(), usedAttributes);
 
-        boolean fallbackToHigherResolutionWithValidTTL = idealResolution < idealAvailableCollection.getResolution();
+        boolean fallbackToHigherResolutionWithValidTTL = idealResolution < idealAvailableCollection.getResolutionMs();
         boolean ttlCovered = ttlEnabled ? collectionTtlCoverInterval(idealAvailableCollection, queryFrom, queryTo) : true;
 
-        long sourceResolution = idealAvailableCollection.getResolution();
+        long sourceResolution = idealAvailableCollection.getResolutionMs();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
 
         Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
@@ -118,7 +118,7 @@ public class TimeSeriesAggregationPipeline {
             .setStart(finalParams.getFrom())
             .setEnd(finalParams.getTo())
             .setResolution(finalParams.getResolution())
-            .setCollectionResolution(idealAvailableCollection.getResolution())
+            .setCollectionResolution(idealAvailableCollection.getResolutionMs())
             .setCollectionIgnoredAttributes(idealAvailableCollection.getIgnoredAttributes())
             .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
             .setTtlCovered(ttlCovered)
@@ -206,7 +206,7 @@ public class TimeSeriesAggregationPipeline {
             }
         }
         if (query.getBucketsResolution() != null) {
-            long firstCollectionResolution = collections.get(0).getResolution();
+            long firstCollectionResolution = collections.get(0).getResolutionMs();
             if (query.getBucketsResolution() < firstCollectionResolution) {
                 throw new IllegalArgumentException("Buckets resolution must be less than or equal to the minimum registered collection: " + firstCollectionResolution);
             }
@@ -270,7 +270,7 @@ public class TimeSeriesAggregationPipeline {
     }
 
     private boolean collectionTtlCoverInterval(TimeSeriesCollection collection, long from, long to) {
-        long ttl = collection.getTtl();
+        long ttl = collection.getTtlMs();
         if (ttl == 0) {
             // housekeeping is disabled
             return true;
@@ -281,7 +281,7 @@ public class TimeSeriesAggregationPipeline {
     }
 
     public List<Long> getAvailableResolutions() {
-        return this.collections.stream().map(TimeSeriesCollection::getResolution).collect(Collectors.toList());
+        return this.collections.stream().map(TimeSeriesCollection::getResolutionMs).collect(Collectors.toList());
     }
 
     private long calculateBucketBeginAnchor(long bucketBegin, TimeSeriesProcessedParams params) {
