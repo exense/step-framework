@@ -111,6 +111,15 @@ public interface OQLVisitor<T> extends ParseTreeVisitor<T> {
     T visitEqualityExpr(OQLParser.EqualityExprContext ctx);
 
     /**
+     * Visit a parse tree produced by the {@code includesExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitIncludesExpr(OQLParser.IncludesExprContext ctx);
+
+    /**
      * Visit a parse tree produced by the {@code andExpr}
      * labeled alternative in {@link OQLParser#expr}.
      *

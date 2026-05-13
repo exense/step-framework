@@ -22,6 +22,7 @@ import org.junit.Test;
 import step.core.collections.PojoFilter;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertFalse;
@@ -36,10 +37,15 @@ public class OQLFilterBuilderTest {
         int int1 = 1;
         int int10 = 10;
         Map<String, String> map1 = new HashMap<>();
+        List<String> tags = List.of("alpha", "beta", "gamma");
 
         public Bean() {
             super();
             map1.put("property2", "prop2");
+        }
+
+        public List<String> getTags() {
+            return tags;
         }
 
         public String getProperty1() {
@@ -289,6 +295,19 @@ public class OQLFilterBuilderTest {
         PojoFilter<Object> filter = filter("not (property1 in ( \"prop1\", \"prop2\" ))");
         boolean test = filter.test(new Bean());
         assertFalse(test);
+    }
+
+    @Test
+    public void testIncludes() {
+        assertTrue(filter("tags includes \"alpha\"").test(new Bean()));
+        assertTrue(filter("tags includes \"beta\"").test(new Bean()));
+        assertFalse(filter("tags includes \"delta\"").test(new Bean()));
+    }
+
+    @Test
+    public void testIncludesCombined() {
+        assertTrue(filter("property1=prop1 and tags includes \"beta\"").test(new Bean()));
+        assertFalse(filter("property1=prop1 and tags includes \"delta\"").test(new Bean()));
     }
 
     @Test

@@ -99,6 +99,10 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
                 .map(this::formatInValue) // Escape single quotes for SQL
                 .collect(Collectors.joining(",", "(", ")"));
             return formatField(inFilter.getField(), true) + " IN " + values + " ";
+        } else if (filter instanceof Includes) {
+            Includes includesFilter = (Includes) filter;
+            // Use JSONB @> containment to check if the array field contains the given element (GIN-index friendly)
+            return formatField(includesFilter.getField(), List.class) + " @> " + formatIncludesValue(includesFilter.getExpectedValue());
         } else {
             throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
         }
@@ -112,6 +116,25 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
         } else {
             return "NOT (" + childerPojoFilters.get(0) + ")";
         }
+    }
+
+    private String formatIncludesValue(Object expectedValue) {
+        String jsonElement;
+        if (expectedValue instanceof ObjectId) {
+            String s = ((ObjectId) expectedValue).toHexString().replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "''");
+            jsonElement = "\"" + s + "\"";
+        } else if (expectedValue instanceof String) {
+            String s = ((String) expectedValue).replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "''");
+            jsonElement = "\"" + s + "\"";
+        } else if (expectedValue instanceof Boolean) {
+            jsonElement = expectedValue.toString(); // "true" or "false"
+        } else if (expectedValue instanceof Number) {
+            jsonElement = expectedValue.toString(); // plain number, no quotes
+        } else {
+            String s = expectedValue.toString().replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "''");
+            jsonElement = "\"" + s + "\"";
+        }
+        return "'[" + jsonElement + "]'::jsonb";
     }
 
     private String formatInValue(Object expectedValue) {

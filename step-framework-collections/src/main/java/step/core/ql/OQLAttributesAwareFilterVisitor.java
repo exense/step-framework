@@ -68,6 +68,17 @@ public class OQLAttributesAwareFilterVisitor extends OQLFilterVisitor {
         return processInExpr(ctx, text0);
     }
 
+    @Override
+    public Filter visitIncludesExpr(OQLParser.IncludesExprContext ctx) {
+        String field = transform(unescapeStringIfNecessary(ctx.expr(0).getText()));
+        if (ignoreAttributes.contains(field)) {
+            return Filters.empty();
+        }
+        attributes.add(field);
+        String value = unescapeStringIfNecessary(ctx.expr(1).getText());
+        return processIncludesExpr(field, value);
+    }
+
     public List<String> getAttributes() {
         return attributes;
     }

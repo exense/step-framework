@@ -79,6 +79,8 @@ public class PojoFilters {
                 return new ExistsPojoFilter<>((Exists) filter);
             } else if (filter instanceof In) {
                 return new InPojoFilter<>((In) filter);
+            } else if (filter instanceof Includes) {
+                return new IncludesPojoFilter<>((Includes) filter);
             } else {
                 throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
             }
@@ -393,6 +395,29 @@ public class PojoFilters {
                 return ((ObjectId) inValue).toHexString().equals(beanValue);
             } else {
                 return beanValue.equals(inValue);
+            }
+        }
+    }
+
+    public static class IncludesPojoFilter<T> implements PojoFilter<T> {
+
+        private final Includes includesFilter;
+
+        public IncludesPojoFilter(Includes includesFilter) {
+            super();
+            this.includesFilter = includesFilter;
+        }
+
+        @Override
+        public boolean test(T t) {
+            try {
+                Object beanProperty = getBeanProperty(t, includesFilter.getField());
+                if (beanProperty instanceof java.util.Collection<?> collection) {
+                    return collection.contains(includesFilter.getExpectedValue());
+                }
+                return false;
+            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                return false;
             }
         }
     }

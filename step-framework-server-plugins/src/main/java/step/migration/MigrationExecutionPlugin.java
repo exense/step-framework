@@ -18,6 +18,7 @@
  ******************************************************************************/
 package step.migration;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,8 @@ import step.core.plugins.Plugin;
 import step.framework.server.ServerPlugin;
 import step.versionmanager.ControllerLog;
 import step.versionmanager.VersionManager;
+
+import java.util.concurrent.Executors;
 
 @Plugin
 /**
@@ -86,7 +89,11 @@ public class MigrationExecutionPlugin<C extends AbstractContext> implements Serv
                 logger.info("Starting controller with an older version. Current version is "
                     + currentVersion + ". Version of last start was " + latestVersion);
             }
-            migrationManager.migrate(context.get(CollectionFactory.class), latestVersion, currentVersion);
+            CollectionFactory collectionFactory = context.get(CollectionFactory.class);
+            migrationManager.migrateAsync(collectionFactory, latestVersion, currentVersion,
+                    Executors.newSingleThreadExecutor(
+                            BasicThreadFactory.builder().namingPattern("async-migration-%d").daemon(true).build()));
+            migrationManager.migrate(collectionFactory, latestVersion, currentVersion);
         }
     }
 

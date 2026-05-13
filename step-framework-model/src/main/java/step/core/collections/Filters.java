@@ -111,6 +111,10 @@ public class Filters {
         return new In(field, values);
     }
 
+    public static Includes includes(String field, Object expectedValue) {
+        return new Includes(field, expectedValue);
+    }
+
     /**
      * Helper method to extract all attributes (fields) on which the filters are applied
      *

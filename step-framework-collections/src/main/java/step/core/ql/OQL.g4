@@ -12,6 +12,7 @@ expr
  : NOT expr                             #notExpr
  | expr op=(EQ | NEQ | REGEX) expr              #equalityExpr
  | expr op=(LT | LTE | GT | GTE) expr           #comparisonExpr
+ | expr INCLUDES expr                   #includesExpr
  | expr AND expr                        #andExpr
  | expr OR expr                         #orExpr
  | expr IN OPAR (STRING (COMMA STRING)* )? CPAR            #inExpr
@@ -32,6 +33,7 @@ REGEX : '~';
 OR : 'or';
 AND : 'and';
 IN : 'in';
+INCLUDES : 'includes';
 IS : 'is';
 NOT : 'not';
 NULL_LITERAL : 'null';

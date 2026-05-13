@@ -535,6 +535,38 @@ public abstract class AbstractCollectionTest {
     }
 
     @Test
+    public void testIncludesFilter() {
+        Collection<Bean> collection = collectionFactory.getCollection(COLLECTION, Bean.class);
+        collection.remove(Filters.empty());
+
+        Bean bean1 = new Bean("bean1");
+        bean1.setList(List.of(1, 2, 3));
+        collection.save(bean1);
+
+        Bean bean2 = new Bean("bean2");
+        bean2.setList(List.of(4, 5, 6));
+        collection.save(bean2);
+
+        Bean bean3 = new Bean("bean3");
+        // no list field set
+        collection.save(bean3);
+
+        // matches bean1 (list contains 2)
+        List<Bean> result = collection.find(Filters.includes("list", 2), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(1, result.size());
+        assertEquals(bean1.getId(), result.get(0).getId());
+
+        // matches bean2 (list contains 4)
+        result = collection.find(Filters.includes("list", 4), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(1, result.size());
+        assertEquals(bean2.getId(), result.get(0).getId());
+
+        // no match (value absent from all lists)
+        result = collection.find(Filters.includes("list", 7), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(0, result.size());
+    }
+
+    @Test
     public void testRemove() throws Exception {
         Collection<Bean> beanCollection = collectionFactory.getCollection(COLLECTION, Bean.class);
         beanCollection.remove(Filters.empty());

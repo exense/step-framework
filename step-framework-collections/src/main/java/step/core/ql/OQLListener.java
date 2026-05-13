@@ -170,6 +170,22 @@ public interface OQLListener extends ParseTreeListener {
     void exitEqualityExpr(OQLParser.EqualityExprContext ctx);
 
     /**
+     * Enter a parse tree produced by the {@code includesExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterIncludesExpr(OQLParser.IncludesExprContext ctx);
+
+    /**
+     * Exit a parse tree produced by the {@code includesExpr}
+     * labeled alternative in {@link OQLParser#expr}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitIncludesExpr(OQLParser.IncludesExprContext ctx);
+
+    /**
      * Enter a parse tree produced by the {@code andExpr}
      * labeled alternative in {@link OQLParser#expr}.
      *
