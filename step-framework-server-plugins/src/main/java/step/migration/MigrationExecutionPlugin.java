@@ -30,6 +30,7 @@ import step.framework.server.ServerPlugin;
 import step.versionmanager.ControllerLog;
 import step.versionmanager.VersionManager;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Plugin
@@ -39,11 +40,7 @@ import java.util.concurrent.Executors;
 public class MigrationExecutionPlugin<C extends AbstractContext> implements ServerPlugin<C> {
 
     private static final Logger logger = LoggerFactory.getLogger(MigrationExecutionPlugin.class);
-
-    @Override
-    public void serverStart(C context) throws Exception {
-
-    }
+    private ExecutorService executorService;
 
     @Override
     public void migrateData(C context) throws Exception {
@@ -51,18 +48,10 @@ public class MigrationExecutionPlugin<C extends AbstractContext> implements Serv
     }
 
     @Override
-    public void initializeData(C context) throws Exception {
-
-    }
-
-    @Override
-    public void afterInitializeData(C context) throws Exception {
-
-    }
-
-    @Override
     public void serverStop(C context) {
-
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 
     @Override
@@ -90,9 +79,9 @@ public class MigrationExecutionPlugin<C extends AbstractContext> implements Serv
                     + currentVersion + ". Version of last start was " + latestVersion);
             }
             CollectionFactory collectionFactory = context.get(CollectionFactory.class);
-            migrationManager.migrateAsync(collectionFactory, latestVersion, currentVersion,
-                    Executors.newSingleThreadExecutor(
-                            BasicThreadFactory.builder().namingPattern("async-migration-%d").daemon(true).build()));
+            executorService = Executors.newSingleThreadExecutor(
+                BasicThreadFactory.builder().namingPattern("async-migration-%d").daemon(true).build());
+            migrationManager.migrateAsync(collectionFactory, latestVersion, currentVersion, executorService);
             migrationManager.migrate(collectionFactory, latestVersion, currentVersion);
         }
     }

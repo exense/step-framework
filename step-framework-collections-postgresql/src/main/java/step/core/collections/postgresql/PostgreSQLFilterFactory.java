@@ -18,6 +18,8 @@
  ******************************************************************************/
 package step.core.collections.postgresql;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.types.ObjectId;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.Filter;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 
 public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 
+    private static final ObjectMapper OBJECT_MAPPER = PostgreSQLCollectionJacksonMapperProvider.getObjectMapper();
     private static final Pattern p = Pattern.compile("([^.]+)");
 
     @Override
@@ -119,22 +122,15 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
     }
 
     private String formatIncludesValue(Object expectedValue) {
-        String jsonElement;
-        if (expectedValue instanceof ObjectId) {
-            String s = ((ObjectId) expectedValue).toHexString().replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "''");
-            jsonElement = "\"" + s + "\"";
-        } else if (expectedValue instanceof String) {
-            String s = ((String) expectedValue).replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "''");
-            jsonElement = "\"" + s + "\"";
-        } else if (expectedValue instanceof Boolean) {
-            jsonElement = expectedValue.toString(); // "true" or "false"
-        } else if (expectedValue instanceof Number) {
-            jsonElement = expectedValue.toString(); // plain number, no quotes
-        } else {
-            String s = expectedValue.toString().replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "''");
-            jsonElement = "\"" + s + "\"";
+        Object valueToSerialize = (expectedValue instanceof ObjectId)
+                ? ((ObjectId) expectedValue).toHexString()
+                : expectedValue;
+        try {
+            String jsonElement = OBJECT_MAPPER.writeValueAsString(valueToSerialize);
+            return "'[" + jsonElement.replace("'", "''") + "]'::jsonb";
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize filter value to JSON", e);
         }
-        return "'[" + jsonElement + "]'::jsonb";
     }
 
     private String formatInValue(Object expectedValue) {
