@@ -79,10 +79,12 @@ public class MigrationExecutionPlugin<C extends AbstractContext> implements Serv
                     + currentVersion + ". Version of last start was " + latestVersion);
             }
             CollectionFactory collectionFactory = context.get(CollectionFactory.class);
+            // First run all synchronous migration tasks
+            migrationManager.migrate(collectionFactory, latestVersion, currentVersion);
+            // Then start the asynchronous migration tasks:
             executorService = Executors.newSingleThreadExecutor(
                 BasicThreadFactory.builder().namingPattern("async-migration-%d").daemon(true).build());
             migrationManager.migrateAsync(collectionFactory, latestVersion, currentVersion, executorService);
-            migrationManager.migrate(collectionFactory, latestVersion, currentVersion);
         }
     }
 

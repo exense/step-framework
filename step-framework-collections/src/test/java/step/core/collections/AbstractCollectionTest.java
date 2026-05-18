@@ -564,6 +564,64 @@ public abstract class AbstractCollectionTest {
         // no match (value absent from all lists)
         result = collection.find(Filters.includes("list", 7), null, null, null, 0).collect(Collectors.toList());
         assertEquals(0, result.size());
+
+        // String list: two beans share the same value → both returned
+        Bean beanStr1 = new Bean("beanStr1");
+        beanStr1.setStringList(List.of("apple", "banana", "shared"));
+        collection.save(beanStr1);
+
+        Bean beanStr2 = new Bean("beanStr2");
+        beanStr2.setStringList(List.of("cherry", "shared"));
+        collection.save(beanStr2);
+
+        Bean beanStr3 = new Bean("beanStr3");
+        // no stringList set
+        collection.save(beanStr3);
+
+        // matches both beanStr1 and beanStr2
+        result = collection.find(Filters.includes("stringList", "shared"), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(2, result.size());
+        List<ObjectId> resultIds = result.stream().map(Bean::getId).collect(Collectors.toList());
+        assertTrue(resultIds.contains(beanStr1.getId()));
+        assertTrue(resultIds.contains(beanStr2.getId()));
+
+        // matches only beanStr1
+        result = collection.find(Filters.includes("stringList", "apple"), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(1, result.size());
+        assertEquals(beanStr1.getId(), result.get(0).getId());
+
+        // no match
+        result = collection.find(Filters.includes("stringList", "notfound"), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(0, result.size());
+
+        // ObjectId list
+        ObjectId sharedOid = new ObjectId();
+        ObjectId oid2 = new ObjectId();
+        ObjectId oid3 = new ObjectId();
+
+        Bean beanOid1 = new Bean("beanOid1");
+        beanOid1.setObjectIdList(List.of(sharedOid, oid2));
+        collection.save(beanOid1);
+
+        Bean beanOid2 = new Bean("beanOid2");
+        beanOid2.setObjectIdList(List.of(sharedOid, oid3));
+        collection.save(beanOid2);
+
+        // matches both beanOid1 and beanOid2
+        result = collection.find(Filters.includes("objectIdList", sharedOid), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(2, result.size());
+        resultIds = result.stream().map(Bean::getId).collect(Collectors.toList());
+        assertTrue(resultIds.contains(beanOid1.getId()));
+        assertTrue(resultIds.contains(beanOid2.getId()));
+
+        // matches only beanOid1
+        result = collection.find(Filters.includes("objectIdList", oid2), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(1, result.size());
+        assertEquals(beanOid1.getId(), result.get(0).getId());
+
+        // no match
+        result = collection.find(Filters.includes("objectIdList", new ObjectId()), null, null, null, 0).collect(Collectors.toList());
+        assertEquals(0, result.size());
     }
 
     @Test

@@ -2,6 +2,7 @@ package step.core.entities;
 
 import jakarta.json.JsonObject;
 
+import org.bson.types.ObjectId;
 import org.json.JSONObject;
 
 import step.core.accessors.AbstractOrganizableObject;
@@ -27,6 +28,8 @@ public class Bean extends AbstractOrganizableObject {
     private DottedKeyMap<String, String> map;
 
     private List<Integer> list;
+    private List<String> stringList;
+    private List<ObjectId> objectIdList;
 
     private Bean nested;
     private SimpleBean simpleBean;
@@ -82,6 +85,22 @@ public class Bean extends AbstractOrganizableObject {
 
     public void setList(List<Integer> list) {
         this.list = list;
+    }
+
+    public List<String> getStringList() {
+        return stringList;
+    }
+
+    public void setStringList(List<String> stringList) {
+        this.stringList = stringList;
+    }
+
+    public List<ObjectId> getObjectIdList() {
+        return objectIdList;
+    }
+
+    public void setObjectIdList(List<ObjectId> objectIdList) {
+        this.objectIdList = objectIdList;
     }
 
     public void setJsonObject(JsonObject jsonObject) {
