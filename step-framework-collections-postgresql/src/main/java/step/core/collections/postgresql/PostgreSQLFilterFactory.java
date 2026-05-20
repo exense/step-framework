@@ -122,11 +122,8 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
     }
 
     private String formatIncludesValue(Object expectedValue) {
-        Object valueToSerialize = (expectedValue instanceof ObjectId)
-                ? ((ObjectId) expectedValue).toHexString()
-                : expectedValue;
         try {
-            String jsonElement = OBJECT_MAPPER.writeValueAsString(valueToSerialize);
+            String jsonElement = OBJECT_MAPPER.writeValueAsString(expectedValue);
             return "'[" + jsonElement.replace("'", "''") + "]'::jsonb";
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize filter value to JSON", e);
