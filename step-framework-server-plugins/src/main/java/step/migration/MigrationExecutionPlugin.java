@@ -18,6 +18,7 @@
  ******************************************************************************/
 package step.migration;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,9 @@ import step.framework.server.ServerPlugin;
 import step.versionmanager.ControllerLog;
 import step.versionmanager.VersionManager;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @Plugin
 /**
  * This plugin is responsible for the execution of the Migration Tasks
@@ -36,11 +40,7 @@ import step.versionmanager.VersionManager;
 public class MigrationExecutionPlugin<C extends AbstractContext> implements ServerPlugin<C> {
 
     private static final Logger logger = LoggerFactory.getLogger(MigrationExecutionPlugin.class);
-
-    @Override
-    public void serverStart(C context) throws Exception {
-
-    }
+    private ExecutorService executorService;
 
     @Override
     public void migrateData(C context) throws Exception {
@@ -48,18 +48,10 @@ public class MigrationExecutionPlugin<C extends AbstractContext> implements Serv
     }
 
     @Override
-    public void initializeData(C context) throws Exception {
-
-    }
-
-    @Override
-    public void afterInitializeData(C context) throws Exception {
-
-    }
-
-    @Override
     public void serverStop(C context) {
-
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 
     @Override
@@ -86,7 +78,13 @@ public class MigrationExecutionPlugin<C extends AbstractContext> implements Serv
                 logger.info("Starting controller with an older version. Current version is "
                     + currentVersion + ". Version of last start was " + latestVersion);
             }
-            migrationManager.migrate(context.get(CollectionFactory.class), latestVersion, currentVersion);
+            CollectionFactory collectionFactory = context.get(CollectionFactory.class);
+            // First run all synchronous migration tasks
+            migrationManager.migrate(collectionFactory, latestVersion, currentVersion);
+            // Then start the asynchronous migration tasks:
+            executorService = Executors.newSingleThreadExecutor(
+                BasicThreadFactory.builder().namingPattern("async-migration-%d").daemon(true).build());
+            migrationManager.migrateAsync(collectionFactory, latestVersion, currentVersion, executorService);
         }
     }
 

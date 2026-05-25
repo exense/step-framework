@@ -18,6 +18,8 @@
  ******************************************************************************/
 package step.core.collections.postgresql;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.types.ObjectId;
 import step.core.accessors.AbstractIdentifiableObject;
 import step.core.collections.Filter;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 
 public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
 
+    private static final ObjectMapper OBJECT_MAPPER = PostgreSQLCollectionJacksonMapperProvider.getObjectMapper();
     private static final Pattern p = Pattern.compile("([^.]+)");
 
     @Override
@@ -99,6 +102,10 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
                 .map(this::formatInValue) // Escape single quotes for SQL
                 .collect(Collectors.joining(",", "(", ")"));
             return formatField(inFilter.getField(), true) + " IN " + values + " ";
+        } else if (filter instanceof Includes) {
+            Includes includesFilter = (Includes) filter;
+            // Use JSONB @> containment to check if the array field contains the given element (GIN-index friendly)
+            return formatField(includesFilter.getField(), List.class) + " @> " + formatIncludesValue(includesFilter.getExpectedValue());
         } else {
             throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
         }
@@ -111,6 +118,15 @@ public class PostgreSQLFilterFactory implements Filters.FilterFactory<String> {
             return "(NOT (" + childerPojoFilters.get(0) + ") OR " + buildFilter(Filters.equals(eqFilter.getField(), (String) null)) + ")";
         } else {
             return "NOT (" + childerPojoFilters.get(0) + ")";
+        }
+    }
+
+    private String formatIncludesValue(Object expectedValue) {
+        try {
+            String jsonElement = OBJECT_MAPPER.writeValueAsString(expectedValue);
+            return "'[" + jsonElement.replace("'", "''") + "]'::jsonb";
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize filter value to JSON", e);
         }
     }
 

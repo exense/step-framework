@@ -92,6 +92,9 @@ public class MongoDBFilterFactory implements FilterFactory<Bson> {
                 values = values.stream().map(s -> (s instanceof String) ? new ObjectId((String) s) : s).collect(Collectors.toList());
             }
             return com.mongodb.client.model.Filters.in(field, values);
+        } else if (filter instanceof Includes includesFilter) {
+            // MongoDB natively checks array containment when matching a scalar against an array field
+            return com.mongodb.client.model.Filters.eq(includesFilter.getField(), includesFilter.getExpectedValue());
         } else {
             throw new IllegalArgumentException("Unsupported filter type " + filter.getClass());
         }

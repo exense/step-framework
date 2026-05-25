@@ -82,11 +82,10 @@ public class AbstractIdentifiableObject {
 
     @SuppressWarnings("unchecked")
     public <T> T computeCustomFieldIfAbsent(String key, Function<? super String, T> mappingFunction) {
-        if (customFields != null) {
-            return (T) customFields.computeIfAbsent(key, mappingFunction);
-        } else {
-            return mappingFunction.apply(key);
+        if (customFields == null) {
+            customFields = new HashMap<>();
         }
+        return (T) customFields.computeIfAbsent(key, mappingFunction);
     }
 
     @SuppressWarnings("unchecked")

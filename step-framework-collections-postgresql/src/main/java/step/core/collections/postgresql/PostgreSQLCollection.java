@@ -317,21 +317,42 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
 
     @Override
     public void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
-        StringBuffer indexId = new StringBuffer().append("idx_").append(collectionName);
-        StringBuffer index = new StringBuffer().append("(");
-        fields.forEach(i -> {
-            String fieldName = i.fieldName;
-            String order = i.order.name();
-            indexId.append("_").append(fieldName.replaceAll("\\.", "_")).append(order);
-            Class<?> fieldClass = Objects.requireNonNullElseGet(i.fieldClass, () -> getFieldClass(fieldName));
-            if (fieldClass.getClass().equals(Object.class)) {
-                throw new UnsupportedOperationException("Creation of index on fields with resolved type 'Object' is not supported, use the index creation method specifying the type explicitly");
+        // Resolve the field class for each entry (may require reflection when not explicitly set),
+        // then partition: List fields get individual GIN indexes, all others form a compound B-tree index.
+        LinkedHashSet<IndexField> ginFields = new LinkedHashSet<>();
+        LinkedHashSet<IndexField> btreeFields = new LinkedHashSet<>();
+        for (IndexField i : fields) {
+            Class<?> fieldClass = Objects.requireNonNullElseGet(i.fieldClass, () -> getFieldClass(i.fieldName));
+            if (List.class.equals(fieldClass)) {
+                ginFields.add(i);
+            } else {
+                btreeFields.add(i);
             }
-            index.append("(").append(PostgreSQLFilterFactory.formatField(fieldName, fieldClass)).append(") ").append(order).append(",");
-        });
-        //finally replace the last comma by the closing parenthesis
-        index.deleteCharAt(index.length() - 1).append(")");
-        createIndex(indexId.toString(), index.toString());
+        }
+
+        for (IndexField ginField : ginFields) {
+            String fieldName = ginField.fieldName;
+            Class<?> fieldClass = Objects.requireNonNullElseGet(ginField.fieldClass, () -> getFieldClass(fieldName));
+            String indexId = "idx_" + collectionName + "_" + fieldName.replaceAll("\\.", "_") + "_gin";
+            createIndex(indexId, "USING GIN ((" + PostgreSQLFilterFactory.formatField(fieldName, fieldClass) + "))");
+        }
+
+        if (!btreeFields.isEmpty()) {
+            StringBuffer indexId = new StringBuffer().append("idx_").append(collectionName);
+            StringBuffer index = new StringBuffer().append("(");
+            btreeFields.forEach(i -> {
+                String fieldName = i.fieldName;
+                String order = i.order.name();
+                indexId.append("_").append(fieldName.replaceAll("\\.", "_")).append(order);
+                Class<?> fieldClass = Objects.requireNonNullElseGet(i.fieldClass, () -> getFieldClass(fieldName));
+                if (fieldClass.getClass().equals(Object.class)) {
+                    throw new UnsupportedOperationException("Creation of index on fields with resolved type 'Object' is not supported, use the index creation method specifying the type explicitly");
+                }
+                index.append("(").append(PostgreSQLFilterFactory.formatField(fieldName, fieldClass)).append(") ").append(order).append(",");
+            });
+            index.deleteCharAt(index.length() - 1).append(")");
+            createIndex(indexId.toString(), index.toString());
+        }
     }
 
     private void createIndex(String indexId, String index) {

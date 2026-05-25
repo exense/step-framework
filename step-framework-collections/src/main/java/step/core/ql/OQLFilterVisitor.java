@@ -111,6 +111,17 @@ public class OQLFilterVisitor extends OQLBaseVisitor<Filter> {
     }
 
     @Override
+    public Filter visitIncludesExpr(IncludesExprContext ctx) {
+        String field = unescapeStringIfNecessary(ctx.expr(0).getText());
+        String value = unescapeStringIfNecessary(ctx.expr(1).getText());
+        return processIncludesExpr(field, value);
+    }
+
+    protected Filter processIncludesExpr(String field, String value) {
+        return Filters.includes(field, value);
+    }
+
+    @Override
     public Filter visitIsNullExpr(IsNullExprContext ctx) {
         String field = unescapeStringIfNecessary(ctx.expr().getText());
         return Filters.equals(field, (String) null);

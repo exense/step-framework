@@ -20,6 +20,7 @@ package step.core.accessors;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
@@ -252,6 +253,10 @@ public class AbstractAccessor<T extends AbstractIdentifiableObject> implements A
     }
 
     protected void createOrUpdateCompoundIndex(String... fields) {
+        collectionDriver.createOrUpdateCompoundIndex(fields);
+    }
+
+    protected void createOrUpdateCompoundIndex(LinkedHashSet<IndexField> fields) {
         collectionDriver.createOrUpdateCompoundIndex(fields);
     }
 
