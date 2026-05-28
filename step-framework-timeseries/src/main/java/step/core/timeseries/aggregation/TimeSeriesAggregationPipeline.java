@@ -78,7 +78,7 @@ public class TimeSeriesAggregationPipeline {
         idealAvailableCollection = chooseLastCollectionWhichHandleAttributes(idealAvailableCollection.getResolutionMs(), usedAttributes);
 
         boolean fallbackToHigherResolutionWithValidTTL = idealResolution < idealAvailableCollection.getResolutionMs();
-        boolean ttlCovered = ttlEnabled ? collectionTtlCoverInterval(idealAvailableCollection, queryFrom, queryTo) : true;
+        boolean ttlCovered = ttlEnabled ? collectionTtlCoverInterval(idealAvailableCollection, queryFrom) : true;
 
         long sourceResolution = idealAvailableCollection.getResolutionMs();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
@@ -229,7 +229,7 @@ public class TimeSeriesAggregationPipeline {
         int targetResolutionIndex = this.resolutionsIndexes.get(resolution);
         for (int i = targetResolutionIndex; i < this.collections.size(); i++) { // find the best resolution with valid TTL
             TimeSeriesCollection targetCollection = this.collections.get(i);
-            if (collectionTtlCoverInterval(targetCollection, from, to)) {
+            if (collectionTtlCoverInterval(targetCollection, from)) {
                 return targetCollection;
             }
         }
@@ -269,7 +269,7 @@ public class TimeSeriesAggregationPipeline {
         return idealResolution;
     }
 
-    private boolean collectionTtlCoverInterval(TimeSeriesCollection collection, long from, long to) {
+    private boolean collectionTtlCoverInterval(TimeSeriesCollection collection, long from) {
         long ttl = collection.getTtlMs();
         if (ttl == 0) {
             // housekeeping is disabled
@@ -277,7 +277,7 @@ public class TimeSeriesAggregationPipeline {
         }
         long collectionEnd = System.currentTimeMillis();
         long collectionStart = collectionEnd - ttl;
-        return collectionStart <= from && collectionEnd >= to;
+        return collectionStart <= from;
     }
 
     public List<Long> getAvailableResolutions() {
