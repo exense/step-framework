@@ -67,7 +67,6 @@ public class TimeSeriesAggregationPipeline {
         validateQuery(query);
         Set<String> usedAttributes = collectAllUsedAttributes(query).stream().map(a -> a.replace("attributes.", "")).collect(Collectors.toSet());
         long queryFrom = query.getFrom() != null ? query.getFrom() : 0;
-        long queryTo = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         long idealResolution = 0;
         if (query.getOptimizationType() == TimeSeriesOptimizationType.MOST_ACCURATE) {
             idealResolution = collections.get(0).getResolutionMs(); // first collection with the best resolution
@@ -225,7 +224,6 @@ public class TimeSeriesAggregationPipeline {
 
     private TimeSeriesCollection chooseFirstAvailableCollectionBasedOnTTL(long resolution, TimeSeriesAggregationQuery query) {
         long from = query.getFrom() != null ? query.getFrom() : 0;
-        long to = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
         int targetResolutionIndex = this.resolutionsIndexes.get(resolution);
         for (int i = targetResolutionIndex; i < this.collections.size(); i++) { // find the best resolution with valid TTL
             TimeSeriesCollection targetCollection = this.collections.get(i);
