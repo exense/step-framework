@@ -42,8 +42,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <!-- internal dependencies -->
-    <dependencies.version>2026.6.03</dependencies.version>
-    <exense-commons.version>2.2.0</exense-commons.version>
+    <dependencies.version>2026.7.1</dependencies.version>
+    <exense-commons.version>0.0.0-MASTER-SNAPSHOT</exense-commons.version>
 
     <!-- external dependencies -->
     <dep.antlr.version>4.5.3</dep.antlr.version>
