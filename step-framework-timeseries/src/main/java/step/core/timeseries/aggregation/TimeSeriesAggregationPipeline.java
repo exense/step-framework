@@ -82,8 +82,10 @@ public class TimeSeriesAggregationPipeline {
         long sourceResolution = idealAvailableCollection.getResolutionMs();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
 
-        Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
-
+        // Perform time-window aggregation and partition the time series:
+        // Aggregate each series into the requested aligned time buckets and assign the resulting series to their respective groups.
+        // Do not perform any cross-series aggregation at this stage.
+        Map<Long, Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>>> timeBucketedSeriesByGroup = new HashMap<>();
         LongAdder bucketCount = new LongAdder();
         long t1 = System.currentTimeMillis();
         try (Stream<Bucket> stream = idealAvailableCollection.queryTimeSeries(finalParams)) {
@@ -91,25 +93,52 @@ public class TimeSeriesAggregationPipeline {
                 bucketCount.increment();
                 BucketAttributes bucketAttributes = bucket.getAttributes() != null ? bucket.getAttributes() : new BucketAttributes();
 
-                BucketAttributes seriesKey;
+                BucketAttributes groupAttributes;
                 if (CollectionUtils.isNotEmpty(finalParams.getGroupDimensions())) {
-                    seriesKey = bucketAttributes.subset(finalParams.getGroupDimensions());
+                    groupAttributes = bucketAttributes.subset(finalParams.getGroupDimensions());
                 } else {
-                    seriesKey = new BucketAttributes();
+                    groupAttributes = new BucketAttributes();
                 }
-                Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
+                long timeSliceIndex = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
 
-                long index = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
-                series.computeIfAbsent(index, i -> new BucketBuilder(i, i + getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), finalParams.getResolution()))
-                    .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit())).accumulate(bucket);
+                // Get or create the time slice corresponding to the time index of the current bucket
+                Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>> timeSlice = timeBucketedSeriesByGroup.computeIfAbsent(timeSliceIndex, a -> new HashMap<>());
+                // Get or create the group of builders corresponding to the current group (defined by the group dimensions)
+                Map<BucketAttributes, BucketBuilder> indexSeriesBuckets = timeSlice.computeIfAbsent(groupAttributes, a -> new HashMap<>());
+                // Get the builder for the attributes of the current bucket. The full attributes of the series are kept
+                // at this stage, so that the attribute collection can be performed on them during the group-by aggregation
+                BucketBuilder bucketBuilder = indexSeriesBuckets.computeIfAbsent(bucketAttributes, a -> new BucketBuilder(timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams)).withAttributes(bucketAttributes));
+                // Aggregate the current bucket to the builder using the configured time-window aggregation
+                bucketBuilder.aggregate(bucket, query.getTimeAggregation());
             });
         }
         long t2 = System.currentTimeMillis();
         if (logger.isDebugEnabled()) {
-            logger.debug("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
+            logger.debug("Performed time-window aggregation in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
         }
 
-        Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
+        // Aggregate the grouped series:
+        // For each time bucket, apply the configured group-by aggregation across the aligned series in each group.
+        Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder = new HashMap<>();
+        // For each time slice
+        timeBucketedSeriesByGroup.forEach((timeSliceIndex, timeSlice) -> {
+            // For each group
+            timeSlice.forEach((groupAttributes, group) -> {
+                // For each series of the group
+                group.forEach((seriesAttributes, series) -> {
+                    long begin = series.getBegin();
+                    Long end = series.getEnd();
+                    Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
+                    BucketBuilder bucketBuilder = resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> new BucketBuilder(begin, end)
+                        .withAttributes(new BucketAttributes(groupAttributes))
+                        .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit()));
+                    // Aggregate
+                    bucketBuilder.aggregate(series.build(), query.getGroupAggregation());
+                });
+            });
+        });
+
+        Map<BucketAttributes, Map<Long, Bucket>> result = resultBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
             e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
 
         return new TimeSeriesAggregationResponseBuilder()
@@ -122,6 +151,10 @@ public class TimeSeriesAggregationPipeline {
             .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
             .setTtlCovered(ttlCovered)
             .build();
+    }
+
+    private long getBucketEnd(Long i, TimeSeriesProcessedParams finalParams) {
+        return i + getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), finalParams.getResolution());
     }
 
     private long roundDownToAvailableResolution(long targetResolution) {

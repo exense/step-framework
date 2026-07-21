@@ -14,6 +14,7 @@ public class BucketBuilder {
     private final long begin;
     private final Long end;
     private BucketAttributes attributes;
+    private final LongAdder contributingCountAdder = new LongAdder();
     private final LongAdder countAdder = new LongAdder();
     private final LongAdder sumAdder = new LongAdder();
     private final AtomicLong min = new AtomicLong(Long.MAX_VALUE);
@@ -43,7 +44,10 @@ public class BucketBuilder {
     public BucketBuilder withAccumulateAttributes(Set<String> accumulateAttributeKeys, int accumulateAttributeValuesLimit) {
         this.accumulateAttributeKeys = accumulateAttributeKeys;
         this.accumulateAttributeValuesLimit = accumulateAttributeValuesLimit;
-        this.attributes = new BucketAttributes();
+        // Collected attributes are added on top of the attributes already set on this builder, if any
+        if (this.attributes == null) {
+            this.attributes = new BucketAttributes();
+        }
         return this;
     }
 
@@ -52,6 +56,7 @@ public class BucketBuilder {
     }
 
     public BucketBuilder ingest(long value) {
+        contributingCountAdder.increment();
         countAdder.increment();
         sumAdder.add(value);
         updateMin(value);
@@ -60,9 +65,18 @@ public class BucketBuilder {
         return this;
     }
 
-    public BucketBuilder accumulate(Bucket bucket) {
+    /**
+     * Aggregates the given bucket into this builder using the provided aggregation.
+     * <p>
+     * The aggregation only drives the scalar accumulated into the sum and the weight of that contribution. The
+     * distribution, the min and the max are always merged by union, independently of the aggregation, so that
+     * percentiles remain percentiles over the underlying raw samples. Likewise the raw sample count is always
+     * carried over, so that no aggregation loses track of how many samples the result is based on.
+     */
+    public BucketBuilder aggregate(Bucket bucket, Aggregation aggregation) {
+        contributingCountAdder.add(aggregation.getWeight(bucket));
+        sumAdder.add(aggregation.getValue(bucket));
         countAdder.add(bucket.getCount());
-        sumAdder.add(bucket.getSum());
         updateMin(bucket.getMin());
         updateMax(bucket.getMax());
 
@@ -75,12 +89,28 @@ public class BucketBuilder {
         return this;
     }
 
+    /**
+     * Merges the given bucket into this builder, i.e. adds all the raw samples it holds.
+     * Equivalent to {@link #aggregate(Bucket, Aggregation)} with {@link Aggregation#AVG}.
+     */
+    public BucketBuilder accumulate(Bucket bucket) {
+        return aggregate(bucket, Aggregation.AVG);
+    }
+
     private void accumulateAttributes(Bucket bucket) {
         BucketAttributes bucketAttr = bucket.getAttributes();
         if (accumulateAttributeKeys != null && bucketAttr != null && !bucketAttr.isEmpty()) {
             accumulateAttributeKeys.forEach(a -> {
                 Object value = bucketAttr.get(a);
                 if (value != null) {
+                    Object currentValue = attributes.get(a);
+                    if (currentValue != null && !(currentValue instanceof Set)) {
+                        // The key is also a group dimension: its exact value is already set on this builder
+                        // and is constant across the group, so there is nothing to collect
+                        return;
+                    }
+                    // TODO: we currently misuse the attributes field to return the collected attribute values.
+                    //  We should introduce a dedicated field to collect the attribute values
                     Set values = (Set) attributes.computeIfAbsent(a, i -> new HashSet());
                     if (values.size() < accumulateAttributeValuesLimit) {
                         values.add(value);
@@ -111,6 +141,7 @@ public class BucketBuilder {
         bucket.setBegin(begin);
         bucket.setEnd(end);
         bucket.setAttributes(attributes);
+        bucket.setContributorCount(contributingCountAdder.longValue());
         bucket.setCount(countAdder.longValue());
         bucket.setSum(sumAdder.longValue());
         bucket.setMin(min.longValue());
