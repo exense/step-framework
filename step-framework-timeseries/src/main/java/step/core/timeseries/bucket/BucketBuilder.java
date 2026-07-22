@@ -9,6 +9,20 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 
+/**
+ * Accumulates samples into one single {@link Bucket}, or into one single {@link ScalarBucket} when built with a
+ * scalar {@link Aggregation}.
+ * <p>
+ * Samples are contributed by {@link #ingest(long)} for one raw value, by {@link #merge(Bucket)} for all the samples
+ * of a bucket, and by {@link #aggregate(BucketBuilder)} for the aggregate of another builder. They are always
+ * accumulated the same way, whatever the aggregation: the sum, the count, the min, the max and the distribution of
+ * this builder always describe the samples it holds. The aggregation only defines how the builder is reduced, i.e.
+ * what {@link #getScalarValue()} and {@link #buildAggregate()} return.
+ * <p>
+ * The accumulation of the samples is safe for concurrent use, as required by the ingestion pipeline. The attribute
+ * collection enabled by {@link #withAccumulateAttributes(Set, int)} is not, and is only used by the single-threaded
+ * aggregation pipeline.
+ */
 public class BucketBuilder {
 
     private final long begin;
@@ -25,13 +39,32 @@ public class BucketBuilder {
     private Set<String> accumulateAttributeKeys;
     private int accumulateAttributeValuesLimit;
 
+    /**
+     * Creates a merging builder, i.e. a builder reducing to the {@link Bucket} of the samples it holds.
+     */
+    public BucketBuilder(long begin) {
+        this(Aggregation.MERGE, begin);
+    }
 
+    /**
+     * Creates a merging builder, i.e. a builder reducing to the {@link Bucket} of the samples it holds.
+     */
+    public BucketBuilder(long begin, long end) {
+        this(Aggregation.MERGE, begin, end);
+    }
+
+    /**
+     * @param aggregation the aggregation this builder reduces to, see {@link #buildAggregate()}
+     */
     public BucketBuilder(Aggregation aggregation, long begin) {
         this.begin = begin;
         this.aggregation = aggregation;
         this.end = null;
     }
 
+    /**
+     * @param aggregation the aggregation this builder reduces to, see {@link #buildAggregate()}
+     */
     public BucketBuilder(Aggregation aggregation, long begin, long end) {
         this.begin = begin;
         this.end = end;
@@ -43,6 +76,13 @@ public class BucketBuilder {
         return this;
     }
 
+    /**
+     * Enables the collection of the attribute values of the contributed buckets and builders: for each of the given
+     * keys, the distinct values encountered are collected into the attributes of the resulting bucket.
+     *
+     * @param accumulateAttributeKeys         the attribute keys to collect
+     * @param accumulateAttributeValuesLimit  the maximum number of values collected per key
+     */
     public BucketBuilder withAccumulateAttributes(Set<String> accumulateAttributeKeys, int accumulateAttributeValuesLimit) {
         this.accumulateAttributeKeys = accumulateAttributeKeys;
         this.accumulateAttributeValuesLimit = accumulateAttributeValuesLimit;
@@ -61,6 +101,9 @@ public class BucketBuilder {
         return new BucketBuilder(Aggregation.MERGE, begin, end);
     }
 
+    /**
+     * Adds one single raw sample to this builder.
+     */
     public BucketBuilder ingest(long value) {
         countAdder.increment();
         sumAdder.add(value);
@@ -75,8 +118,8 @@ public class BucketBuilder {
      * and the max are merged by union, so that percentiles remain percentiles over the underlying raw samples.
      */
     public BucketBuilder merge(Bucket bucket) {
-        sumAdder.add(bucket.getSum());
         countAdder.add(bucket.getCount());
+        sumAdder.add(bucket.getSum());
         updateMin(bucket.getMin());
         updateMax(bucket.getMax());
 
@@ -150,23 +193,38 @@ public class BucketBuilder {
         max.updateAndGet(curMax -> Math.max(value, curMax));
     }
 
+    /**
+     * @return the number of samples accumulated so far
+     */
     public long getCount() {
         return countAdder.longValue();
     }
 
+    /**
+     * @return the sum of the samples accumulated so far
+     */
     public long getSum() {
         return sumAdder.longValue();
     }
 
+    /**
+     * @return the average of the samples accumulated so far, 0 if this builder is empty
+     */
     public long getAverage() {
         long count = getCount();
         return count > 0 ? getSum() / count : 0;
     }
 
+    /**
+     * @return the lowest sample accumulated so far, {@link Long#MAX_VALUE} if this builder is empty
+     */
     public long getMin() {
         return min.get();
     }
 
+    /**
+     * @return the highest sample accumulated so far, {@link Long#MIN_VALUE} if this builder is empty
+     */
     public long getMax() {
         return max.get();
     }
@@ -187,6 +245,10 @@ public class BucketBuilder {
         return bucket;
     }
 
+    /**
+     * Builds the {@link Bucket} of the samples accumulated by this builder, whatever its aggregation. Use
+     * {@link #buildAggregate()} to obtain the aggregate defined by the aggregation instead.
+     */
     public Bucket build() {
         Bucket bucket = new Bucket();
         bucket.setBegin(begin);
