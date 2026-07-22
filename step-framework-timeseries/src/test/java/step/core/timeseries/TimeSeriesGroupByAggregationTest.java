@@ -104,6 +104,56 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
     }
 
     /**
+     * When both axes merge, the pipeline merges the source buckets directly into their resulting bucket, without
+     * materializing the series they belong to. The partitioning by group and by time bucket, as well as the
+     * attribute collection, must be preserved.
+     */
+    @Test
+    public void groupByMergeOverSeveralGroupsAndTimeBucketsTest() {
+        TimeSeries timeSeries = getNewTimeSeries(RESOLUTION);
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
+            // Group t1, first time bucket: 2 series
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "FAILED"), 2L, 20L);
+            // Group t1, second time bucket
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1001L, 30L);
+            // Group t2, first time bucket
+            ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "PASSED"), 1L, 100L);
+        }
+
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(
+            new TimeSeriesAggregationQueryBuilder()
+                .range(0, 2 * RESOLUTION)
+                .window(RESOLUTION)
+                .groupBy(Set.of("name"), Aggregation.MERGE)
+                .withAttributeCollection(Set.of("status"), 10)
+                .build());
+
+        assertEquals(2, response.getSeries().size());
+
+        Map<Long, Bucket> t1 = response.getSeries().get(new BucketAttributes(Map.of("name", "t1")));
+        assertEquals(2, t1.size());
+        // Both series of the group are merged into the first time bucket
+        Bucket t1FirstBucket = t1.get(0L);
+        assertEquals(2, t1FirstBucket.getCount());
+        assertEquals(30, t1FirstBucket.getSum());
+        assertEquals(10, t1FirstBucket.getMin());
+        assertEquals(20, t1FirstBucket.getMax());
+        assertEquals("t1", t1FirstBucket.getAttributes().get("name"));
+        assertEquals(Set.of("PASSED", "FAILED"), t1FirstBucket.getAttributes().get("status"));
+        // The second time bucket holds the later point only
+        Bucket t1SecondBucket = t1.get(RESOLUTION);
+        assertEquals(1, t1SecondBucket.getCount());
+        assertEquals(30, t1SecondBucket.getSum());
+        assertEquals(Set.of("PASSED"), t1SecondBucket.getAttributes().get("status"));
+
+        Map<Long, Bucket> t2 = response.getSeries().get(new BucketAttributes(Map.of("name", "t2")));
+        assertEquals(1, t2.size());
+        assertEquals(100, t2.get(0L).getSum());
+        assertEquals("t2", t2.get(0L).getAttributes().get("name"));
+    }
+
+    /**
      * AVG reduces the merged series to the average of their raw points.
      */
     @Test

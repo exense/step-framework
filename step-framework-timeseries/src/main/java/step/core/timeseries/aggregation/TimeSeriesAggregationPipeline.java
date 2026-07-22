@@ -80,63 +80,12 @@ public class TimeSeriesAggregationPipeline {
         long sourceResolution = idealAvailableCollection.getResolutionMs();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
 
-        // Perform time-window aggregation and partition the time series:
-        // Aggregate each series into the requested aligned time buckets and assign the resulting series to their respective groups.
-        // Do not perform any cross-series aggregation at this stage.
-        Map<Long, Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>>> timeBucketedSeriesByGroup = new HashMap<>();
-        LongAdder bucketCount = new LongAdder();
-        long t1 = System.currentTimeMillis();
-        try (Stream<Bucket> stream = idealAvailableCollection.queryTimeSeries(finalParams)) {
-            stream.forEach(bucket -> {
-                bucketCount.increment();
-                BucketAttributes bucketAttributes = bucket.getAttributes() != null ? bucket.getAttributes() : new BucketAttributes();
-
-                BucketAttributes groupAttributes;
-                if (CollectionUtils.isNotEmpty(finalParams.getGroupDimensions())) {
-                    groupAttributes = bucketAttributes.subset(finalParams.getGroupDimensions());
-                } else {
-                    groupAttributes = new BucketAttributes();
-                }
-                long timeSliceIndex = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
-
-                // Get or create the time slice corresponding to the time index of the current bucket
-                Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>> timeSlice = timeBucketedSeriesByGroup.computeIfAbsent(timeSliceIndex, a -> new HashMap<>());
-                // Get or create the group of builders corresponding to the current group (defined by the group dimensions)
-                Map<BucketAttributes, BucketBuilder> indexSeriesBuckets = timeSlice.computeIfAbsent(groupAttributes, a -> new HashMap<>());
-                // Get the builder for the attributes of the current bucket. The full attributes of the series are kept
-                // at this stage, so that the attribute collection can be performed on them during the group-by aggregation
-                BucketBuilder bucketBuilder = indexSeriesBuckets.computeIfAbsent(bucketAttributes, a -> new BucketBuilder(query.getTimeAggregation(), timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams)).withAttributes(bucketAttributes));
-                // Merge the current source bucket into the builder. The configured time-window aggregation is
-                // applied when the builder is reduced, at the group-by stage
-                bucketBuilder.merge(bucket);
-            });
+        Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder;
+        if (query.getTimeAggregation().isMerge() && query.getGroupAggregation().isMerge()) {
+            resultBuilder = collectByMerging(query, finalParams, idealAvailableCollection);
+        } else {
+            resultBuilder = collectByAggregating(query, finalParams, idealAvailableCollection);
         }
-        long t2 = System.currentTimeMillis();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Performed time-window aggregation in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
-        }
-
-        // Aggregate the grouped series:
-        // For each time bucket, apply the configured group-by aggregation across the aligned series in each group.
-        Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder = new HashMap<>();
-        // For each time slice
-        timeBucketedSeriesByGroup.forEach((timeSliceIndex, timeSlice) -> {
-            // For each group
-            timeSlice.forEach((groupAttributes, group) -> {
-                // For each series of the group
-                group.forEach((seriesAttributes, series) -> {
-                    long begin = series.getBegin();
-                    Long end = series.getEnd();
-                    Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
-                    BucketBuilder bucketBuilder = resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> new BucketBuilder(query.getGroupAggregation(), begin, end)
-                        .withAttributes(new BucketAttributes(groupAttributes))
-                        .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit()));
-                    // Aggregate the series into the group. How the series contributes is defined by the
-                    // time-window aggregation it was built with
-                    bucketBuilder.aggregate(series);
-                });
-            });
-        });
 
         Map<BucketAttributes, Map<Long, Bucket>> result = resultBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
             e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().buildAggregate()))));
@@ -151,6 +100,106 @@ public class TimeSeriesAggregationPipeline {
             .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
             .setTtlCovered(ttlCovered)
             .build();
+    }
+
+    /**
+     * Collects the source buckets when both axes merge, i.e. when the whole aggregation amounts to one single merge
+     * of all the source buckets of a group falling into the same time bucket. A merge being associative and
+     * commutative, the source buckets can be merged directly into their resulting bucket, without materializing the
+     * series they belong to. The memory footprint is therefore driven by the number of groups and time buckets of the
+     * response, and not by the cardinality of the attributes of the source buckets.
+     */
+    private Map<BucketAttributes, Map<Long, BucketBuilder>> collectByMerging(TimeSeriesAggregationQuery query, TimeSeriesProcessedParams finalParams, TimeSeriesCollection collection) {
+        Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder = new HashMap<>();
+        LongAdder bucketCount = new LongAdder();
+        long t1 = System.currentTimeMillis();
+        try (Stream<Bucket> stream = collection.queryTimeSeries(finalParams)) {
+            stream.forEach(bucket -> {
+                bucketCount.increment();
+                BucketAttributes groupAttributes = getGroupAttributes(bucket, finalParams);
+                long timeSliceIndex = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
+
+                Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
+                resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> newGroupBucketBuilder(query, finalParams, groupAttributes, i))
+                    .merge(bucket);
+            });
+        }
+        logAggregationDuration("merge aggregation", t1, bucketCount);
+        return resultBuilder;
+    }
+
+    /**
+     * Collects the source buckets when at least one of the axes reduces its inputs to a scalar. The time-window
+     * aggregation has then to be applied per series, before the group-by aggregation, which requires the series of
+     * each group to be materialized.
+     */
+    private Map<BucketAttributes, Map<Long, BucketBuilder>> collectByAggregating(TimeSeriesAggregationQuery query, TimeSeriesProcessedParams finalParams, TimeSeriesCollection collection) {
+        // Perform time-window aggregation and partition the time series:
+        // Aggregate each series into the requested aligned time buckets and assign the resulting series to their respective groups.
+        // Do not perform any cross-series aggregation at this stage.
+        Map<Long, Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>>> timeBucketedSeriesByGroup = new HashMap<>();
+        LongAdder bucketCount = new LongAdder();
+        long t1 = System.currentTimeMillis();
+        try (Stream<Bucket> stream = collection.queryTimeSeries(finalParams)) {
+            stream.forEach(bucket -> {
+                bucketCount.increment();
+                BucketAttributes bucketAttributes = bucket.getAttributes() != null ? bucket.getAttributes() : new BucketAttributes();
+                BucketAttributes groupAttributes = getGroupAttributes(bucket, finalParams);
+                long timeSliceIndex = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
+
+                // Get or create the time slice corresponding to the time index of the current bucket
+                Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>> timeSlice = timeBucketedSeriesByGroup.computeIfAbsent(timeSliceIndex, a -> new HashMap<>());
+                // Get or create the group of builders corresponding to the current group (defined by the group dimensions)
+                Map<BucketAttributes, BucketBuilder> indexSeriesBuckets = timeSlice.computeIfAbsent(groupAttributes, a -> new HashMap<>());
+                // Get the builder for the attributes of the current bucket. The full attributes of the series are kept
+                // at this stage, so that the attribute collection can be performed on them during the group-by aggregation
+                BucketBuilder bucketBuilder = indexSeriesBuckets.computeIfAbsent(bucketAttributes, a -> new BucketBuilder(query.getTimeAggregation(), timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams)).withAttributes(bucketAttributes));
+                // Merge the current source bucket into the builder. The configured time-window aggregation is
+                // applied when the builder is reduced, at the group-by stage
+                bucketBuilder.merge(bucket);
+            });
+        }
+        logAggregationDuration("time-window aggregation", t1, bucketCount);
+
+        // Aggregate the grouped series:
+        // For each time bucket, apply the configured group-by aggregation across the aligned series in each group.
+        Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder = new HashMap<>();
+        // For each time slice
+        timeBucketedSeriesByGroup.forEach((timeSliceIndex, timeSlice) -> {
+            // For each group
+            timeSlice.forEach((groupAttributes, group) -> {
+                // For each series of the group
+                group.forEach((seriesAttributes, series) -> {
+                    Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
+                    BucketBuilder bucketBuilder = resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> newGroupBucketBuilder(query, finalParams, groupAttributes, i));
+                    // Aggregate the series into the group. How the series contributes is defined by the
+                    // time-window aggregation it was built with
+                    bucketBuilder.aggregate(series);
+                });
+            });
+        });
+        return resultBuilder;
+    }
+
+    private BucketAttributes getGroupAttributes(Bucket bucket, TimeSeriesProcessedParams finalParams) {
+        BucketAttributes bucketAttributes = bucket.getAttributes();
+        if (bucketAttributes == null || CollectionUtils.isEmpty(finalParams.getGroupDimensions())) {
+            return new BucketAttributes();
+        }
+        return bucketAttributes.subset(finalParams.getGroupDimensions());
+    }
+
+    private BucketBuilder newGroupBucketBuilder(TimeSeriesAggregationQuery query, TimeSeriesProcessedParams finalParams, BucketAttributes groupAttributes, long timeSliceIndex) {
+        return new BucketBuilder(query.getGroupAggregation(), timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams))
+            // The group attributes are copied, so that collecting the attributes doesn't mutate the key of the response
+            .withAttributes(new BucketAttributes(groupAttributes))
+            .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit());
+    }
+
+    private void logAggregationDuration(String aggregationName, long startTime, LongAdder bucketCount) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Performed " + aggregationName + " in " + (System.currentTimeMillis() - startTime) + "ms. Number of buckets processed: " + bucketCount.longValue());
+        }
     }
 
     private long getBucketEnd(Long i, TimeSeriesProcessedParams finalParams) {
