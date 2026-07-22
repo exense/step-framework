@@ -28,6 +28,8 @@ import java.util.Map;
  * A scalar aggregate is equivalent to a bucket holding one single sample, the scalar itself. The inherited accessors
  * are populated accordingly, so that the consumers reading the generic {@link Bucket} fields get the scalar value
  * instead of an empty bucket.
+ *
+ * @see Aggregation
  */
 public class ScalarBucket extends Bucket {
 

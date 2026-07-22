@@ -94,11 +94,11 @@ public class BucketBuilder {
     }
 
     public static BucketBuilder create(long begin) {
-        return new BucketBuilder(Aggregation.MERGE, begin);
+        return new BucketBuilder(begin);
     }
 
     public static BucketBuilder create(long begin, long end) {
-        return new BucketBuilder(Aggregation.MERGE, begin, end);
+        return new BucketBuilder(begin, end);
     }
 
     /**
