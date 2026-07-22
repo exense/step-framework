@@ -7,6 +7,7 @@ import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
 import step.core.timeseries.bucket.Aggregation;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
+import step.core.timeseries.bucket.ScalarBucket;
 import step.core.timeseries.ingestion.TimeSeriesIngestionPipeline;
 
 import java.util.List;
@@ -54,37 +55,43 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
             .window(RESOLUTION);
     }
 
-    /**
-     * Without any explicit group-by aggregation, the pipeline must keep its historical behavior: AVG.
-     */
-    @Test
-    public void defaultGroupByAggregationIsAvgTest() {
-        TimeSeries timeSeries = newTimeSeriesWith2Series();
-
-        Bucket defaultBucket = collectSingleBucket(timeSeries, singleBucketQuery().build());
-        Bucket avgBucket = collectSingleBucket(timeSeries, singleBucketQuery()
-            .groupBy(Set.of(), Aggregation.AVG).build());
-
-        assertEquals(avgBucket.getCount(), defaultBucket.getCount());
-        assertEquals(avgBucket.getSum(), defaultBucket.getSum());
-        assertEquals(avgBucket.getMin(), defaultBucket.getMin());
-        assertEquals(avgBucket.getMax(), defaultBucket.getMax());
-        assertEquals(avgBucket.getAverage(), defaultBucket.getAverage());
+    private ScalarBucket collectSingleScalarBucket(TimeSeries timeSeries, TimeSeriesAggregationQuery query) {
+        Bucket bucket = collectSingleBucket(timeSeries, query);
+        assertEquals(ScalarBucket.class, bucket.getClass());
+        return (ScalarBucket) bucket;
     }
 
     /**
-     * AVG merges all the raw points of the aggregated series. The resulting bucket is therefore
+     * Without any explicit aggregation, both axes must merge, i.e. keep the historical behavior of the pipeline.
+     */
+    @Test
+    public void defaultAggregationsAreMergeTest() {
+        TimeSeries timeSeries = newTimeSeriesWith2Series();
+
+        Bucket defaultBucket = collectSingleBucket(timeSeries, singleBucketQuery().build());
+        Bucket mergeBucket = collectSingleBucket(timeSeries, singleBucketQuery()
+            .withTimeAggregation(Aggregation.MERGE)
+            .groupBy(Set.of(), Aggregation.MERGE).build());
+
+        assertEquals(Bucket.class, defaultBucket.getClass());
+        assertEquals(mergeBucket.getCount(), defaultBucket.getCount());
+        assertEquals(mergeBucket.getSum(), defaultBucket.getSum());
+        assertEquals(mergeBucket.getMin(), defaultBucket.getMin());
+        assertEquals(mergeBucket.getMax(), defaultBucket.getMax());
+        assertEquals(mergeBucket.getAverage(), defaultBucket.getAverage());
+    }
+
+    /**
+     * MERGE merges all the raw points of the aggregated series. The resulting bucket is therefore
      * strictly equivalent to a bucket built out of all the raw points: min/max/distribution are preserved.
      */
     @Test
-    public void groupByAvgTest() {
+    public void groupByMergeTest() {
         TimeSeries timeSeries = newTimeSeriesWith2Series();
 
         Bucket bucket = collectSingleBucket(timeSeries, singleBucketQuery()
-            .groupBy(Set.of(), Aggregation.AVG).build());
+            .groupBy(Set.of(), Aggregation.MERGE).build());
 
-        // Each raw sample is one contributor
-        assertEquals(5, bucket.getContributorCount());
         assertEquals(5, bucket.getCount());
         assertEquals(630, bucket.getSum());
         assertEquals(10, bucket.getMin());
@@ -97,85 +104,142 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
     }
 
     /**
-     * SUM contributes the sum of each series, each series counting as one single contributor.
+     * AVG reduces the merged series to the average of their raw points.
+     */
+    @Test
+    public void groupByAvgTest() {
+        TimeSeries timeSeries = newTimeSeriesWith2Series();
+
+        ScalarBucket bucket = collectSingleScalarBucket(timeSeries, singleBucketQuery()
+            .groupBy(Set.of(), Aggregation.AVG).build());
+
+        // 630 / 5
+        assertEquals(126, bucket.getValue());
+    }
+
+    /**
+     * SUM reduces the merged series to the sum of their raw points.
      */
     @Test
     public void groupBySumTest() {
         TimeSeries timeSeries = newTimeSeriesWith2Series();
 
-        Bucket bucket = collectSingleBucket(timeSeries, singleBucketQuery()
+        ScalarBucket bucket = collectSingleScalarBucket(timeSeries, singleBucketQuery()
             .groupBy(Set.of(), Aggregation.SUM).build());
 
-        // One contributor per aggregated series
-        assertEquals(2, bucket.getContributorCount());
-        // The raw sample count is preserved
-        assertEquals(5, bucket.getCount());
-        assertEquals(630, bucket.getSum());
-        // The average is the average over the contributing series: 630 / 2
-        assertEquals(315, bucket.getAverage());
+        assertEquals(630, bucket.getValue());
     }
 
     /**
-     * COUNT contributes the number of raw samples of each series, each series counting as one single contributor.
+     * COUNT reduces the merged series to their number of raw points. The time aggregation being MERGE, the group
+     * receives the raw points of every series, hence the total number of raw points and not the number of series.
      */
     @Test
     public void groupByCountTest() {
         TimeSeries timeSeries = newTimeSeriesWith2Series();
 
-        Bucket bucket = collectSingleBucket(timeSeries, singleBucketQuery()
+        ScalarBucket bucket = collectSingleScalarBucket(timeSeries, singleBucketQuery()
             .groupBy(Set.of(), Aggregation.COUNT).build());
 
-        assertEquals(2, bucket.getContributorCount());
-        assertEquals(5, bucket.getCount());
-        // Sum of the counts of both series: 2 + 3
-        assertEquals(5, bucket.getSum());
-        // 5 / 2
-        assertEquals(2, bucket.getAverage());
+        // 2 + 3 raw points
+        assertEquals(5, bucket.getValue());
     }
 
     /**
-     * Whatever the group-by aggregation, the distribution, the min and the max are merged by union, so that
-     * percentiles remain percentiles over the raw samples and min/max remain the raw min/max.
+     * MIN reduces the merged series to the lowest of their raw points.
      */
     @Test
-    public void distributionMinAndMaxAreAlwaysMergedByUnionTest() {
-        for (Aggregation aggregation : List.of(Aggregation.AVG, Aggregation.SUM, Aggregation.COUNT)) {
+    public void groupByMinTest() {
+        TimeSeries timeSeries = newTimeSeriesWith2Series();
+
+        ScalarBucket bucket = collectSingleScalarBucket(timeSeries, singleBucketQuery()
+            .groupBy(Set.of(), Aggregation.MIN).build());
+
+        // min(10, 100)
+        assertEquals(10, bucket.getValue());
+    }
+
+    /**
+     * MAX reduces the merged series to the highest of their raw points.
+     */
+    @Test
+    public void groupByMaxTest() {
+        TimeSeries timeSeries = newTimeSeriesWith2Series();
+
+        ScalarBucket bucket = collectSingleScalarBucket(timeSeries, singleBucketQuery()
+            .groupBy(Set.of(), Aggregation.MAX).build());
+
+        // max(20, 300)
+        assertEquals(300, bucket.getValue());
+    }
+
+    /**
+     * A scalar aggregate is equivalent to a bucket holding one single sample: the inherited accessors of a
+     * {@link ScalarBucket} must all report the scalar, so that the consumers reading the generic bucket fields
+     * don't silently read an empty bucket.
+     */
+    @Test
+    public void scalarBucketsReportTheirValueOnTheInheritedFieldsTest() {
+        for (Aggregation aggregation : List.of(Aggregation.AVG, Aggregation.SUM, Aggregation.COUNT, Aggregation.MIN, Aggregation.MAX)) {
             TimeSeries timeSeries = newTimeSeriesWith2Series();
-            Bucket bucket = collectSingleBucket(timeSeries, singleBucketQuery()
+            ScalarBucket bucket = collectSingleScalarBucket(timeSeries, singleBucketQuery()
                 .groupBy(Set.of(), aggregation).build());
 
             String message = "Aggregation " + aggregation;
-            assertEquals(message, 10, bucket.getMin());
-            assertEquals(message, 300, bucket.getMax());
-            // The distribution holds all 5 raw samples
-            assertEquals(message, 5, bucket.getDistribution().values().stream().mapToLong(Long::longValue).sum());
-            assertEquals(message, 300, bucket.getPercentile(100));
-            assertEquals(message, 10, bucket.getPercentile(0));
+            long value = bucket.getValue();
+            assertEquals(message, 1, bucket.getCount());
+            assertEquals(message, value, bucket.getSum());
+            assertEquals(message, value, bucket.getMin());
+            assertEquals(message, value, bucket.getMax());
+            assertEquals(message, value, bucket.getAverage());
+            assertEquals(message, value, bucket.getPercentile(50));
+            assertEquals(message, Map.of(value, 1L), bucket.getDistribution());
         }
     }
 
     /**
-     * When each group contains a single series, the group-by aggregation must be a no-op
-     * on the sum, whatever the configured aggregation.
+     * When merging, the distribution, the min and the max are merged by union, so that percentiles remain
+     * percentiles over the raw samples and min/max remain the raw min/max.
+     */
+    @Test
+    public void groupByMergeKeepsTheRawDistributionTest() {
+        TimeSeries timeSeries = newTimeSeriesWith2Series();
+        Bucket bucket = collectSingleBucket(timeSeries, singleBucketQuery()
+            .groupBy(Set.of(), Aggregation.MERGE).build());
+
+        assertEquals(10, bucket.getMin());
+        assertEquals(300, bucket.getMax());
+        // The distribution holds all 5 raw samples
+        assertEquals(5, bucket.getDistribution().values().stream().mapToLong(Long::longValue).sum());
+        assertEquals(300, bucket.getPercentile(100));
+        assertEquals(10, bucket.getPercentile(0));
+    }
+
+    /**
+     * When each group contains a single series, the group-by aggregation reduces that series alone.
      */
     @Test
     public void groupByDimensionWithSingleSeriesPerGroupTest() {
         TimeSeries timeSeries = newTimeSeriesWith2Series();
 
-        for (Aggregation aggregation : Set.of(Aggregation.AVG, Aggregation.SUM)) {
-            TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(singleBucketQuery()
-                .groupBy(Set.of("name"), aggregation).build());
+        TimeSeriesAggregationResponse sums = timeSeries.getAggregationPipeline().collect(singleBucketQuery()
+            .groupBy(Set.of("name"), Aggregation.SUM).build());
+        assertEquals(2, sums.getSeries().size());
+        assertEquals(30, scalar(sums, "t1").getValue());
+        assertEquals(600, scalar(sums, "t2").getValue());
 
-            assertEquals(2, response.getSeries().size());
+        TimeSeriesAggregationResponse averages = timeSeries.getAggregationPipeline().collect(singleBucketQuery()
+            .groupBy(Set.of("name"), Aggregation.AVG).build());
+        assertEquals(2, averages.getSeries().size());
+        // 30 / 2 and 600 / 3
+        assertEquals(15, scalar(averages, "t1").getValue());
+        assertEquals(200, scalar(averages, "t2").getValue());
+    }
 
-            Bucket t1 = response.getSeries().get(new BucketAttributes(Map.of("name", "t1"))).values().iterator().next();
-            Bucket t2 = response.getSeries().get(new BucketAttributes(Map.of("name", "t2"))).values().iterator().next();
-
-            assertEquals("Aggregation " + aggregation, 30, t1.getSum());
-            assertEquals("Aggregation " + aggregation, 2, t1.getCount());
-            assertEquals("Aggregation " + aggregation, 600, t2.getSum());
-            assertEquals("Aggregation " + aggregation, 3, t2.getCount());
-        }
+    private static ScalarBucket scalar(TimeSeriesAggregationResponse response, String name) {
+        Bucket bucket = response.getSeries().get(new BucketAttributes(Map.of("name", name))).values().iterator().next();
+        assertEquals(ScalarBucket.class, bucket.getClass());
+        return (ScalarBucket) bucket;
     }
 
     /**
@@ -217,21 +281,15 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
         Map<Long, Bucket> series = response.getFirstSeries();
         assertEquals(2, series.size());
 
-        Bucket firstBucket = series.get(0L);
-        assertEquals(2, firstBucket.getContributorCount());
-        assertEquals(30, firstBucket.getSum());
-        assertEquals(15, firstBucket.getAverage());
-
-        Bucket secondBucket = series.get(RESOLUTION);
-        assertEquals(1, secondBucket.getContributorCount());
-        assertEquals(100, secondBucket.getSum());
-        assertEquals(100, secondBucket.getAverage());
+        // The first time bucket holds both series, the second one only t1
+        assertEquals(30, ((ScalarBucket) series.get(0L)).getValue());
+        assertEquals(100, ((ScalarBucket) series.get(RESOLUTION)).getValue());
     }
 
     /**
      * The time-window aggregation must remain an accumulation of the raw points, independently of the
-     * configured group-by aggregation: aggregating 2 source buckets of the same series into one time
-     * window must not be counted as 2 contributors of the group-by aggregation.
+     * configured group-by aggregation: merging 2 source buckets of the same series into one time
+     * window must not be counted as 2 contributions of the group-by aggregation.
      */
     @Test
     public void timeWindowAggregationIsIndependentOfGroupByAggregationTest() {
@@ -242,16 +300,13 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
             ingestionPipeline.ingestPoint(Map.of("name", "t1"), 1001L, 20L);
         }
 
-        Bucket bucket = collectSingleBucket(timeSeries, new TimeSeriesAggregationQueryBuilder()
+        ScalarBucket bucket = collectSingleScalarBucket(timeSeries, new TimeSeriesAggregationQueryBuilder()
             .range(0, 2 * RESOLUTION)
             .window(2 * RESOLUTION)
             .groupBy(Set.of(), Aggregation.SUM)
             .build());
 
-        assertEquals(1, bucket.getContributorCount());
-        assertEquals(2, bucket.getCount());
-        assertEquals(30, bucket.getSum());
-        assertEquals(30, bucket.getAverage());
+        assertEquals(30, bucket.getValue());
     }
 
     // ------------------------------------------------------------------------------------------------------------
@@ -282,31 +337,41 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
     }
 
     /**
-     * Without any explicit time aggregation, the pipeline must keep its historical behavior: AVG.
+     * Reduces the single series of the data set with the given time aggregation. The group axis merges, so the
+     * scalar of the series ends up as the one single sample of the resulting bucket.
      */
-    @Test
-    public void defaultTimeAggregationIsAvgTest() {
-        Bucket defaultBucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
-            singleWindowOver2SourceBucketsQuery().build());
-        Bucket avgBucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
-            singleWindowOver2SourceBucketsQuery().withTimeAggregation(Aggregation.AVG).build());
+    private long timeAggregate(Aggregation timeAggregation) {
+        Bucket bucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
+            singleWindowOver2SourceBucketsQuery().withTimeAggregation(timeAggregation).build());
 
-        assertEquals(avgBucket.getContributorCount(), defaultBucket.getContributorCount());
-        assertEquals(avgBucket.getCount(), defaultBucket.getCount());
-        assertEquals(avgBucket.getSum(), defaultBucket.getSum());
-        assertEquals(avgBucket.getAverage(), defaultBucket.getAverage());
+        assertEquals("Aggregation " + timeAggregation, 1, bucket.getCount());
+        assertEquals("Aggregation " + timeAggregation, bucket.getSum(), bucket.getAverage());
+        return bucket.getSum();
     }
 
     /**
-     * AVG over the time window merges all the raw samples of the successive source buckets.
+     * Without any explicit time aggregation, the pipeline must keep its historical behavior: MERGE.
      */
     @Test
-    public void timeAggregationAvgTest() {
-        Bucket bucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
-            singleWindowOver2SourceBucketsQuery().withTimeAggregation(Aggregation.AVG).build());
+    public void defaultTimeAggregationIsMergeTest() {
+        Bucket defaultBucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
+            singleWindowOver2SourceBucketsQuery().build());
+        Bucket mergeBucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
+            singleWindowOver2SourceBucketsQuery().withTimeAggregation(Aggregation.MERGE).build());
 
-        // Each raw sample is one contributor
-        assertEquals(3, bucket.getContributorCount());
+        assertEquals(mergeBucket.getCount(), defaultBucket.getCount());
+        assertEquals(mergeBucket.getSum(), defaultBucket.getSum());
+        assertEquals(mergeBucket.getAverage(), defaultBucket.getAverage());
+    }
+
+    /**
+     * MERGE over the time window keeps all the raw samples of the successive source buckets.
+     */
+    @Test
+    public void timeAggregationMergeTest() {
+        Bucket bucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
+            singleWindowOver2SourceBucketsQuery().withTimeAggregation(Aggregation.MERGE).build());
+
         assertEquals(3, bucket.getCount());
         assertEquals(140, bucket.getSum());
         // Average over the raw samples: 140 / 3
@@ -314,91 +379,139 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
     }
 
     /**
-     * SUM over the time window contributes the sum of each source bucket, each source bucket counting as one
-     * single contributor. The average is therefore the mean sum per source interval.
+     * AVG over the time window reduces the merged source buckets to the average of their raw samples.
      */
     @Test
-    public void timeAggregationSumTest() {
-        Bucket bucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
-            singleWindowOver2SourceBucketsQuery().withTimeAggregation(Aggregation.SUM).build());
-
-        // One contributor per source bucket
-        assertEquals(2, bucket.getContributorCount());
-        // The raw sample count is preserved
-        assertEquals(3, bucket.getCount());
-        assertEquals(140, bucket.getSum());
-        // 140 / 2
-        assertEquals(70, bucket.getAverage());
+    public void timeAggregationAvgTest() {
+        // 140 / 3
+        assertEquals(46, timeAggregate(Aggregation.AVG));
     }
 
     /**
-     * COUNT over the time window contributes the number of raw samples of each source bucket.
+     * SUM over the time window reduces the merged source buckets to the sum of their raw samples.
+     */
+    @Test
+    public void timeAggregationSumTest() {
+        // 40 + 100
+        assertEquals(140, timeAggregate(Aggregation.SUM));
+    }
+
+    /**
+     * COUNT over the time window reduces the merged source buckets to their number of raw samples.
      */
     @Test
     public void timeAggregationCountTest() {
-        Bucket bucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
-            singleWindowOver2SourceBucketsQuery().withTimeAggregation(Aggregation.COUNT).build());
-
-        assertEquals(2, bucket.getContributorCount());
-        assertEquals(3, bucket.getCount());
         // 2 + 1
-        assertEquals(3, bucket.getSum());
-        // 3 / 2
-        assertEquals(1, bucket.getAverage());
+        assertEquals(3, timeAggregate(Aggregation.COUNT));
+    }
+
+    /**
+     * MIN over the time window keeps the lowest raw sample, whatever the sample counts of the source buckets.
+     */
+    @Test
+    public void timeAggregationMinTest() {
+        // min(10, 100)
+        assertEquals(10, timeAggregate(Aggregation.MIN));
+    }
+
+    /**
+     * MAX over the time window keeps the highest raw sample.
+     */
+    @Test
+    public void timeAggregationMaxTest() {
+        // max(30, 100)
+        assertEquals(100, timeAggregate(Aggregation.MAX));
     }
 
     /**
      * The distribution, min and max are merged by union on the time axis too.
      */
     @Test
-    public void timeAggregationAlwaysMergesDistributionMinAndMaxByUnionTest() {
-        for (Aggregation aggregation : List.of(Aggregation.AVG, Aggregation.SUM, Aggregation.COUNT)) {
-            Bucket bucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
-                singleWindowOver2SourceBucketsQuery().withTimeAggregation(aggregation).build());
+    public void timeAggregationMergeKeepsTheRawDistributionTest() {
+        Bucket bucket = collectSingleBucket(newTimeSeriesWith2SourceBuckets(),
+            singleWindowOver2SourceBucketsQuery().withTimeAggregation(Aggregation.MERGE).build());
 
-            String message = "Aggregation " + aggregation;
-            assertEquals(message, 10, bucket.getMin());
-            assertEquals(message, 100, bucket.getMax());
-            assertEquals(message, 3, bucket.getDistribution().values().stream().mapToLong(Long::longValue).sum());
-            assertEquals(message, 100, bucket.getPercentile(100));
-            assertEquals(message, 10, bucket.getPercentile(0));
-        }
+        assertEquals(10, bucket.getMin());
+        assertEquals(100, bucket.getMax());
+        assertEquals(3, bucket.getDistribution().values().stream().mapToLong(Long::longValue).sum());
+        assertEquals(100, bucket.getPercentile(100));
+        assertEquals(10, bucket.getPercentile(0));
     }
 
     /**
-     * The two axes are independent and compose: the time aggregation is applied first, per series, and the group-by
-     * aggregation is then applied on its result.
+     * 2 series spread over the 2 source buckets of one single time window:
+     * <ul>
+     *     <li>name=t1 : [0,1000) => 10, 30 and [1000,2000) => 100 => count 3, sum 140, min 10, max 100</li>
+     *     <li>name=t2 : [0,1000) => 5                            => count 1, sum 5,   min 5,  max 5</li>
+     * </ul>
      */
-    @Test
-    public void timeAndGroupByAggregationsComposeTest() {
+    private TimeSeries newTimeSeriesWith2SeriesOver2SourceBuckets() {
         TimeSeries timeSeries = getNewTimeSeries(RESOLUTION);
         try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
-            // t1 over 2 source buckets: [0,1000) => 10, 30 (sum 40) and [1000,2000) => 100 (sum 100)
             ingestionPipeline.ingestPoint(Map.of("name", "t1"), 1L, 10L);
             ingestionPipeline.ingestPoint(Map.of("name", "t1"), 2L, 30L);
             ingestionPipeline.ingestPoint(Map.of("name", "t1"), 1001L, 100L);
-            // t2 over 1 source bucket: [0,1000) => 5
             ingestionPipeline.ingestPoint(Map.of("name", "t2"), 1L, 5L);
         }
+        return timeSeries;
+    }
 
-        Bucket bucket = collectSingleBucket(timeSeries, new TimeSeriesAggregationQueryBuilder()
+    private TimeSeriesAggregationQueryBuilder singleWindowOver2SeriesQuery() {
+        return new TimeSeriesAggregationQueryBuilder()
             .range(0, 2 * RESOLUTION)
-            .window(2 * RESOLUTION)
-            .withTimeAggregation(Aggregation.SUM)
-            .groupBy(Set.of(), Aggregation.SUM)
-            .build());
+            .window(2 * RESOLUTION);
+    }
 
-        // Time axis: t1 => sum 140, t2 => sum 5. Group axis: one contributor per series
-        assertEquals(2, bucket.getContributorCount());
+    /**
+     * The two axes are independent and compose: the time aggregation reduces each series first, and the group-by
+     * aggregation is then applied on the resulting per-series scalars.
+     */
+    @Test
+    public void timeAndGroupByAggregationsComposeTest() {
+        ScalarBucket bucket = collectSingleScalarBucket(newTimeSeriesWith2SeriesOver2SourceBuckets(),
+            singleWindowOver2SeriesQuery()
+                .withTimeAggregation(Aggregation.SUM)
+                .groupBy(Set.of(), Aggregation.SUM)
+                .build());
+
+        // Time axis: t1 => sum 140, t2 => sum 5. Group axis: the sum of both
+        assertEquals(145, bucket.getValue());
+    }
+
+    /**
+     * The group-by aggregation is applied on the per-series scalars, not on the raw samples: summing the minima of
+     * the series is not the same as the minimum of all the raw samples.
+     */
+    @Test
+    public void timeMinAndGroupBySumComposeTest() {
+        ScalarBucket bucket = collectSingleScalarBucket(newTimeSeriesWith2SeriesOver2SourceBuckets(),
+            singleWindowOver2SeriesQuery()
+                .withTimeAggregation(Aggregation.MIN)
+                .groupBy(Set.of(), Aggregation.SUM)
+                .build());
+
+        // Time axis: t1 => min 10, t2 => min 5. Group axis: the sum of both minima
+        assertEquals(15, bucket.getValue());
+    }
+
+    /**
+     * A scalar time aggregation followed by a MERGE group aggregation yields a bucket holding one sample per series,
+     * i.e. a bucket over the per-series scalars rather than over the raw samples.
+     */
+    @Test
+    public void scalarTimeAggregationFollowedByMergeTest() {
+        Bucket bucket = collectSingleBucket(newTimeSeriesWith2SeriesOver2SourceBuckets(),
+            singleWindowOver2SeriesQuery()
+                .withTimeAggregation(Aggregation.SUM)
+                .groupBy(Set.of(), Aggregation.MERGE)
+                .build());
+
+        // One sample per series: 140 and 5
+        assertEquals(2, bucket.getCount());
         assertEquals(145, bucket.getSum());
-        // The raw sample count survives both axes
-        assertEquals(4, bucket.getCount());
-        // 145 / 2
-        assertEquals(72, bucket.getAverage());
-        // Raw distribution survives both axes
-        assertEquals(4, bucket.getDistribution().values().stream().mapToLong(Long::longValue).sum());
         assertEquals(5, bucket.getMin());
-        assertEquals(100, bucket.getMax());
+        assertEquals(140, bucket.getMax());
+        assertEquals(72, bucket.getAverage());
     }
 
     // ------------------------------------------------------------------------------------------------------------
@@ -418,6 +531,27 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
         }
 
         Bucket bucket = collectSingleBucket(timeSeries, singleBucketQuery()
+            .withAttributeCollection(Set.of("status"), 10)
+            .build());
+
+        assertEquals(Set.of("PASSED", "FAILED"), bucket.getAttributes().get("status"));
+    }
+
+    /**
+     * Attribute collection must remain functional when the time aggregation reduces the series to a scalar: the
+     * series contributes its scalar value, but its attributes must still be collected.
+     */
+    @Test
+    public void attributeCollectionWithScalarTimeAggregationTest() {
+        TimeSeries timeSeries = getNewTimeSeries(RESOLUTION);
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "PASSED"), 1L, 20L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t3", "status", "FAILED"), 1L, 30L);
+        }
+
+        Bucket bucket = collectSingleBucket(timeSeries, singleBucketQuery()
+            .withTimeAggregation(Aggregation.SUM)
             .withAttributeCollection(Set.of("status"), 10)
             .build());
 

@@ -14,7 +14,7 @@ public class BucketBuilder {
     private final long begin;
     private final Long end;
     private BucketAttributes attributes;
-    private final LongAdder contributingCountAdder = new LongAdder();
+    private final Aggregation aggregation;
     private final LongAdder countAdder = new LongAdder();
     private final LongAdder sumAdder = new LongAdder();
     private final AtomicLong min = new AtomicLong(Long.MAX_VALUE);
@@ -26,14 +26,16 @@ public class BucketBuilder {
     private int accumulateAttributeValuesLimit;
 
 
-    public BucketBuilder(long begin) {
+    public BucketBuilder(Aggregation aggregation, long begin) {
         this.begin = begin;
+        this.aggregation = aggregation;
         this.end = null;
     }
 
-    public BucketBuilder(long begin, long end) {
+    public BucketBuilder(Aggregation aggregation, long begin, long end) {
         this.begin = begin;
         this.end = end;
+        this.aggregation = aggregation;
     }
 
     public BucketBuilder withAttributes(BucketAttributes attributes) {
@@ -52,11 +54,14 @@ public class BucketBuilder {
     }
 
     public static BucketBuilder create(long begin) {
-        return new BucketBuilder(begin);
+        return new BucketBuilder(Aggregation.MERGE, begin);
+    }
+
+    public static BucketBuilder create(long begin, long end) {
+        return new BucketBuilder(Aggregation.MERGE, begin, end);
     }
 
     public BucketBuilder ingest(long value) {
-        contributingCountAdder.increment();
         countAdder.increment();
         sumAdder.add(value);
         updateMin(value);
@@ -66,16 +71,11 @@ public class BucketBuilder {
     }
 
     /**
-     * Aggregates the given bucket into this builder using the provided aggregation.
-     * <p>
-     * The aggregation only drives the scalar accumulated into the sum and the weight of that contribution. The
-     * distribution, the min and the max are always merged by union, independently of the aggregation, so that
-     * percentiles remain percentiles over the underlying raw samples. Likewise the raw sample count is always
-     * carried over, so that no aggregation loses track of how many samples the result is based on.
+     * Merges the given bucket into this builder, i.e. adds all the raw samples it holds. The distribution, the min
+     * and the max are merged by union, so that percentiles remain percentiles over the underlying raw samples.
      */
-    public BucketBuilder aggregate(Bucket bucket, Aggregation aggregation) {
-        contributingCountAdder.add(aggregation.getWeight(bucket));
-        sumAdder.add(aggregation.getValue(bucket));
+    public BucketBuilder merge(Bucket bucket) {
+        sumAdder.add(bucket.getSum());
         countAdder.add(bucket.getCount());
         updateMin(bucket.getMin());
         updateMax(bucket.getMax());
@@ -85,20 +85,34 @@ public class BucketBuilder {
             bucketDistribution.forEach((key, value) ->
                 distribution.computeIfAbsent(key, k -> new LongAdder()).add(value));
         }
-        accumulateAttributes(bucket);
+        accumulateAttributes(bucket.getAttributes());
         return this;
     }
 
     /**
-     * Merges the given bucket into this builder, i.e. adds all the raw samples it holds.
-     * Equivalent to {@link #aggregate(Bucket, Aggregation)} with {@link Aggregation#AVG}.
+     * Aggregates the given builder into this builder, i.e. contributes its aggregate to this one. How the contribution
+     * is made is defined by the aggregation of the contributing builder, not by the one of this builder: a
+     * {@link Aggregation#MERGE} builder contributes all the raw samples it holds, while a scalar one contributes its
+     * scalar value as one single sample. The attributes of the contributing builder are collected either way.
      */
-    public BucketBuilder accumulate(Bucket bucket) {
-        return aggregate(bucket, Aggregation.AVG);
+    public BucketBuilder aggregate(BucketBuilder builder) {
+        if (builder.aggregation.isMerge()) {
+            merge(builder.build());
+        } else {
+            ingest(builder.getScalarValue());
+            accumulateAttributes(builder.attributes);
+        }
+        return this;
     }
 
-    private void accumulateAttributes(Bucket bucket) {
-        BucketAttributes bucketAttr = bucket.getAttributes();
+    /**
+     * @return the scalar this builder reduces to, as defined by its aggregation
+     */
+    public long getScalarValue() {
+        return aggregation.getValue(this);
+    }
+
+    private void accumulateAttributes(BucketAttributes bucketAttr) {
         if (accumulateAttributeKeys != null && bucketAttr != null && !bucketAttr.isEmpty()) {
             accumulateAttributeKeys.forEach(a -> {
                 Object value = bucketAttr.get(a);
@@ -136,12 +150,48 @@ public class BucketBuilder {
         max.updateAndGet(curMax -> Math.max(value, curMax));
     }
 
+    public long getCount() {
+        return countAdder.longValue();
+    }
+
+    public long getSum() {
+        return sumAdder.longValue();
+    }
+
+    public long getAverage() {
+        long count = getCount();
+        return count > 0 ? getSum() / count : 0;
+    }
+
+    public long getMin() {
+        return min.get();
+    }
+
+    public long getMax() {
+        return max.get();
+    }
+
+    /**
+     * @return the aggregate of this builder: the merged {@link Bucket} for {@link Aggregation#MERGE}, a
+     * {@link ScalarBucket} holding the scalar value of the aggregation otherwise
+     */
+    public Bucket buildAggregate() {
+        return aggregation.isMerge() ? build() : buildScalarBucket();
+    }
+
+    private ScalarBucket buildScalarBucket() {
+        ScalarBucket bucket = new ScalarBucket(getScalarValue());
+        bucket.setBegin(begin);
+        bucket.setEnd(end);
+        bucket.setAttributes(attributes);
+        return bucket;
+    }
+
     public Bucket build() {
         Bucket bucket = new Bucket();
         bucket.setBegin(begin);
         bucket.setEnd(end);
         bucket.setAttributes(attributes);
-        bucket.setContributorCount(contributingCountAdder.longValue());
         bucket.setCount(countAdder.longValue());
         bucket.setSum(sumAdder.longValue());
         bucket.setMin(min.longValue());

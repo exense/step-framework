@@ -13,8 +13,8 @@ public class TimeSeriesAggregationQueryBuilder {
 
     private TimeSeriesOptimizationType optimizationType = TimeSeriesOptimizationType.MOST_EFFICIENT;
     private Set<String> groupDimensions = new HashSet<>();
-    private Aggregation groupAggregation = Aggregation.AVG;
-    private Aggregation timeAggregation = Aggregation.AVG;
+    private Aggregation groupAggregation = Aggregation.MERGE;
+    private Aggregation timeAggregation = Aggregation.MERGE;
     private Filter filter = Filters.empty();
     private Long from;
     private Long to;

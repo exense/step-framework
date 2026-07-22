@@ -21,71 +21,43 @@ package step.core.timeseries.bucket;
 
 import java.util.function.ToLongFunction;
 
-/**
- * Defines how a set of {@link Bucket}s is reduced into a single one. The same set of aggregations is
- * applicable to both axes of the aggregation pipeline, which are independent of each other:
- * <ul>
- *     <li>the <b>time-window aggregation</b>, which reduces the successive buckets of one series into one time bucket</li>
- *     <li>the <b>group-by aggregation</b>, which reduces the aligned buckets of the series of one group into one bucket</li>
- * </ul>
- * <p>
- * An aggregation only defines the <i>scalar value</i> contributed by each input bucket and the <i>weight</i> of that
- * contribution. It never defines how the distribution, the min and the max are merged: those are always merged by
- * union, as this is their only algebraically valid merge. Percentiles obtained from an aggregated bucket are therefore
- * always percentiles over the underlying raw samples, whatever the aggregation in use.
- *
- * @see BucketBuilder#aggregate(Bucket, Aggregation)
- */
 public enum Aggregation {
 
-    /**
-     * Sample-weighted average: each input bucket contributes its sum, weighted by the number of raw samples it holds.
-     * The resulting bucket is a plain merge of its inputs, i.e. it is equivalent to a bucket built out of all the raw
-     * samples of the inputs, and it remains mergeable.
-     */
-    AVG(Bucket::getSum, Aggregation::effectiveContributorCount),
+    MERGE(null),
+    AVG(BucketBuilder::getAverage),
+    SUM(BucketBuilder::getSum),
+    COUNT(BucketBuilder::getCount),
+    MIN(BucketBuilder::getMin),
+    MAX(BucketBuilder::getMax);
 
-    /**
-     * Sum: each input bucket contributes its sum and counts as one single contributor. The average of the resulting
-     * bucket is therefore the mean of the sums of its inputs.
-     */
-    SUM(Bucket::getSum, b -> 1),
+    private final ToLongFunction<BucketBuilder> valueFunction;
 
-    /**
-     * Count: each input bucket contributes its number of raw samples and counts as one single contributor. The average
-     * of the resulting bucket is therefore the mean of the sample counts of its inputs.
-     */
-    COUNT(Bucket::getCount, b -> 1);
-
-    private final ToLongFunction<Bucket> valueFunction;
-    private final ToLongFunction<Bucket> weightFunction;
-
-    Aggregation(ToLongFunction<Bucket> valueFunction, ToLongFunction<Bucket> weightFunction) {
+    Aggregation(ToLongFunction<BucketBuilder> valueFunction) {
         this.valueFunction = valueFunction;
-        this.weightFunction = weightFunction;
+    }
+
+    /**
+     * @return true if this aggregation merges its inputs into a {@link Bucket}, false if it reduces them to a scalar
+     */
+    public boolean isMerge() {
+        return valueFunction == null;
+    }
+
+    /**
+     * @return true if this aggregation reduces its inputs to a scalar, i.e. to a {@link ScalarBucket}
+     */
+    public boolean isScalar() {
+        return !isMerge();
     }
 
     /**
      * @return the scalar contributed by the given bucket to the aggregate
+     * @throws UnsupportedOperationException if this aggregation is not a scalar one
      */
-    public long getValue(Bucket bucket) {
+    public long getValue(BucketBuilder bucket) {
+        if (isMerge()) {
+            throw new UnsupportedOperationException(name() + " merges its inputs and doesn't reduce them to a scalar");
+        }
         return valueFunction.applyAsLong(bucket);
-    }
-
-    /**
-     * @return the number of contributors the given bucket accounts for in the aggregate, i.e. the weight of its value
-     */
-    public long getWeight(Bucket bucket) {
-        return weightFunction.applyAsLong(bucket);
-    }
-
-    /**
-     * Buckets persisted before the introduction of {@link Bucket#getContributorCount()} carry a contributor count of 0.
-     * For those, the number of raw samples is the correct weight, which is also what the contributor count of a freshly
-     * ingested bucket amounts to.
-     */
-    private static long effectiveContributorCount(Bucket bucket) {
-        long contributorCount = bucket.getContributorCount();
-        return contributorCount > 0 ? contributorCount : bucket.getCount();
     }
 }

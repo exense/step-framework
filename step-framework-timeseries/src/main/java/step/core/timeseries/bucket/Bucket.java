@@ -12,11 +12,6 @@ public class Bucket extends AbstractIdentifiableObject {
     private long begin;
     private Long end;
     private BucketAttributes attributes;
-
-    // Number of series buckets that contributed.
-    // When set this count is used for the calculation of the average value.
-    private long contributorCount;
-    // Total number of raw samples.
     private long count;
     private long sum, min, max;
     private long pclPrecision;
@@ -51,14 +46,6 @@ public class Bucket extends AbstractIdentifiableObject {
 
     public void setAttributes(BucketAttributes attributes) {
         this.attributes = attributes;
-    }
-
-    public long getContributorCount() {
-        return contributorCount;
-    }
-
-    public void setContributorCount(long contributorCount) {
-        this.contributorCount = contributorCount;
     }
 
     public long getCount() {
@@ -130,16 +117,7 @@ public class Bucket extends AbstractIdentifiableObject {
         return percentileValue;
     }
 
-    /**
-     * @return the sum divided by the number of contributors. Which value this represents depends on the
-     * {@link step.core.timeseries.bucket.Aggregation} the bucket was aggregated with: for
-     * {@link step.core.timeseries.bucket.Aggregation#AVG} the contributors are the raw samples, hence the average of
-     * the raw samples, while for the other aggregations the contributors are the aggregated buckets.
-     */
     public long getAverage() {
-        // Buckets persisted before the introduction of contributorCount carry a contributor count of 0.
-        // For those the number of raw samples is the correct divisor.
-        long divisor = contributorCount > 0 ? contributorCount : count;
-        return divisor > 0 ? sum / divisor : 0;
+        return count > 0 ? sum / count : 0;
     }
 }

@@ -93,7 +93,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
             Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
             bucketsForTimestamp.computeIfAbsent(bucketAttributes, k ->
                     BucketBuilder.create(index).withAttributes(bucketAttributes))
-                .accumulate(bucket);
+                .merge(bucket);
             if (nextPipeline != null) {
                 nextPipeline.ingestBucket(bucket);
             }

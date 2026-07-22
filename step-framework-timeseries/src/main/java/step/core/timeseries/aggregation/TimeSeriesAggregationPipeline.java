@@ -5,9 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.timeseries.TimeSeriesCollection;
 import step.core.timeseries.TimeSeriesUtils;
-import step.core.timeseries.bucket.Bucket;
-import step.core.timeseries.bucket.BucketAttributes;
-import step.core.timeseries.bucket.BucketBuilder;
+import step.core.timeseries.bucket.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
@@ -107,9 +105,10 @@ public class TimeSeriesAggregationPipeline {
                 Map<BucketAttributes, BucketBuilder> indexSeriesBuckets = timeSlice.computeIfAbsent(groupAttributes, a -> new HashMap<>());
                 // Get the builder for the attributes of the current bucket. The full attributes of the series are kept
                 // at this stage, so that the attribute collection can be performed on them during the group-by aggregation
-                BucketBuilder bucketBuilder = indexSeriesBuckets.computeIfAbsent(bucketAttributes, a -> new BucketBuilder(timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams)).withAttributes(bucketAttributes));
-                // Aggregate the current bucket to the builder using the configured time-window aggregation
-                bucketBuilder.aggregate(bucket, query.getTimeAggregation());
+                BucketBuilder bucketBuilder = indexSeriesBuckets.computeIfAbsent(bucketAttributes, a -> new BucketBuilder(query.getTimeAggregation(), timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams)).withAttributes(bucketAttributes));
+                // Merge the current source bucket into the builder. The configured time-window aggregation is
+                // applied when the builder is reduced, at the group-by stage
+                bucketBuilder.merge(bucket);
             });
         }
         long t2 = System.currentTimeMillis();
@@ -129,17 +128,18 @@ public class TimeSeriesAggregationPipeline {
                     long begin = series.getBegin();
                     Long end = series.getEnd();
                     Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
-                    BucketBuilder bucketBuilder = resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> new BucketBuilder(begin, end)
+                    BucketBuilder bucketBuilder = resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> new BucketBuilder(query.getGroupAggregation(), begin, end)
                         .withAttributes(new BucketAttributes(groupAttributes))
                         .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit()));
-                    // Aggregate
-                    bucketBuilder.aggregate(series.build(), query.getGroupAggregation());
+                    // Aggregate the series into the group. How the series contributes is defined by the
+                    // time-window aggregation it was built with
+                    bucketBuilder.aggregate(series);
                 });
             });
         });
 
         Map<BucketAttributes, Map<Long, Bucket>> result = resultBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-            e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
+            e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().buildAggregate()))));
 
         return new TimeSeriesAggregationResponseBuilder()
             .setSeries(result)
