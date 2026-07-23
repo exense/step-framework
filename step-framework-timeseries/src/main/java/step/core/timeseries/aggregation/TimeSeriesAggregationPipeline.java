@@ -178,8 +178,8 @@ public class TimeSeriesAggregationPipeline {
             // For each group
             timeSlice.forEach((groupAttributes, group) -> {
                 // For each series of the group
+                Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
                 group.forEach((seriesAttributes, series) -> {
-                    Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
                     BucketBuilder bucketBuilder = resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> newGroupBucketBuilder(query, finalParams, groupAttributes, i));
                     // Aggregate the series into the group. How the series contributes is defined by the
                     // time-window aggregation it was built with
@@ -211,7 +211,7 @@ public class TimeSeriesAggregationPipeline {
         }
     }
 
-    private long getBucketEnd(Long i, TimeSeriesProcessedParams finalParams) {
+    private long getBucketEnd(long i, TimeSeriesProcessedParams finalParams) {
         return i + getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), finalParams.getResolution());
     }
 
