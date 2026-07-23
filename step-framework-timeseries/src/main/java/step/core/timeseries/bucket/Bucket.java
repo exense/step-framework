@@ -115,4 +115,11 @@ public class Bucket extends AbstractIdentifiableObject {
         }
         return percentileValue;
     }
+
+    /**
+     * @return the average of the samples of this bucket, i.e. its sum divided by its count, 0 if it is empty
+     */
+    public long getAverage() {
+        return count > 0 ? sum / count : 0;
+    }
 }
