@@ -5,9 +5,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.timeseries.TimeSeriesCollection;
 import step.core.timeseries.TimeSeriesUtils;
-import step.core.timeseries.bucket.*;
+import step.core.timeseries.bucket.Bucket;
+import step.core.timeseries.bucket.BucketAttributes;
+import step.core.timeseries.bucket.BucketBuilder;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -116,7 +123,7 @@ public class TimeSeriesAggregationPipeline {
         try (Stream<Bucket> stream = collection.queryTimeSeries(finalParams)) {
             stream.forEach(bucket -> {
                 bucketCount.increment();
-                BucketAttributes groupAttributes = getGroupAttributes(bucket, finalParams);
+                BucketAttributes groupAttributes = getGroupAttributes(bucket, finalParams.getGroupDimensions());
                 long timeSliceIndex = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
 
                 Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
@@ -135,7 +142,7 @@ public class TimeSeriesAggregationPipeline {
      */
     private Map<BucketAttributes, Map<Long, BucketBuilder>> collectByAggregating(TimeSeriesAggregationQuery query, TimeSeriesProcessedParams finalParams, TimeSeriesCollection collection) {
         // Perform time-window aggregation and partition the time series:
-        // Aggregate each series into the requested aligned time buckets and assign the resulting series to their respective groups.
+        // Aggregate each source series into the requested aligned time buckets and assign the resulting series to their respective groups (defined by the group dimensions).
         // Do not perform any cross-series aggregation at this stage.
         Map<Long, Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>>> timeBucketedSeriesByGroup = new HashMap<>();
         LongAdder bucketCount = new LongAdder();
@@ -143,11 +150,13 @@ public class TimeSeriesAggregationPipeline {
         try (Stream<Bucket> stream = collection.queryTimeSeries(finalParams)) {
             stream.forEach(bucket -> {
                 bucketCount.increment();
+                // The attributes of the source series
                 BucketAttributes bucketAttributes = bucket.getAttributes() != null ? bucket.getAttributes() : new BucketAttributes();
-                BucketAttributes groupAttributes = getGroupAttributes(bucket, finalParams);
+                // The subset of attributes corresponding to the requested group dimensions (group by)
+                BucketAttributes groupAttributes = getGroupAttributes(bucket, finalParams.getGroupDimensions());
+                // The time slice index on the result series
                 long timeSliceIndex = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
-
-                // Get or create the time slice corresponding to the time index of the current bucket
+                // Get or create the time slice corresponding to the time index of the current bucket on the result series (aligned)
                 Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>> timeSlice = timeBucketedSeriesByGroup.computeIfAbsent(timeSliceIndex, a -> new HashMap<>());
                 // Get or create the group of builders corresponding to the current group (defined by the group dimensions)
                 Map<BucketAttributes, BucketBuilder> indexSeriesBuckets = timeSlice.computeIfAbsent(groupAttributes, a -> new HashMap<>());
@@ -181,12 +190,12 @@ public class TimeSeriesAggregationPipeline {
         return resultBuilder;
     }
 
-    private BucketAttributes getGroupAttributes(Bucket bucket, TimeSeriesProcessedParams finalParams) {
+    private BucketAttributes getGroupAttributes(Bucket bucket, Set<String> groupDimensions) {
         BucketAttributes bucketAttributes = bucket.getAttributes();
-        if (bucketAttributes == null || CollectionUtils.isEmpty(finalParams.getGroupDimensions())) {
+        if (bucketAttributes == null || CollectionUtils.isEmpty(groupDimensions)) {
             return new BucketAttributes();
         }
-        return bucketAttributes.subset(finalParams.getGroupDimensions());
+        return bucketAttributes.subset(groupDimensions);
     }
 
     private BucketBuilder newGroupBucketBuilder(TimeSeriesAggregationQuery query, TimeSeriesProcessedParams finalParams, BucketAttributes groupAttributes, long timeSliceIndex) {
