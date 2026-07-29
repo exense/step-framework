@@ -20,11 +20,17 @@ package step.framework.server;
 
 import ch.exense.commons.app.ArgumentParser;
 import ch.exense.commons.app.Configuration;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
 import jakarta.websocket.server.ServerEndpointConfig;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.ext.Provider;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -485,7 +491,28 @@ public class ControllerServer {
 
         @Override
         public void registerPackage(Package aPackage) {
-            resourceConfig.packages(aPackage.getName());
+            // Jersey's resourceConfig.packages() method is broken when working with packages inside fat jars.
+            // Use a functionally identical implementation using ClassGraph, which handles the scanning better.
+            Objects.requireNonNull(aPackage, "package must not be null");
+            try (ScanResult scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .acceptPackages(aPackage.getName())
+                .scan()) {
+
+                // Replicate Jersey's native behavior: search for both @Path and @Provider
+                ClassInfoList jaxrsClasses = scanResult.getClassesWithAnnotation(Path.class.getName())
+                    .union(scanResult.getClassesWithAnnotation(Provider.class.getName()));
+
+                for (ClassInfo classInfo : jaxrsClasses) {
+                    try {
+                        Class<?> klass = classInfo.loadClass();
+                        resourceConfig.register(klass);
+                        logger.debug("Successfully registered JAX-RS component: {}", klass.getName());
+                    } catch (Exception e) {
+                        logger.error("Error while loading or registering JAX-RS class: {}", classInfo.getName(), e);
+                    }
+                }
+            }
         }
 
         @Override
