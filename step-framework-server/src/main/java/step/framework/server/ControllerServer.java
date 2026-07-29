@@ -493,6 +493,7 @@ public class ControllerServer {
         public void registerPackage(Package aPackage) {
             // Jersey's resourceConfig.packages() method is broken when working with packages inside fat jars.
             // Use a functionally identical implementation using ClassGraph, which handles the scanning better.
+            Objects.requireNonNull(aPackage, "package must not be null");
             try (ScanResult scanResult = new ClassGraph()
                 .enableAnnotationInfo()
                 .acceptPackages(aPackage.getName())
@@ -507,15 +508,8 @@ public class ControllerServer {
                         Class<?> klass = classInfo.loadClass();
                         resourceConfig.register(klass);
                         logger.debug("Successfully registered JAX-RS component: {}", klass.getName());
-                    } catch (IllegalArgumentException e) {
-                        // Thrown by ClassGraph if the class cannot be loaded
-                        logger.error("Failed to load JAX-RS class: {}", classInfo.getName(), e);
-                    } catch (LinkageError e) {
-                        // Standard Java error if the class is found but is missing dependencies
-                        logger.error("Linkage error while loading JAX-RS class: {}", classInfo.getName(), e);
                     } catch (Exception e) {
-                        // Catch any unexpected Jersey registration exceptions
-                        logger.error("Unexpected error registering JAX-RS class: {}", classInfo.getName(), e);
+                        logger.error("Error while loading or registering JAX-RS class: {}", classInfo.getName(), e);
                     }
                 }
             }
