@@ -107,6 +107,12 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         if (CollectionUtils.isNotEmpty(ignoredAttributes)) {
             ignoredAttributes.forEach(attributesCopy::remove);
         }
+        // Null-valued attributes are handled differently across collection implementations. Some persistent collections, such as MongoDB, do not store them at all, whereas InMemoryCollection retains the attributes with a null value.
+        // This causes a mismatch when step.core.timeseries.TimeSeriesCollection.queryTimeSeries queries both the in-memory and persisted collections. Buckets belonging to the same logical series are interpreted as two distinct source series:
+        // - In-memory buckets that have not yet been flushed contain all attributes, including those with null values.
+        // - Persisted buckets contain only attributes with non-null values.
+        // We therefore remove attributes with null values here
+        attributesCopy.entrySet().removeIf(entry -> entry.getValue() == null);
         return attributesCopy;
     }
 
