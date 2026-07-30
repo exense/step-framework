@@ -212,7 +212,7 @@ public class BucketBuilder {
      */
     public long getAverage() {
         long count = getCount();
-        return count > 0 ? getSum() / count : 0;
+        return count > 0 ? Math.round((1.0 * getSum()) / count) : 0;
     }
 
     /**

@@ -433,8 +433,8 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
      */
     @Test
     public void timeAggregationAvgTest() {
-        // 140 / 3
-        assertEquals(46, timeAggregate(Aggregation.AVG));
+        // 140 / 3 => we want the rounded value which is 47 in this case
+        assertEquals(47, timeAggregate(Aggregation.AVG));
     }
 
     /**
