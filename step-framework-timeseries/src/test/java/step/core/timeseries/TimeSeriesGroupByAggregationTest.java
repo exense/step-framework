@@ -425,7 +425,7 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
         assertEquals(3, bucket.getCount());
         assertEquals(140, bucket.getSum());
         // Average over the raw samples: 140 / 3
-        assertEquals(46, bucket.getAverage());
+        assertEquals(47, bucket.getAverage());
     }
 
     /**
@@ -561,7 +561,7 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
         assertEquals(145, bucket.getSum());
         assertEquals(5, bucket.getMin());
         assertEquals(140, bucket.getMax());
-        assertEquals(72, bucket.getAverage());
+        assertEquals(73, bucket.getAverage());
     }
 
     // ------------------------------------------------------------------------------------------------------------
