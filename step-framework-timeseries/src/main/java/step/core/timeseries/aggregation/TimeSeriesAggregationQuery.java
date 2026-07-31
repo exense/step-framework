@@ -1,7 +1,6 @@
 package step.core.timeseries.aggregation;
 
 import step.core.collections.Filter;
-import step.core.timeseries.bucket.Aggregation;
 import step.core.timeseries.query.TimeSeriesQuery;
 
 import javax.annotation.Nullable;
@@ -13,12 +12,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     // Group
     private Set<String> groupDimensions;
-
-    // Aggregation applied across the series of one group
-    private Aggregation groupAggregation;
-
-    // Aggregation applied across the successive buckets of one series falling into the same time window
-    private Aggregation timeAggregation;
 
     // Ideal number of buckets the interval will be split into
     @Nullable
@@ -38,8 +31,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         Filter filter,
         TimeSeriesOptimizationType optimizationType,
         Set<String> groupDimensions,
-        Aggregation groupAggregation,
-        Aggregation timeAggregation,
         Long bucketsResolution,
         Long from,
         Long to,
@@ -51,8 +42,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         this.optimizationType = optimizationType;
         this.bucketsCount = bucketsCount;
         this.groupDimensions = groupDimensions;
-        this.groupAggregation = groupAggregation;
-        this.timeAggregation = timeAggregation;
         this.bucketsResolution = bucketsResolution;
         this.collectAttributeKeys = collectAttributeKeys;
         this.collectAttributesValuesLimit = collectAttributesValuesLimit;
@@ -60,14 +49,6 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     public Set<String> getGroupDimensions() {
         return groupDimensions;
-    }
-
-    public Aggregation getGroupAggregation() {
-        return groupAggregation;
-    }
-
-    public Aggregation getTimeAggregation() {
-        return timeAggregation;
     }
 
     public Filter getFilter() {
