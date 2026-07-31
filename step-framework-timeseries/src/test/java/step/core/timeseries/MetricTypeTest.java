@@ -2,6 +2,7 @@ package step.core.timeseries;
 
 import org.junit.Assert;
 import org.junit.Test;
+import step.core.timeseries.bucket.Aggregation;
 import step.core.timeseries.metric.*;
 
 import java.util.*;
@@ -73,4 +74,11 @@ public class MetricTypeTest {
 
     }
 
+    @Test
+    public void testTwoPhaseAggregation() {
+        MetricAggregation metricAggregation = new MetricAggregation(Aggregation.AVG, Aggregation.SUM);
+        Assert.assertEquals(MetricAggregationType.TWO_STAGE, metricAggregation.getType());
+        Assert.assertEquals(Aggregation.AVG, metricAggregation.getTwoStageAggregation().getTimeAggregation());
+        Assert.assertEquals(Aggregation.SUM, metricAggregation.getTwoStageAggregation().getGroupAggregation());
+    }
 }
