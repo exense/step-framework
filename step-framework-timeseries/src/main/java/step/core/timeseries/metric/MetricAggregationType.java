@@ -8,5 +8,6 @@ public enum MetricAggregationType {
     COUNT,
     RATE,
     MEDIAN,
-    PERCENTILE
+    PERCENTILE,
+    TWO_STAGE
 }
