@@ -132,6 +132,16 @@ public class BucketBuilder {
         return this;
     }
 
+    private void merge(BucketBuilder builder) {
+        countAdder.add(builder.getCount());
+        sumAdder.add(builder.getSum());
+        updateMin(builder.getMin());
+        updateMax(builder.getMax());
+        builder.distribution.forEach((key, value) ->
+            distribution.computeIfAbsent(key, k -> new LongAdder()).add(value.longValue()));
+        accumulateAttributes(builder.attributes);
+    }
+
     /**
      * Aggregates the given builder into this builder, i.e. contributes its aggregate to this one. How the contribution
      * is made is defined by the aggregation of the contributing builder, not by the one of this builder: a
@@ -140,7 +150,7 @@ public class BucketBuilder {
      */
     public BucketBuilder aggregate(BucketBuilder builder) {
         if (builder.aggregation.isMerge()) {
-            merge(builder.build());
+            merge(builder);
         } else {
             ingest(builder.getScalarValue());
             accumulateAttributes(builder.attributes);

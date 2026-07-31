@@ -36,7 +36,7 @@ public class TimeSeriesAggregationQueryBuilder {
 
     /**
      * Defines the group-by (series) aggregation, i.e. how the aligned buckets of the series belonging to the same
-     * group are reduced into one single bucket. Defaults to {@link Aggregation#AVG}.
+     * group are reduced into one single bucket. Defaults to {@link Aggregation#MERGE}.
      *
      * @param groupDimensions    the attribute keys defining the groups
      * @param groupAggregation the aggregation applied across the series of each group
@@ -50,7 +50,7 @@ public class TimeSeriesAggregationQueryBuilder {
     /**
      * Defines the time-window aggregation, i.e. how the successive buckets of one single series falling into the same
      * time window are reduced into one single bucket. Independent of the group-by aggregation defined by
-     * {@link #groupBy(Set, Aggregation)}. Defaults to {@link Aggregation#AVG}.
+     * {@link #groupBy(Set, Aggregation)}. Defaults to {@link Aggregation#MERGE}.
      *
      * @param timeAggregation the aggregation applied across the buckets of one series within a time window
      */
