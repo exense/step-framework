@@ -38,10 +38,10 @@ public class BucketBuilderTest {
     }
 
     @Test
-    public void accumulate() {
+    public void merge() {
         Bucket bucket1 = BucketBuilder.create(0L).ingest(-5L).build();
         Bucket bucket2 = BucketBuilder.create(0L).ingest(5L).build();
-        Bucket bucket = BucketBuilder.create(0L).accumulate(bucket1).accumulate(bucket2).build();
+        Bucket bucket = BucketBuilder.create(0L).merge(bucket1).merge(bucket2).build();
         assertEquals(0L, bucket.getBegin());
         assertEquals(2L, bucket.getCount());
         assertEquals(0L, bucket.getSum());
@@ -51,7 +51,7 @@ public class BucketBuilderTest {
     }
 
     @Test
-    public void accumulateWithAttributes() {
+    public void mergeWithAttributes() {
         BucketAttributes attributes = new BucketAttributes(Map.of("key", "value1"));
         Bucket bucket1 = BucketBuilder.create(0L).withAttributes(attributes).ingest(-5L).build();
         attributes = new BucketAttributes(Map.of("key", "value2"));
@@ -59,9 +59,9 @@ public class BucketBuilderTest {
         attributes = new BucketAttributes(Map.of("key", "value3"));
         Bucket bucket3 = BucketBuilder.create(0L).withAttributes(attributes).ingest(5L).build();
         Bucket bucket = BucketBuilder.create(0L).withAccumulateAttributes(Set.of("key"), 2)
-            .accumulate(bucket1)
-            .accumulate(bucket2)
-            .accumulate(bucket3).build();
+            .merge(bucket1)
+            .merge(bucket2)
+            .merge(bucket3).build();
         assertEquals(0L, bucket.getBegin());
         assertEquals(3L, bucket.getCount());
         assertEquals(5L, bucket.getSum());
