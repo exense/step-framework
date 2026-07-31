@@ -8,6 +8,9 @@ import java.util.Map;
 public class MetricAggregation {
     @NotNull
     private MetricAggregationType type;
+
+    private TwoStageAggregation twoStageAggregation;
+
     private Map<String, Object> params;
 
     public MetricAggregation() {
@@ -38,5 +41,13 @@ public class MetricAggregation {
     public MetricAggregation setParams(Map<String, Object> params) {
         this.params = params;
         return this;
+    }
+
+    public TwoStageAggregation getTwoStageAggregation() {
+        return twoStageAggregation;
+    }
+
+    public void setTwoStageAggregation(TwoStageAggregation twoStageAggregation) {
+        this.twoStageAggregation = twoStageAggregation;
     }
 }
