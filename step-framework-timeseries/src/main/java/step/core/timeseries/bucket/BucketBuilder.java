@@ -165,7 +165,14 @@ public class BucketBuilder {
         return aggregation.getValue(this);
     }
 
-    private void accumulateAttributes(BucketAttributes bucketAttr) {
+    /**
+     * Collects the values of the given attributes, as enabled by {@link #withAccumulateAttributes(Set, int)}, without
+     * contributing any sample. This is performed implicitly for every contributed bucket and builder, and has to be
+     * called explicitly when the samples reach this builder through an intermediate builder: the attributes have to
+     * be collected from the source series they belong to, and not from the intermediate builder, whose attributes
+     * already hold the collected values.
+     */
+    public void accumulateAttributes(BucketAttributes bucketAttr) {
         if (accumulateAttributeKeys != null && bucketAttr != null && !bucketAttr.isEmpty()) {
             accumulateAttributeKeys.forEach(a -> {
                 Object value = bucketAttr.get(a);

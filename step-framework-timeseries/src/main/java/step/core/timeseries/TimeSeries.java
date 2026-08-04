@@ -37,7 +37,7 @@ public class TimeSeries implements AutoCloseable {
     TimeSeries(List<TimeSeriesCollection> handledCollections, TimeSeriesAggregationConfig aggregationConfig) {
         this.handledCollections = handledCollections;
         this.ttlEnabled = aggregationConfig.isTtlEnabled();
-        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, aggregationConfig.getResponseMaxIntervals(), aggregationConfig.getIdealResponseIntervals(), aggregationConfig.isTtlEnabled());
+        aggregationPipeline = new TimeSeriesAggregationPipeline(handledCollections, aggregationConfig.getResponseMaxIntervals(), aggregationConfig.getIdealResponseIntervals(), aggregationConfig.getMaxAlignmentIntervals(), aggregationConfig.isTtlEnabled());
     }
 
     public boolean isTtlEnabled() {

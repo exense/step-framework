@@ -19,6 +19,12 @@ public class TimeSeriesAggregationResponse {
     private final long resolution;
 
     /**
+     * The resolution of the grid on which the time aggregation was applied. Equal to {@link #resolution} when the
+     * aggregation didn't require a finer alignment grid.
+     */
+    private final long alignmentResolution;
+
+    /**
      * The resolution of the collection that was used to create this time-series.
      */
     private final long collectionResolution;
@@ -35,9 +41,10 @@ public class TimeSeriesAggregationResponse {
      */
     private final boolean ttlCovered;
 
-    TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long start, long end, long resolution, long collectionResolution, Set<String> collectionIgnoredAttributes, boolean higherResolutionUsed, boolean ttlCovered) {
+    TimeSeriesAggregationResponse(Map<BucketAttributes, Map<Long, Bucket>> series, long start, long end, long resolution, long alignmentResolution, long collectionResolution, Set<String> collectionIgnoredAttributes, boolean higherResolutionUsed, boolean ttlCovered) {
         this.series = series;
         this.resolution = resolution;
+        this.alignmentResolution = alignmentResolution;
         this.collectionResolution = collectionResolution;
         this.collectionIgnoredAttributes = collectionIgnoredAttributes;
         this.higherResolutionUsed = higherResolutionUsed;
@@ -56,6 +63,10 @@ public class TimeSeriesAggregationResponse {
 
     public long getResolution() {
         return resolution;
+    }
+
+    public long getAlignmentResolution() {
+        return alignmentResolution;
     }
 
     public Map<BucketAttributes, Map<Long, Bucket>> getSeries() {

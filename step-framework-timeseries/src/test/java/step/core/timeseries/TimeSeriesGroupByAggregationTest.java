@@ -1,6 +1,8 @@
 package step.core.timeseries;
 
+import org.junit.Assert;
 import org.junit.Test;
+import step.core.collections.inmemory.InMemoryCollection;
 import step.core.timeseries.aggregation.TimeSeriesAggregationQuery;
 import step.core.timeseries.aggregation.TimeSeriesAggregationQueryBuilder;
 import step.core.timeseries.aggregation.TimeSeriesAggregationResponse;
@@ -15,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static step.core.timeseries.aggregation.TimeSeriesAggregationPipeline.calculateAlignmentResolution;
 
 /**
  * Covers the configurable group-by (series) aggregation of the {@link step.core.timeseries.aggregation.TimeSeriesAggregationPipeline}.
@@ -151,6 +154,334 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
         assertEquals(1, t2.size());
         assertEquals(100, t2.get(0L).getSum());
         assertEquals("t2", t2.get(0L).getAttributes().get("name"));
+    }
+
+
+    // ------------------------------------------------------------------------------------------------------------
+    // Alignment grid
+    // ------------------------------------------------------------------------------------------------------------
+
+    private TimeSeries newTimeSeries(long resolution, int maxAlignmentIntervals) {
+        TimeSeriesCollection collection = new TimeSeriesCollection(new InMemoryCollection<>(), resolution);
+        return new TimeSeriesBuilder()
+            .registerCollection(collection)
+            .withAggregationConfig(new TimeSeriesAggregationConfig().setMaxAlignmentIntervals(maxAlignmentIntervals))
+            .build();
+    }
+
+    /**
+     * A group (name=t1) made of 2 series with different lifetimes, plus a second group, spread over 4 source buckets:
+     * <ul>
+     *     <li>[0,1000)    : t1/PASSED 10, t1/FAILED 20, t2/PASSED 100</li>
+     *     <li>[1000,2000) : t1/PASSED 30</li>
+     *     <li>[2000,3000) : t1/PASSED 20</li>
+     *     <li>[3000,4000) : t1/PASSED 20</li>
+     * </ul>
+     * The total of the group t1 is therefore 30, 30, 20 and 20 over the 4 source buckets it spans.
+     */
+    private TimeSeries newTimeSeriesWithSeriesOfDifferentLifetimes(int maxAlignmentIntervals) {
+        TimeSeries timeSeries = newTimeSeries(RESOLUTION, maxAlignmentIntervals);
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1L, 10L);
+            // This series only exists during the first source bucket
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "FAILED"), 2L, 20L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t2", "status", "PASSED"), 1L, 100L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 1001L, 30L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 2001L, 20L);
+            ingestionPipeline.ingestPoint(Map.of("name", "t1", "status", "PASSED"), 3001L, 20L);
+        }
+        return timeSeries;
+    }
+
+    private TimeSeriesAggregationQueryBuilder avgOverSumQuery() {
+        return new TimeSeriesAggregationQueryBuilder()
+            .range(0, 10 * RESOLUTION)
+            .withTimeAggregation(Aggregation.AVG)
+            .groupBy(Set.of("name"), Aggregation.SUM)
+            .withAttributeCollection(Set.of("status"), 10);
+    }
+
+    private static long valueOf(TimeSeriesAggregationResponse response, String name, long bucketIndex) {
+        return response.getSeries().get(new BucketAttributes(Map.of("name", name))).get(bucketIndex).getSum();
+    }
+
+    private static long alignmentResolution(long sourceResolution, long resultResolution, long rangeDiff, long maxAlignmentIntervals) {
+        return alignmentResolution(Aggregation.AVG, Aggregation.SUM, sourceResolution, resultResolution, rangeDiff, maxAlignmentIntervals);
+    }
+
+    private static long alignmentResolution(Aggregation timeAggregation, Aggregation groupAggregation, long sourceResolution,
+                                            long resultResolution, long rangeDiff, long maxAlignmentIntervals) {
+        return calculateAlignmentResolution(new TimeSeriesAggregationQueryBuilder()
+                .withTimeAggregation(timeAggregation)
+                .groupBy(Set.of(), groupAggregation)
+                .build(),
+            sourceResolution, resultResolution, rangeDiff, maxAlignmentIntervals);
+    }
+
+    /**
+     * The ideal alignment grid is the source resolution, i.e. the finest grid the stored data allows.
+     */
+    @Test
+    public void alignmentResolutionIsTheSourceResolutionWhenTheBudgetAllowsTest() {
+        // 1 hour shrunk into one single response bucket, over a 30 seconds collection: 120 intervals, well below the cap
+        assertEquals(30_000, alignmentResolution(30_000, 3_600_000, 3_600_000, 500));
+        // Same range split into 60 response buckets of 1 minute, over a 5 seconds collection: 720 intervals
+        assertEquals(5_000, alignmentResolution(5_000, 60_000, 3_600_000, 1000));
+    }
+
+    /**
+     * The number of alignment intervals over the whole range is bounded, so that the number of builders the pipeline
+     * retains while collecting stays bounded too. The grid is coarsened just enough to fit the budget.
+     */
+    @Test
+    public void alignmentResolutionIsCappedByTheBudgetTest() {
+        // 1 hour split into 120 response buckets of 30 seconds, over a 5 seconds collection
+        // alignment interval of 10 seconds expected, giving for the 1 hour interval 360 alignment intervals (below
+        // the 500 cap), while the next lower interval of 5 seconds would be over the limit
+        assertEquals(10_000, alignmentResolution(5_000, 30_000, 3_600_000, 500));
+        // The same query with a larger budget affords the source resolution: 720 intervals
+        assertEquals(5_000, alignmentResolution(5_000, 30_000, 3_600_000, 1000));
+        // With a smaller budget the grid is coarsened further: 15 seconds, i.e. 240 intervals
+        assertEquals(15_000, alignmentResolution(5_000, 30_000, 3_600_000, 300));
+        // And with a budget the response buckets alone exhaust, no alignment applies at all
+        assertEquals(30_000, alignmentResolution(5_000, 30_000, 3_600_000, 200));
+    }
+
+    /**
+     * A response finer than the budget gets no alignment at all: its response buckets are already close to the source
+     * resolution, so there is little to correct, and it is also the response which retains the most builders.
+     */
+    @Test
+    public void noAlignmentWhenTheResponseBucketsExhaustTheBudgetTest() {
+        // 1 hour split into 900 response buckets of 4 seconds, over a 1 second collection
+        assertEquals(4_000, alignmentResolution(1_000, 4_000, 3_600_000, 500));
+    }
+
+    /**
+     * The response resolution is already as fine as the stored data: there is no finer grid to align on.
+     */
+    @Test
+    public void noAlignmentWhenTheResponseMatchesTheSourceResolutionTest() {
+        assertEquals(1_000, alignmentResolution(1_000, 1_000, 3_600_000, 500));
+    }
+
+    /**
+     * The alignment resolution must divide the response resolution, so that an alignment interval never spans two
+     * response buckets. When no divisor fits the budget, the grid degrades to the response resolution rather than
+     * returning a finer but straddling one.
+     */
+    @Test
+    public void alignmentResolutionAlwaysDividesTheResponseResolutionTest() {
+        // 7 source buckets per response bucket, a budget of 10 intervals per response bucket: the source resolution fits
+        assertEquals(1_000, alignmentResolution(1_000, 7_000, 70_000, 100));
+        // The same with a budget of 3 intervals per response bucket: 7 being prime, no divisor between 3 and 7 exists,
+        // so the only grid which both fits the budget and divides the response resolution is the response resolution
+        assertEquals(7_000, alignmentResolution(1_000, 7_000, 70_000, 30));
+    }
+
+    /**
+     * A merging aggregation on either axis keeps the historical behavior, whatever the budget: no alignment applies.
+     * Both axes being scalar, the very same query would be aligned on a 10 seconds grid.
+     */
+    @Test
+    public void noAlignmentWithMergingAggregationsTest() {
+        assertEquals(10_000, alignmentResolution(Aggregation.AVG, Aggregation.SUM, 1_000, 60_000, 3_600_000, 500));
+
+        assertEquals(60_000, alignmentResolution(Aggregation.MERGE, Aggregation.SUM, 1_000, 60_000, 3_600_000, 500));
+        assertEquals(60_000, alignmentResolution(Aggregation.AVG, Aggregation.MERGE, 1_000, 60_000, 3_600_000, 500));
+        assertEquals(60_000, alignmentResolution(Aggregation.MERGE, Aggregation.MERGE, 1_000, 60_000, 3_600_000, 500));
+    }
+
+    /**
+     * An empty range shrinks into a response resolution of 0. The alignment must not divide by it.
+     */
+    @Test
+    public void alignmentResolutionOfAnEmptyRangeTest() {
+        assertEquals(0, alignmentResolution(1_000, 0, 0, 500));
+    }
+
+    /**
+     * Whatever the query, the alignment grid must be usable by the pipeline and must respect its budget:
+     * <ul>
+     *     <li>it is not finer than the stored data and not coarser than a response bucket</li>
+     *     <li>it divides the response resolution, so that an interval never spans two response buckets</li>
+     *     <li>it doesn't split the range into more intervals than the budget allows, unless the response buckets
+     *     alone already exceed it, in which case no alignment applies</li>
+     * </ul>
+     */
+    @Test
+    public void alignmentResolutionInvariantsTest() {
+        for (long sourceResolution : List.of(1_000L, 5_000L, 30_000L)) {
+            // The response resolution is always a multiple of the source resolution
+            for (long intervalsPerBucket : List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 10L, 12L, 60L, 120L)) {
+                long resultResolution = sourceResolution * intervalsPerBucket;
+                for (long resultBuckets : List.of(1L, 10L, 100L, 360L)) {
+                    long rangeDiff = resultResolution * resultBuckets;
+                    for (long maxAlignmentIntervals : List.of(1L, 10L, 100L, 500L, 4000L)) {
+                        long alignmentResolution = alignmentResolution(sourceResolution, resultResolution, rangeDiff, maxAlignmentIntervals);
+                        String message = String.format("source %d, response %d, range %d, budget %d",
+                            sourceResolution, resultResolution, rangeDiff, maxAlignmentIntervals);
+
+                        Assert.assertTrue(message, alignmentResolution >= sourceResolution);
+                        Assert.assertTrue(message, alignmentResolution <= resultResolution);
+                        assertEquals(message, 0, resultResolution % alignmentResolution);
+                        Assert.assertTrue(message, rangeDiff / alignmentResolution <= Math.max(maxAlignmentIntervals, resultBuckets));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * When both axes are scalar, both stages are applied on the alignment grid and their values are then reduced over
+     * time. Reducing each series over the whole response bucket first would let t1/FAILED, which only existed during
+     * the first source bucket, contribute its value as if it had existed during the whole range: the group-by SUM
+     * would then be 20 + 20 = 40 instead of the average of the totals of the 4 source buckets, (30+30+20+20)/4 = 25.
+     */
+    @Test
+    public void scalarAggregationsAreAppliedOnTheAlignmentGridTest() {
+        TimeSeries timeSeries = newTimeSeriesWithSeriesOfDifferentLifetimes(TimeSeriesAggregationConfig.DEFAULT_MAX_ALIGNMENT_INTERVALS);
+
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline()
+            .collect(avgOverSumQuery().split(1).build());
+
+        assertEquals(2, response.getSeries().size());
+        // The alignment grid is the source resolution, the response holds one single bucket
+        assertEquals(RESOLUTION, response.getAlignmentResolution());
+        assertEquals(10 * RESOLUTION, response.getResolution());
+
+        Map<Long, Bucket> t1 = response.getSeries().get(new BucketAttributes(Map.of("name", "t1")));
+        assertEquals(1, t1.size());
+        Bucket t1Bucket = t1.get(0L);
+        // A scalar aggregate holds one single sample, the scalar itself
+        assertEquals(1, t1Bucket.getCount());
+        assertEquals(25, t1Bucket.getSum());
+        assertEquals(25, t1Bucket.getAverage());
+        assertEquals(25, t1Bucket.getMin());
+        assertEquals(25, t1Bucket.getMax());
+        // The group attributes are kept and the attributes of both series are collected, whatever their lifetime
+        assertEquals("t1", t1Bucket.getAttributes().get("name"));
+        assertEquals(Set.of("PASSED", "FAILED"), t1Bucket.getAttributes().get("status"));
+
+        Map<Long, Bucket> t2 = response.getSeries().get(new BucketAttributes(Map.of("name", "t2")));
+        assertEquals(1, t2.size());
+        assertEquals(100, t2.get(0L).getSum());
+        assertEquals("t2", t2.get(0L).getAttributes().get("name"));
+    }
+
+    /**
+     * The level of a scalar aggregation must not depend on the requested resolution: zooming out must not raise the
+     * values. Without an alignment grid, the response bucket [0,2000) would report 20 + 20 = 40, i.e. more than any
+     * of the source buckets it covers.
+     */
+    @Test
+    public void scalarAggregationsAreStableAcrossResolutionsTest() {
+        // One response bucket per source bucket: the alignment grid is the response resolution, no roll-up applies
+        TimeSeriesAggregationResponse perSourceBucket = newTimeSeriesWithSeriesOfDifferentLifetimes(TimeSeriesAggregationConfig.DEFAULT_MAX_ALIGNMENT_INTERVALS)
+            .getAggregationPipeline().collect(avgOverSumQuery().window(RESOLUTION).build());
+        assertEquals(RESOLUTION, perSourceBucket.getAlignmentResolution());
+        assertEquals(30, valueOf(perSourceBucket, "t1", 0));
+        assertEquals(30, valueOf(perSourceBucket, "t1", RESOLUTION));
+        assertEquals(20, valueOf(perSourceBucket, "t1", 2 * RESOLUTION));
+        assertEquals(20, valueOf(perSourceBucket, "t1", 3 * RESOLUTION));
+
+        // Two source buckets per response bucket: the totals of the source buckets are averaged over time
+        TimeSeriesAggregationResponse zoomedOut = newTimeSeriesWithSeriesOfDifferentLifetimes(TimeSeriesAggregationConfig.DEFAULT_MAX_ALIGNMENT_INTERVALS)
+            .getAggregationPipeline().collect(avgOverSumQuery().window(2 * RESOLUTION).build());
+        assertEquals(RESOLUTION, zoomedOut.getAlignmentResolution());
+        assertEquals(2 * RESOLUTION, zoomedOut.getResolution());
+        // (30 + 30) / 2 and (20 + 20) / 2
+        assertEquals(30, valueOf(zoomedOut, "t1", 0));
+        assertEquals(20, valueOf(zoomedOut, "t1", 2 * RESOLUTION));
+    }
+
+    /**
+     * A group-by SUM must not depend on the lifetime of the series it aggregates: series which never coexisted must
+     * not be summed. This is the degenerate case of {@link #scalarAggregationsAreAppliedOnTheAlignmentGridTest()},
+     * where every source bucket holds a different short-lived series.
+     */
+    @Test
+    public void groupBySumIsNotInflatedBySeriesLifetimeTest() {
+        int sourceBuckets = 10;
+        TimeSeries timeSeries = newTimeSeries(RESOLUTION, TimeSeriesAggregationConfig.DEFAULT_MAX_ALIGNMENT_INTERVALS);
+        try (TimeSeriesIngestionPipeline ingestionPipeline = timeSeries.getIngestionPipeline()) {
+            for (int i = 0; i < sourceBuckets; i++) {
+                // One distinct series per source bucket, all of them holding the same value
+                ingestionPipeline.ingestPoint(Map.of("name", "t1", "id", "series-" + i), i * RESOLUTION + 1, 10L);
+            }
+        }
+
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(
+            new TimeSeriesAggregationQueryBuilder()
+                .range(0, sourceBuckets * RESOLUTION)
+                .split(1)
+                .withTimeAggregation(Aggregation.AVG)
+                .groupBy(Set.of("name"), Aggregation.SUM)
+                .build());
+
+        // At any point in time the group holds one single series worth 10. Summing the averages of the 10 series
+        // instead would yield 100
+        assertEquals(10, valueOf(response, "t1", 0));
+    }
+
+    /**
+     * A merging time aggregation doesn't reduce the series to a scalar, so the group aggregation receives the raw
+     * samples whatever the width of the response bucket: no alignment grid is required, and the historical behavior
+     * must be kept untouched.
+     */
+    @Test
+    public void mergingTimeAggregationIgnoresTheAlignmentGridTest() {
+        for (int maxAlignmentIntervals : List.of(1, TimeSeriesAggregationConfig.DEFAULT_MAX_ALIGNMENT_INTERVALS)) {
+            TimeSeriesAggregationResponse response = newTimeSeriesWithSeriesOfDifferentLifetimes(maxAlignmentIntervals)
+                .getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder()
+                    .range(0, 10 * RESOLUTION)
+                    .window(2 * RESOLUTION)
+                    .withTimeAggregation(Aggregation.MERGE)
+                    .groupBy(Set.of("name"), Aggregation.SUM)
+                    .build());
+
+            String message = "maxAlignmentIntervals " + maxAlignmentIntervals;
+            // No alignment grid finer than the response resolution
+            assertEquals(message, 2 * RESOLUTION, response.getAlignmentResolution());
+            // The sum of all the raw samples of the group: 10 + 20 + 30, then 20 + 20
+            assertEquals(message, 60, valueOf(response, "t1", 0));
+            assertEquals(message, 40, valueOf(response, "t1", 2 * RESOLUTION));
+        }
+    }
+
+    /**
+     * The alignment grid drives the memory footprint of the aggregation, so the number of alignment intervals is
+     * bounded. When the budget doesn't allow for a grid finer than the response resolution, the aggregation falls
+     * back to aligning on the response resolution itself.
+     */
+    @Test
+    public void alignmentGridIsBoundedTest() {
+        TimeSeriesAggregationResponse response = newTimeSeriesWithSeriesOfDifferentLifetimes(1)
+            .getAggregationPipeline().collect(avgOverSumQuery().split(1).build());
+
+        assertEquals(10 * RESOLUTION, response.getAlignmentResolution());
+        assertEquals(response.getResolution(), response.getAlignmentResolution());
+        // Both series are reduced over the whole range before being summed: 20 + 20
+        assertEquals(40, valueOf(response, "t1", 0));
+    }
+
+    /**
+     * The alignment resolution must always divide the response resolution, so that an alignment interval never spans
+     * two response buckets.
+     */
+    @Test
+    public void alignmentResolutionDividesTheResponseResolutionTest() {
+        for (int maxAlignmentIntervals : List.of(1, 2, 3, 5, 7, 11, 100, 500)) {
+            for (long window : List.of(RESOLUTION, 2 * RESOLUTION, 5 * RESOLUTION)) {
+                TimeSeriesAggregationResponse response = newTimeSeriesWithSeriesOfDifferentLifetimes(maxAlignmentIntervals)
+                    .getAggregationPipeline().collect(avgOverSumQuery().window(window).build());
+
+                String message = "maxAlignmentIntervals " + maxAlignmentIntervals + ", window " + window;
+                assertEquals(message, 0, response.getResolution() % response.getAlignmentResolution());
+                Assert.assertTrue(message, response.getAlignmentResolution() >= RESOLUTION);
+                Assert.assertTrue(message, response.getAlignmentResolution() <= response.getResolution());
+            }
+        }
     }
 
     /**

@@ -52,6 +52,13 @@ import java.util.function.ToLongFunction;
  *     <li><b>scalar, then scalar</b>: each series is reduced to one value and the group is reduced to one value over
  *     those. A group-by {@link #MIN} is therefore the lowest per-series value, not the lowest raw sample.</li>
  * </ul>
+ * <p>
+ * When both axes are scalar, the two stages are not applied over the whole response bucket but over an alignment
+ * grid which is finer than it, and the values they produce for each alignment interval are then reduced over time by
+ * the time aggregation. Reducing a series over a whole response bucket first would otherwise let a series which only
+ * existed during a fraction of that bucket contribute as if it had existed during the whole of it, which distorts the
+ * group aggregation as soon as the series of a group don't share the same lifetime. See
+ * {@code TimeSeriesAggregationPipeline#calculateAlignmentResolution}.
  *
  * @see BucketBuilder#aggregate(BucketBuilder)
  */

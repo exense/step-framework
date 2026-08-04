@@ -14,6 +14,7 @@ public class TimeSeriesAggregationResponseBuilder {
     private Long end;
     private Map<BucketAttributes, Map<Long, Bucket>> series;
     private long resolution;
+    private long alignmentResolution;
     private long collectionResolution;
     private Set<String> collectionIgnoredAttributes;
     private boolean higherResolutionUsed;
@@ -55,6 +56,15 @@ public class TimeSeriesAggregationResponseBuilder {
         return this;
     }
 
+    public long getAlignmentResolution() {
+        return alignmentResolution;
+    }
+
+    public TimeSeriesAggregationResponseBuilder setAlignmentResolution(long alignmentResolution) {
+        this.alignmentResolution = alignmentResolution;
+        return this;
+    }
+
     public long getCollectionResolution() {
         return collectionResolution;
     }
@@ -90,6 +100,6 @@ public class TimeSeriesAggregationResponseBuilder {
     public TimeSeriesAggregationResponse build() {
         Objects.requireNonNull(start);
         Objects.requireNonNull(end);
-        return new TimeSeriesAggregationResponse(series, start, end, resolution, collectionResolution, collectionIgnoredAttributes, higherResolutionUsed, ttlCovered);
+        return new TimeSeriesAggregationResponse(series, start, end, resolution, alignmentResolution, collectionResolution, collectionIgnoredAttributes, higherResolutionUsed, ttlCovered);
     }
 }

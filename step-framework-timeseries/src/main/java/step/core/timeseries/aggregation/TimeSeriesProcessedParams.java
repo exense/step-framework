@@ -8,6 +8,7 @@ public class TimeSeriesProcessedParams {
     private long from;
     private long to;
     private long resolution;
+    private long alignmentResolution;
     private boolean shrink;
     private Filter filter;
     private Set<String> groupDimensions;
@@ -24,6 +25,14 @@ public class TimeSeriesProcessedParams {
 
     public long getResolution() {
         return resolution;
+    }
+
+    /**
+     * @return the resolution of the grid on which the time aggregation is applied. Always a divisor of
+     * {@link #getResolution()}, and equal to it when no intermediate alignment is required.
+     */
+    public long getAlignmentResolution() {
+        return alignmentResolution;
     }
 
     public Set<String> getGroupDimensions() {
@@ -55,6 +64,11 @@ public class TimeSeriesProcessedParams {
 
     public TimeSeriesProcessedParams setResolution(long resolution) {
         this.resolution = resolution;
+        return this;
+    }
+
+    public TimeSeriesProcessedParams setAlignmentResolution(long alignmentResolution) {
+        this.alignmentResolution = alignmentResolution;
         return this;
     }
 
