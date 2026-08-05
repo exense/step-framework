@@ -344,8 +344,8 @@ public class TimeSeriesAggregationPipeline {
      * maxAlignmentIntervals. When the budget doesn't allow for a grid finer than the response resolution, the
      * alignment falls back to the response resolution and the aggregation behaves as if no alignment took place.
      * <p>
-     * The returned resolution is always a divisor of the response resolution, so that an alignment interval never
-     * spans two response buckets.
+     * The returned resolution is always a divisor of the response resolution and a multiple of the source resolution,
+     * so that an alignment interval neither spans two response buckets nor splits a source bucket.
      *
      * @return the alignment resolution, equal to the response resolution when no intermediate alignment applies
      */
@@ -369,29 +369,35 @@ public class TimeSeriesAggregationPipeline {
             return resultResolution;
         }
         // The response resolution is always a multiple of the source resolution
-        long intervalsPerBucket = resultResolution / sourceResolution;
-        if (intervalsPerBucket <= 1) {
+        long sourceBucketsPerResultBucket = resultResolution / sourceResolution;
+        if (sourceBucketsPerResultBucket <= 1) {
             // The response buckets are already as fine as the source data
             return resultResolution;
         }
-        long resultBuckets = Math.max(1, divideAndRoundUp(rangeDiff, resultResolution));
-        long intervalsBudgetPerBucket = maxAlignmentIntervals / resultBuckets;
-        if (intervalsBudgetPerBucket <= 1) {
-            // The response buckets alone already exhaust the budget
-            return resultResolution;
-        }
-        // Take the finest grid within the budget which still divides the response resolution
-        long factor = smallestDivisorAtLeast(intervalsPerBucket, divideAndRoundUp(intervalsPerBucket, intervalsBudgetPerBucket));
-        return factor * sourceResolution;
+        long resultBucketsInRange = Math.max(1, divideAndRoundUp(rangeDiff, resultResolution));
+        // The budget is defined for the whole range and shared by the response buckets covering it. A budget which
+        // doesn't even afford one interval per response bucket leaves the response buckets unsplit
+        long maxIntervalsPerResultBucket = Math.max(1, maxAlignmentIntervals / resultBucketsInRange);
+        // Split each response bucket into as many alignment intervals as the budget affords. Their number has to
+        // divide the number of source buckets the response bucket covers, so that an alignment interval neither
+        // spans two response buckets nor splits a source bucket. Falling back to one single interval per response
+        // bucket, i.e. to no alignment at all, is always possible
+        long alignmentIntervalsPerResultBucket = largestDivisorAtMost(sourceBucketsPerResultBucket, maxIntervalsPerResultBucket);
+        return resultResolution / alignmentIntervalsPerResultBucket;
     }
 
-    private static long smallestDivisorAtLeast(long value, long minDivisor) {
-        for (long divisor = Math.max(1, minDivisor); divisor < value; divisor++) {
+    /**
+     * @return the largest divisor of the given value which is not greater than the given bound, 1 if the value has no
+     * other divisor within the bound. The bound being the number of alignment intervals one response bucket may be
+     * split into, the number of iterations is bounded by the configured budget, and not by the queried range.
+     */
+    private static long largestDivisorAtMost(long value, long maxDivisor) {
+        for (long divisor = Math.min(value, maxDivisor); divisor > 1; divisor--) {
             if (value % divisor == 0) {
                 return divisor;
             }
         }
-        return value;
+        return 1;
     }
 
     private static long divideAndRoundUp(long value, long divisor) {
