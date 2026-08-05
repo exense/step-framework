@@ -152,12 +152,13 @@ public class TimeSeriesSampledAverageAggregationTest extends TimeSeriesBaseTest 
     }
 
     /**
-     * A response bucket may be finer than the sampling interval, in which case it holds at most one sample and
+     * A response bucket may be finer than the sampling interval, in which case it covers less than one sample and
      * dividing by the number of samples it is expected to hold would multiply the value. The samples are then
-     * averaged over their own number, i.e. the sampled average degrades to the plain average.
+     * averaged over their own number instead, i.e. a bucket holding one sample reports that sample, and the buckets
+     * falling between two samples hold no value at all rather than a zero.
      */
     @Test
-    public void sampledAverageDegradesToThePlainAverageOnFineBucketsTest() {
+    public void bucketsFinerThanTheSamplingIntervalReportTheSampleTest() {
         TimeSeries timeSeries = newTimeSeries();
         try (TimeSeriesIngestionPipeline pipeline = timeSeries.getIngestionPipeline()) {
             ingestSampledSeries(pipeline, Map.of("name", "tokens"), 0, 4, 10);
@@ -173,8 +174,14 @@ public class TimeSeriesSampledAverageAggregationTest extends TimeSeriesBaseTest 
             .build());
 
         Map<Long, Bucket> series = response.getFirstSeries();
+        // Only the 4 buckets holding a sample are part of the response, the 8 others are simply absent
         assertEquals(4, series.size());
-        series.forEach((begin, bucket) -> assertEquals("Bucket " + begin, 10, ((ScalarBucket) bucket).getValue()));
+        series.forEach((begin, bucket) -> {
+            assertEquals("Bucket " + begin, 10, ((ScalarBucket) bucket).getValue());
+            assertEquals("Bucket " + begin, 1, bucket.getCount());
+            assertEquals("Bucket " + begin, 10, bucket.getSum());
+        });
+        Set.of(0L, 15_000L, 30_000L, 45_000L).forEach(begin -> assertTrue("Bucket " + begin, series.containsKey(begin)));
     }
 
     /**

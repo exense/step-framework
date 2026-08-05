@@ -269,8 +269,8 @@ public class BucketBuilder {
      * didn't exist at that time.
      * <p>
      * The window of this builder may cover less than one sampling interval, or hold more samples than expected. The
-     * samples are then averaged over their own number, i.e. this aggregation degrades to {@link #getAverageAsDouble()}
-     * rather than extrapolating.
+     * samples are then averaged over their own number, i.e. over the greater of the two counts, so that the value of
+     * a window narrower than one sampling interval is the sample it holds and never an extrapolation of it.
      *
      * @return the average of the samples accumulated so far over the expected number of samples, 0 if this builder is
      * empty
