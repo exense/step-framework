@@ -15,6 +15,12 @@ public class MetricType extends AbstractIdentifiableObject {
     private String description;
     @NotNull
     private String instrumentType;
+    /**
+     * Defaults to {@link MetricSamplingMode#EVENT_DRIVEN} so that metric types persisted before this field was
+     * introduced keep their historical semantics.
+     */
+    @NotNull
+    private MetricSamplingMode samplingMode = MetricSamplingMode.EVENT_DRIVEN;
     @NotNull
     private List<MetricAttribute> attributes = new ArrayList<>();
     private String unit;
@@ -63,6 +69,15 @@ public class MetricType extends AbstractIdentifiableObject {
 
     public MetricType setUnit(String unit) {
         this.unit = unit;
+        return this;
+    }
+
+    public MetricSamplingMode getSamplingMode() {
+        return samplingMode;
+    }
+
+    public MetricType setSamplingMode(MetricSamplingMode samplingMode) {
+        this.samplingMode = samplingMode;
         return this;
     }
 

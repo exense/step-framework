@@ -1,7 +1,10 @@
 package step.core.timeseries;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
+import step.core.accessors.DefaultJacksonMapperProvider;
 import step.core.timeseries.bucket.Aggregation;
 import step.core.timeseries.metric.*;
 
@@ -71,7 +74,38 @@ public class MetricTypeTest {
         Assert.assertEquals("metadataValue", attributes.get(0).getMetadata().get("metadataKey"));
         Assert.assertEquals(grouping, metric.getDefaultGroupingAttributes());
         Assert.assertEquals(seriesColors, metric.getRenderingSettings().getSeriesColors());
+        // Metrics are event driven unless explicitly declared as sampled
+        Assert.assertEquals(MetricSamplingMode.EVENT_DRIVEN, metric.getSamplingMode());
+        Assert.assertEquals(MetricSamplingMode.SAMPLED,
+            metric.setSamplingMode(MetricSamplingMode.SAMPLED).getSamplingMode());
+    }
 
+    /**
+     * Metric types persisted before the introduction of {@link MetricSamplingMode} must keep the historical
+     * behaviour, i.e. be deserialized as {@link MetricSamplingMode#EVENT_DRIVEN}.
+     */
+    @Test
+    public void testSamplingModeDefaultOnLegacyDocument() throws JsonProcessingException {
+        String legacyDocument = "{\"name\":\"metricName\",\"displayName\":\"metricLabel\",\"instrumentType\":\"gauge\"," +
+            "\"unit\":\"1\",\"attributes\":[],\"defaultGroupingAttributes\":[],\"renderingSettings\":{}}";
+
+        MetricType metric = DefaultJacksonMapperProvider.getObjectMapper().readValue(legacyDocument, MetricType.class);
+
+        Assert.assertEquals(MetricSamplingMode.EVENT_DRIVEN, metric.getSamplingMode());
+    }
+
+    @Test
+    public void testSamplingModeSerialization() throws JsonProcessingException {
+        ObjectMapper objectMapper = DefaultJacksonMapperProvider.getObjectMapper();
+        MetricType metric = new MetricType()
+            .setName("metricName")
+            .setDisplayName("metricLabel")
+            .setInstrumentType("gauge")
+            .setSamplingMode(MetricSamplingMode.SAMPLED);
+
+        MetricType deserialized = objectMapper.readValue(objectMapper.writeValueAsString(metric), MetricType.class);
+
+        Assert.assertEquals(MetricSamplingMode.SAMPLED, deserialized.getSamplingMode());
     }
 
     @Test
