@@ -19,7 +19,7 @@
 
 package step.core.timeseries.bucket;
 
-import java.util.function.ToLongFunction;
+import java.util.function.ToDoubleFunction;
 
 /**
  * Defines how a set of {@link Bucket}s is reduced into a single one. The same set of aggregations is applicable to
@@ -66,12 +66,36 @@ public enum Aggregation {
     /**
      * Average of the samples of the aggregate, i.e. their sum divided by their number.
      */
-    AVG(BucketBuilder::getAverage),
+    AVG(BucketBuilder::getAverageAsDouble),
+
+    /**
+     * Average of the samples of the aggregate over the number of samples the time window is expected to hold, i.e.
+     * their sum divided by the number of sampling intervals the window covers. Only meaningful as a <b>time</b>
+     * aggregation, and only for a metric sampled at a fixed interval, i.e. one whose sampling mode is
+     * {@code MetricSamplingMode.SAMPLED}.
+     * <p>
+     * {@link #AVG} averages a series over the samples it happens to hold, i.e. over its own lifetime. A series which
+     * only existed during a tenth of the window therefore contributes the same value as one which existed during the
+     * whole of it, and a group-by {@link #SUM} over series which never coexisted adds up values that were never
+     * simultaneously true. This aggregation instead averages over the whole window, counting the sampling intervals
+     * holding no sample as zero, which is what their absence means for a sampled series: the series didn't exist at
+     * that time. The resulting value is the contribution of the series to the window, and summing the contributions
+     * of the series of a group is therefore meaningful again.
+     * <p>
+     * This is however only correct where a missing sample really means zero. For an event-driven metric such as a
+     * response time, a window holding no measurement means that nothing was measured, not that the response time was
+     * zero, and {@link #AVG} remains the right aggregation.
+     * <p>
+     * Requires the sampling interval to be provided, see
+     * {@link BucketBuilder#withSamplingInterval(long)}. Degrades to {@link #AVG} on windows covering less than one
+     * sampling interval, i.e. on response resolutions finer than the sampling interval.
+     */
+    SAMPLED_AVG(BucketBuilder::getSampledAverage),
 
     /**
      * Sum of the samples of the aggregate.
      */
-    SUM(BucketBuilder::getSum),
+    SUM(BucketBuilder::getSumAsDouble),
 
     /**
      * Number of samples of the aggregate. Beware that a series reduced by a scalar time aggregation contributes one
@@ -82,16 +106,16 @@ public enum Aggregation {
     /**
      * Lowest sample of the aggregate.
      */
-    MIN(BucketBuilder::getMin),
+    MIN(BucketBuilder::getMinAsDouble),
 
     /**
      * Highest sample of the aggregate.
      */
-    MAX(BucketBuilder::getMax);
+    MAX(BucketBuilder::getMaxAsDouble);
 
-    private final ToLongFunction<BucketBuilder> valueFunction;
+    private final ToDoubleFunction<BucketBuilder> valueFunction;
 
-    Aggregation(ToLongFunction<BucketBuilder> valueFunction) {
+    Aggregation(ToDoubleFunction<BucketBuilder> valueFunction) {
         this.valueFunction = valueFunction;
     }
 
@@ -113,13 +137,13 @@ public enum Aggregation {
      * Reduces the samples accumulated by the given builder to the scalar defined by this aggregation.
      *
      * @param builder the builder holding the samples to reduce
-     * @return the scalar the given builder amounts to
+     * @return the scalar the given builder amounts to, not necessarily an integer
      * @throws UnsupportedOperationException if this aggregation is not a scalar one
      */
-    public long getValue(BucketBuilder builder) {
+    public double getValue(BucketBuilder builder) {
         if (isMerge()) {
             throw new UnsupportedOperationException(name() + " merges its inputs and doesn't reduce them to a scalar");
         }
-        return valueFunction.applyAsLong(builder);
+        return valueFunction.applyAsDouble(builder);
     }
 }

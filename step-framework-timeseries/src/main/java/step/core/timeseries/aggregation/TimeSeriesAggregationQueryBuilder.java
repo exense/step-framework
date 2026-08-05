@@ -15,6 +15,7 @@ public class TimeSeriesAggregationQueryBuilder {
     private Set<String> groupDimensions = new HashSet<>();
     private Aggregation groupAggregation = Aggregation.MERGE;
     private Aggregation timeAggregation = Aggregation.MERGE;
+    private long samplingIntervalMs;
     private Filter filter = Filters.empty();
     private Long from;
     private Long to;
@@ -56,6 +57,17 @@ public class TimeSeriesAggregationQueryBuilder {
      */
     public TimeSeriesAggregationQueryBuilder withTimeAggregation(Aggregation timeAggregation) {
         this.timeAggregation = timeAggregation;
+        return this;
+    }
+
+    /**
+     * Defines the interval at which the queried series are sampled. Required by {@link Aggregation#SAMPLED_AVG},
+     * ignored by all the other aggregations.
+     *
+     * @param samplingIntervalMs the sampling interval in ms
+     */
+    public TimeSeriesAggregationQueryBuilder withSamplingInterval(long samplingIntervalMs) {
+        this.samplingIntervalMs = samplingIntervalMs;
         return this;
     }
 
@@ -115,7 +127,7 @@ public class TimeSeriesAggregationQueryBuilder {
      */
     public TimeSeriesAggregationQuery build() {
         this.from = this.from != null ? this.from : 0;
-        return new TimeSeriesAggregationQuery(filter, optimizationType, groupDimensions, groupAggregation, timeAggregation, this.proposedResolution, this.from, this.to, shrink, this.bucketsCount, collectAttributeKeys, collectAttributesValuesLimit);
+        return new TimeSeriesAggregationQuery(filter, optimizationType, groupDimensions, groupAggregation, timeAggregation, samplingIntervalMs, this.proposedResolution, this.from, this.to, shrink, this.bucketsCount, collectAttributeKeys, collectAttributesValuesLimit);
     }
 
 

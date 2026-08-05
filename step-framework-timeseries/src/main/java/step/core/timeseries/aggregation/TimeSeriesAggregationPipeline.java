@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.timeseries.TimeSeriesCollection;
 import step.core.timeseries.TimeSeriesUtils;
+import step.core.timeseries.bucket.Aggregation;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
@@ -162,7 +163,11 @@ public class TimeSeriesAggregationPipeline {
                 Map<BucketAttributes, BucketBuilder> indexSeriesBuckets = timeSlice.computeIfAbsent(groupAttributes, a -> new HashMap<>());
                 // Get the builder for the attributes of the current bucket. The full attributes of the series are kept
                 // at this stage, so that the attribute collection can be performed on them during the group-by aggregation
-                BucketBuilder bucketBuilder = indexSeriesBuckets.computeIfAbsent(bucketAttributes, a -> new BucketBuilder(query.getTimeAggregation(), timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams)).withAttributes(bucketAttributes));
+                BucketBuilder bucketBuilder = indexSeriesBuckets.computeIfAbsent(bucketAttributes, a -> new BucketBuilder(query.getTimeAggregation(), timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams))
+                    .withAttributes(bucketAttributes)
+                    // Required by the time aggregations reducing a series over the time window it is expected to
+                    // cover, and not over the samples it happens to hold
+                    .withSamplingInterval(finalParams.getSamplingIntervalMs()));
                 // Merge the current source bucket into the builder. The configured time-window aggregation is
                 // applied when the builder is reduced, at the group-by stage
                 bucketBuilder.merge(bucket);
@@ -262,6 +267,7 @@ public class TimeSeriesAggregationPipeline {
             .setGroupDimensions(query.getGroupDimensions())
             .setFilter(query.getFilter())
             .setShrink(query.isShrink())
+            .setSamplingIntervalMs(query.getSamplingIntervalMs())
             .setCollectAttributeKeys(query.getCollectAttributeKeys())
             .setCollectAttributesValuesLimit(query.getCollectAttributesValuesLimit());
     }
@@ -287,6 +293,15 @@ public class TimeSeriesAggregationPipeline {
     }
 
     private void validateQuery(TimeSeriesAggregationQuery query) {
+        if (query.getGroupAggregation() == Aggregation.SAMPLED_AVG) {
+            // The group aggregation reduces the series of a group, not a time window, and dividing their values by
+            // the number of samples the window is expected to hold would be meaningless
+            throw new IllegalArgumentException(Aggregation.SAMPLED_AVG + " is only supported as a time aggregation");
+        }
+        if (query.getTimeAggregation() == Aggregation.SAMPLED_AVG && query.getSamplingIntervalMs() <= 0) {
+            // Falling back to AVG would silently return the values SAMPLED_AVG exists to correct
+            throw new IllegalArgumentException(Aggregation.SAMPLED_AVG + " requires the sampling interval of the queried series to be specified");
+        }
         if (query.getBucketsCount() != null) {
             if (query.getFrom() == null || query.getTo() == null) {
                 throw new IllegalArgumentException("While splitting, from and to params must be set");

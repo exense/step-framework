@@ -20,6 +20,9 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
     // Aggregation applied across the successive buckets of one series falling into the same time window
     private Aggregation timeAggregation;
 
+    // Interval in ms at which the queried series are sampled, required by Aggregation.SAMPLED_AVG
+    private long samplingIntervalMs;
+
     // Ideal number of buckets the interval will be split into
     @Nullable
     private Integer bucketsCount;
@@ -40,6 +43,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         Set<String> groupDimensions,
         Aggregation groupAggregation,
         Aggregation timeAggregation,
+        long samplingIntervalMs,
         Long bucketsResolution,
         Long from,
         Long to,
@@ -47,6 +51,7 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
         Integer bucketsCount,
         Set<String> collectAttributeKeys, int collectAttributesValuesLimit) {
         super(from, to, filter);
+        this.samplingIntervalMs = samplingIntervalMs;
         this.shrink = shrink;
         this.optimizationType = optimizationType;
         this.bucketsCount = bucketsCount;
@@ -68,6 +73,13 @@ public class TimeSeriesAggregationQuery extends TimeSeriesQuery {
 
     public Aggregation getTimeAggregation() {
         return timeAggregation;
+    }
+
+    /**
+     * @return the interval in ms at which the queried series are sampled, 0 if unknown
+     */
+    public long getSamplingIntervalMs() {
+        return samplingIntervalMs;
     }
 
     public Filter getFilter() {
