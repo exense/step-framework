@@ -301,6 +301,20 @@ public class TimeSeriesGroupByAggregationTest extends TimeSeriesBaseTest {
     }
 
     /**
+     * The grid is searched among the alignment intervals a response bucket may be split into, which is bounded by the
+     * configured budget. The search must therefore not depend on the queried range: a response bucket covering a
+     * billion source buckets and whose count of source buckets has no divisor within the budget must be resolved as
+     * fast as any other one.
+     */
+    @Test(timeout = 5_000)
+    public void alignmentResolutionIsResolvedInBoundedTimeTest() {
+        // A prime number of source buckets per response bucket: no grid but the response resolution itself divides it
+        assertEquals(1_000_000_007L, alignmentResolution(1, 1_000_000_007L, 1_000_000_007L, 500));
+        // A billion source buckets per response bucket, split into the 500 intervals the budget affords
+        assertEquals(2_000_000L, alignmentResolution(1, 1_000_000_000L, 1_000_000_000L, 500));
+    }
+
+    /**
      * Whatever the query, the alignment grid must be usable by the pipeline and must respect its budget:
      * <ul>
      *     <li>it is not finer than the stored data and not coarser than a response bucket</li>
