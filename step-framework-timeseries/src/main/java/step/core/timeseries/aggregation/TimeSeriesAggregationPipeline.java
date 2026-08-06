@@ -10,6 +10,7 @@ import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -236,30 +237,28 @@ public class TimeSeriesAggregationPipeline {
         }
         // if 'to' parameter is not specified, we take the current time.
         long toParameter = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
-        long resultResolution = sourceResolution;
 
-        // The boundaries of the response range and its resolution are all multiples of this granularity, which is the
-        // source resolution unless the aggregations require a coarser grid
-        long resolutionGranularity = getResolutionGranularity(query, sourceResolution);
-        long resultFrom = roundDownToMultiple(query.getFrom(), resolutionGranularity);
-        long resultTo = roundUpToMultiple(toParameter, resolutionGranularity);
+        long baseResolution = getBaseResolution(query, sourceResolution);
+        long resultFrom = roundDownToMultiple(query.getFrom(), baseResolution);
+        long resultTo = roundUpToMultiple(toParameter, baseResolution);
         long rangeDiff = resultTo - resultFrom;
 
+        long resultResolution;
         if (query.isShrink()) { // we expand the interval to the closest completed resolutions
             // The single response bucket spans the whole range, which is a multiple of the granularity by construction
             resultResolution = rangeDiff;
         } else {
             Integer bucketsCount = query.getBucketsCount();
             if (bucketsCount != null && bucketsCount > 0) {
-                resultResolution = getResolutionBasedOnBucketsCount(resolutionGranularity, rangeDiff, bucketsCount);
+                resultResolution = getResolutionBasedOnBucketsCount(baseResolution, rangeDiff, bucketsCount);
             } else {
                 Long proposedResolution = query.getBucketsResolution();
                 if (proposedResolution != null && proposedResolution != 0) {
-                    resultResolution = Math.max(resolutionGranularity, roundDownToMultiple(proposedResolution, resolutionGranularity));
+                    resultResolution = Math.max(baseResolution, roundDownToMultiple(proposedResolution, baseResolution));
                     rangeDiff = roundUpToMultiple(rangeDiff, resultResolution);
                     resultTo = resultFrom + rangeDiff;
                 } else { // no resolution settings specified
-                    resultResolution = getResolutionBasedOnBucketsCount(resolutionGranularity, rangeDiff, idealResponseIntervals);
+                    resultResolution = getResolutionBasedOnBucketsCount(baseResolution, rangeDiff, idealResponseIntervals);
                 }
             }
         }
@@ -276,42 +275,41 @@ public class TimeSeriesAggregationPipeline {
     }
 
     /**
-     * The response buckets are built out of whole source buckets, hence the response resolution is always a multiple
-     * of the source resolution. {@link Aggregation#SAMPLED_AVG} additionally requires it to be a multiple of the
-     * sampling interval: it reduces a series over the number of samples its window is expected to hold, and a window
-     * which isn't a whole number of sampling intervals doesn't have one. A window of 35 seconds over a sampling
-     * interval of 15 seconds holds 2 or 3 samples depending on where the sampling instants fall, and no divisor
-     * reduces both of them to the value of the series.
-     * <p>
-     * The boundaries of the response range are rounded to this granularity too, so that the range is a whole number
-     * of response buckets whatever the requested resolution, the shrunk responses reducing it to one single bucket
-     * included.
+     * Return the base resolution to be used by the aggregation pipeline to determine the actual query time range (extends to) and the result solution which must be a multiple of that base resolution
+     * It is either the source resolution itself or for {@link Aggregation#SAMPLED_AVG} the least common multiple between source resolution and sampling interval.
      *
-     * @return the granularity the response resolution and range have to be multiples of
+     * @return the base resolution to be used by the aggregation pipeline.
      */
-    private static long getResolutionGranularity(TimeSeriesAggregationQuery query, long sourceResolution) {
+    private static long getBaseResolution(TimeSeriesAggregationQuery query, long sourceResolution) {
         if (query.getTimeAggregation() != Aggregation.SAMPLED_AVG) {
             return sourceResolution;
         }
         return leastCommonMultiple(sourceResolution, query.getSamplingIntervalMs());
     }
 
-    private static long leastCommonMultiple(long value, long otherValue) {
-        return value / greatestCommonDivisor(value, otherValue) * otherValue;
+
+    /**
+     * @return the smallest value both given values divide, 0 if either of them is 0
+     */
+    static long leastCommonMultiple(long number1, long number2) {
+        if (number1 == 0 || number2 == 0) {
+            return 0;
+        }
+        BigInteger bigInteger1 = BigInteger.valueOf(number1);
+        BigInteger bigInteger2 = BigInteger.valueOf(number2);
+        BigInteger gcd = bigInteger1.gcd(bigInteger2);
+        BigInteger absProduct = bigInteger1.multiply(bigInteger2).abs();
+        return absProduct.divide(gcd).longValue();
     }
 
-    private static long greatestCommonDivisor(long value, long otherValue) {
-        return otherValue == 0 ? value : greatestCommonDivisor(otherValue, value % otherValue);
-    }
-
-    private static long getResolutionBasedOnBucketsCount(long resolutionUnit, long rangeDiff, Integer bucketsCount) {
+    private static long getResolutionBasedOnBucketsCount(long baseResolution, long rangeDiff, Integer bucketsCount) {
         long resultResolution;
-        if (rangeDiff / resolutionUnit <= bucketsCount) { // not enough buckets
-            resultResolution = resolutionUnit;
+        if (rangeDiff / baseResolution <= bucketsCount) { // not enough buckets
+            resultResolution = baseResolution;
         } else {
             resultResolution = Math.round(rangeDiff / (double) bucketsCount);
-            // there are situation when resultResolution/resolutionUnit is below 0.5, and that would end up rounded in 0.
-            resultResolution = Math.max(Math.round((double) resultResolution / resolutionUnit), 1) * resolutionUnit; // round to nearest multiple, up or down
+            // there are situation when resultResolution/baseResolution is below 0.5, and that would end up rounded in 0.
+            resultResolution = Math.max(Math.round((double) resultResolution / baseResolution), 1) * baseResolution; // round to nearest multiple, up or down
         }
         return resultResolution;
     }
@@ -331,7 +329,6 @@ public class TimeSeriesAggregationPipeline {
             throw new IllegalArgumentException(Aggregation.SAMPLED_AVG + " is only supported as a time aggregation");
         }
         if (query.getTimeAggregation() == Aggregation.SAMPLED_AVG && query.getSamplingIntervalMs() <= 0) {
-            // Falling back to AVG would silently return the values SAMPLED_AVG exists to correct
             throw new IllegalArgumentException(Aggregation.SAMPLED_AVG + " requires the sampling interval of the queried series to be specified");
         }
         if (query.getBucketsCount() != null) {

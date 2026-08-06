@@ -76,8 +76,7 @@ public enum Aggregation {
      * <p>
      * {@link #AVG} averages a series over the samples it happens to hold, i.e. over its own lifetime. A series which
      * only existed during a tenth of the window therefore contributes the same value as one which existed during the
-     * whole of it, and a group-by {@link #SUM} over series which never coexisted adds up values that were never
-     * simultaneously true. This aggregation instead averages over the whole window, counting the sampling intervals
+     * whole of it. This aggregation instead averages over the whole window, counting the sampling intervals
      * holding no sample as zero, which is what their absence means for a sampled series: the series didn't exist at
      * that time. The resulting value is the contribution of the series to the window, and summing the contributions
      * of the series of a group is therefore meaningful again.

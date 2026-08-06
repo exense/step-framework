@@ -39,8 +39,15 @@ public class TimeSeriesSampledAverageAggregationTest extends TimeSeriesBaseTest 
      * Ingests one series sampled at the sampling interval, starting at the given timestamp.
      */
     private void ingestSampledSeries(TimeSeriesIngestionPipeline pipeline, Map<String, Object> attributes, long from, int sampleCount, long value) {
+        ingestSampledSeries(pipeline, attributes, from, sampleCount, value, SAMPLING_INTERVAL);
+    }
+
+    /**
+     * Ingests one series sampled at the given interval, starting at the given timestamp.
+     */
+    private void ingestSampledSeries(TimeSeriesIngestionPipeline pipeline, Map<String, Object> attributes, long from, int sampleCount, long value, long samplingInterval) {
         for (int i = 0; i < sampleCount; i++) {
-            pipeline.ingestPoint(attributes, from + i * SAMPLING_INTERVAL, value);
+            pipeline.ingestPoint(attributes, from + i * samplingInterval, value);
         }
     }
 
@@ -104,8 +111,8 @@ public class TimeSeriesSampledAverageAggregationTest extends TimeSeriesBaseTest 
     }
 
     /**
-     * The point of the sampled average: a group-by SUM over series which never coexisted must not add up values which
-     * were never simultaneously true. Four agents of 40 tokens, each connected during one quarter of the hour, amount
+     * The point of the sampled average: series that only exist for a part of the time range should only account for the time they existed.
+     * Four agents of 40 tokens, each connected during one quarter of the hour, amount
      * to 40 tokens over the hour and not to 160.
      */
     @Test
@@ -151,14 +158,8 @@ public class TimeSeriesSampledAverageAggregationTest extends TimeSeriesBaseTest 
             .build()));
     }
 
-    /**
-     * A requested resolution is not necessarily a multiple of the sampling interval: the resolutions are derived from
-     * the requested range and rounded to the source resolution, which yields for instance windows of 35 seconds over
-     * a sampling interval of 15 seconds. Such a window holds 2 or 3 samples depending on where the sampling instants
-     * fall and is therefore not reducible, hence the response resolution is rounded to a multiple of the sampling
-     * interval. A series existing during the whole range then reads the same value in all the windows, and not the
-     * value its 3 and then its 2 samples amount to.
-     */
+
+
     @Test
     public void responseResolutionIsAlignedOnTheSamplingIntervalTest() {
         // A whole number of 30 seconds windows, so that the last one isn't a partially covered one
@@ -264,6 +265,75 @@ public class TimeSeriesSampledAverageAggregationTest extends TimeSeriesBaseTest 
             assertEquals("Bucket " + begin, 10, bucket.getSum());
         });
         Set.of(0L, 15_000L, 30_000L, 45_000L).forEach(begin -> assertTrue("Bucket " + begin, series.containsKey(begin)));
+    }
+
+    /**
+     * The sampling interval doesn't necessarily divide the source resolution, nor the other way around, in which case
+     * the response resolution has to be a multiple of both: samples every 6 seconds ingested at a resolution of 4
+     * seconds are reducible on windows of 12 seconds.
+     */
+    @Test
+    public void responseResolutionIsAMultipleOfBothTheSourceResolutionAndTheSamplingIntervalTest() {
+        long sourceResolution = 4_000;
+        long samplingInterval = 6_000;
+        long range = 120_000;
+        TimeSeries timeSeries = getNewTimeSeries(sourceResolution);
+        try (TimeSeriesIngestionPipeline pipeline = timeSeries.getIngestionPipeline()) {
+            ingestSampledSeries(pipeline, Map.of("name", "tokens"), 0, (int) (range / samplingInterval), 10, samplingInterval);
+        }
+
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder()
+            .range(0, range)
+            // Neither a multiple of the sampling interval nor coarser than it
+            .window(sourceResolution)
+            .withSamplingInterval(samplingInterval)
+            .withTimeAggregation(Aggregation.SAMPLED_AVG)
+            .groupBy(Set.of("name"), Aggregation.SUM)
+            .build());
+
+        assertEquals(12_000, response.getResolution());
+        Map<Long, Bucket> series = response.getFirstSeries();
+        // Each window holds the 2 samples it expects
+        assertEquals(range / 12_000, series.size());
+        series.forEach((begin, bucket) -> assertEquals("Bucket " + begin, 10, ((ScalarBucket) bucket).getValue()));
+    }
+
+    /**
+     * A long range is resolved on a collection coarser than the sampling interval, whose buckets already hold several
+     * samples each. The samples are counted the same way, a source bucket contributing the samples it merged and not
+     * one single value.
+     */
+    @Test
+    public void sampledAverageOnASourceResolutionCoarserThanTheSamplingIntervalTest() {
+        long sourceResolution = 60_000;
+        TimeSeries timeSeries = getNewTimeSeries(sourceResolution);
+        try (TimeSeriesIngestionPipeline pipeline = timeSeries.getIngestionPipeline()) {
+            // One series over the whole hour, one over its first half only
+            ingestSampledSeries(pipeline, Map.of("name", "tokens", "agent", "agent0"), 0, (int) EXPECTED_SAMPLES_PER_HOUR, 10);
+            ingestSampledSeries(pipeline, Map.of("name", "tokens", "agent", "agent1"), 0, (int) EXPECTED_SAMPLES_PER_HOUR / 2, 10);
+        }
+
+        // Each window of one minute expects the 4 samples its single source bucket merged
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder()
+            .range(0, ONE_HOUR)
+            .window(sourceResolution)
+            .withSamplingInterval(SAMPLING_INTERVAL)
+            .withTimeAggregation(Aggregation.SAMPLED_AVG)
+            .groupBy(Set.of("name"), Aggregation.SUM)
+            .build());
+
+        assertEquals(sourceResolution, response.getResolution());
+        Map<Long, Bucket> series = response.getFirstSeries();
+        assertEquals(ONE_HOUR / sourceResolution, series.size());
+        series.forEach((begin, bucket) ->
+            // Both series during the first half of the hour, only the first one during its second half
+            assertEquals("Bucket " + begin, begin < ONE_HOUR / 2 ? 20 : 10, ((ScalarBucket) bucket).getValue()));
+
+        // Over the whole hour the second series only contributes the half of it it existed in
+        assertEquals(15, collectSingleValue(timeSeries, oneHourQuery()
+            .withTimeAggregation(Aggregation.SAMPLED_AVG)
+            .groupBy(Set.of("name"), Aggregation.SUM)
+            .build()));
     }
 
     /**

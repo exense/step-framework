@@ -278,18 +278,10 @@ public class BucketBuilder {
     }
 
     /**
-     * A series existing during the whole window holds one sample per sampling interval the window covers, which is
-     * the number of samples this builder is expected to hold. A window which isn't a whole number of sampling
-     * intervals doesn't have such a number: it holds one sample more or less depending on where the sampling instants
-     * fall, and no divisor reduces both of these counts to the value of the series. The samples are then averaged
-     * over their own number, i.e. the sampled average amounts to the plain one.
-     * <p>
-     * The aggregation pipeline resolves the response resolution to a common multiple of the sampling interval and of
-     * the source resolution, which is a whole number of sampling intervals whether the two divide each other or not.
-     * This therefore only applies to a builder used outside of the pipeline, or built without a window.
+     * Calculate the number of expected samples for this the bucket being built. The calculation is based on the bucket builder interval
+     * (begin to end) and the sampling interval.
      *
-     * @return the number of samples the window of this builder is expected to hold, the number of samples it actually
-     * holds if its window isn't a whole number of sampling intervals
+     * @return the number of samples the window of this builder is expected to hold
      */
     private long getExpectedSampleCount() {
         if (end == null || samplingIntervalMs <= 0 || (end - begin) % samplingIntervalMs != 0) {
