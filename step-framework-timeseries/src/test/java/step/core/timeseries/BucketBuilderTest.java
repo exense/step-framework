@@ -3,6 +3,7 @@ package step.core.timeseries;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import step.core.timeseries.bucket.Aggregation;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
@@ -70,5 +71,42 @@ public class BucketBuilderTest {
         assertEquals(5L, bucket.getMax());
         assertEquals(2, ((Set) bucket.getAttributes().get("key")).size());
         assertTrue(((Set) bucket.getAttributes().get("key")).containsAll(List.of("value1", "value2")));
+    }
+
+    /**
+     * The samples are averaged over the number of sampling intervals the window covers, the intervals holding no
+     * sample counting as zero.
+     */
+    @Test
+    public void sampledAverage() {
+        BucketBuilder builder = new BucketBuilder(Aggregation.SAMPLED_AVG, 0L, 60_000L).withSamplingInterval(15_000L);
+        // 2 samples of 10 out of the 4 the window expects
+        builder.ingest(10L).ingest(10L);
+        assertEquals(5, builder.getScalarValue(), 0);
+        assertEquals(10, builder.getAverageAsDouble(), 0);
+    }
+
+    /**
+     * A window which isn't a whole number of sampling intervals expects no defined number of samples, the sampled
+     * average then amounts to the plain one. The same applies to a builder without window.
+     */
+    @Test
+    public void sampledAverageOfAWindowWhichIsNotAWholeNumberOfSamplingIntervals() {
+        BucketBuilder builder = new BucketBuilder(Aggregation.SAMPLED_AVG, 0L, 35_000L).withSamplingInterval(15_000L);
+        builder.ingest(10L).ingest(10L);
+        assertEquals(10, builder.getScalarValue(), 0);
+
+        BucketBuilder builderWithoutWindow = new BucketBuilder(Aggregation.SAMPLED_AVG, 0L).withSamplingInterval(15_000L);
+        builderWithoutWindow.ingest(10L).ingest(10L);
+        assertEquals(10, builderWithoutWindow.getScalarValue(), 0);
+    }
+
+    /**
+     * An empty builder has no sample to average.
+     */
+    @Test
+    public void sampledAverageOfAnEmptyBuilder() {
+        BucketBuilder builder = new BucketBuilder(Aggregation.SAMPLED_AVG, 0L, 60_000L).withSamplingInterval(15_000L);
+        assertEquals(0, builder.getScalarValue(), 0);
     }
 }

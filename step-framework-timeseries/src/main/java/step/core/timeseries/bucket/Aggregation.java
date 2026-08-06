@@ -86,10 +86,10 @@ public enum Aggregation {
      * response time, a window holding no measurement means that nothing was measured, not that the response time was
      * zero, and {@link #AVG} remains the right aggregation.
      * <p>
-     * Requires the sampling interval to be provided, see {@link BucketBuilder#withSamplingInterval(long)}. A window
-     * finer than the sampling interval covers less than one sample and its value is therefore the sample itself: the
-     * samples are never extrapolated. The windows falling between two samples hold no value at all, and are absent
-     * from the response rather than reported as zero.
+     * Requires the sampling interval to be provided, see {@link BucketBuilder#withSamplingInterval(long)}. The
+     * response resolution is aligned on it, so that every window is a whole number of sampling intervals and a series
+     * existing during the whole window reads its plain {@link #AVG}, whatever the requested resolution. The windows
+     * holding no sample at all are absent from the response rather than reported as zero.
      */
     SAMPLED_AVG(BucketBuilder::getSampledAverage),
 

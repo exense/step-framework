@@ -268,31 +268,34 @@ public class BucketBuilder {
      * count as zero, which is what their absence means for a series sampled at a fixed interval: the series simply
      * didn't exist at that time.
      * <p>
-     * The window of this builder may cover less than one sampling interval, or hold more samples than expected. The
-     * samples are then averaged over their own number, i.e. over the greater of the two counts, so that the value of
-     * a window narrower than one sampling interval is the sample it holds and never an extrapolation of it.
-     *
      * @return the average of the samples accumulated so far over the expected number of samples, 0 if this builder is
      * empty
      * @see Aggregation#SAMPLED_AVG
      */
     public double getSampledAverage() {
-        long count = getCount();
-        if (count == 0) {
-            return 0;
-        }
-        return getSumAsDouble() / Math.max(count, getExpectedSampleCount());
+        long expectedSampleCount = getExpectedSampleCount();
+        return expectedSampleCount > 0 ? getSumAsDouble() / expectedSampleCount : 0;
     }
 
     /**
-     * @return the number of samples the window of this builder is expected to hold, 0 if this builder has no window or
-     * no sampling interval
+     * A series existing during the whole window holds one sample per sampling interval the window covers, which is
+     * the number of samples this builder is expected to hold. A window which isn't a whole number of sampling
+     * intervals doesn't have such a number: it holds one sample more or less depending on where the sampling instants
+     * fall, and no divisor reduces both of these counts to the value of the series. The samples are then averaged
+     * over their own number, i.e. the sampled average amounts to the plain one.
+     * <p>
+     * The aggregation pipeline resolves the response resolution to a common multiple of the sampling interval and of
+     * the source resolution, which is a whole number of sampling intervals whether the two divide each other or not.
+     * This therefore only applies to a builder used outside of the pipeline, or built without a window.
+     *
+     * @return the number of samples the window of this builder is expected to hold, the number of samples it actually
+     * holds if its window isn't a whole number of sampling intervals
      */
-    private double getExpectedSampleCount() {
-        if (end == null || samplingIntervalMs <= 0) {
-            return 0;
+    private long getExpectedSampleCount() {
+        if (end == null || samplingIntervalMs <= 0 || (end - begin) % samplingIntervalMs != 0) {
+            return getCount();
         }
-        return (end - begin) / (double) samplingIntervalMs;
+        return (end - begin) / samplingIntervalMs;
     }
 
     /**

@@ -152,13 +152,96 @@ public class TimeSeriesSampledAverageAggregationTest extends TimeSeriesBaseTest 
     }
 
     /**
-     * A response bucket may be finer than the sampling interval, in which case it covers less than one sample and
-     * dividing by the number of samples it is expected to hold would multiply the value. The samples are then
-     * averaged over their own number instead, i.e. a bucket holding one sample reports that sample, and the buckets
-     * falling between two samples hold no value at all rather than a zero.
+     * A requested resolution is not necessarily a multiple of the sampling interval: the resolutions are derived from
+     * the requested range and rounded to the source resolution, which yields for instance windows of 35 seconds over
+     * a sampling interval of 15 seconds. Such a window holds 2 or 3 samples depending on where the sampling instants
+     * fall and is therefore not reducible, hence the response resolution is rounded to a multiple of the sampling
+     * interval. A series existing during the whole range then reads the same value in all the windows, and not the
+     * value its 3 and then its 2 samples amount to.
      */
     @Test
-    public void bucketsFinerThanTheSamplingIntervalReportTheSampleTest() {
+    public void responseResolutionIsAlignedOnTheSamplingIntervalTest() {
+        // A whole number of 30 seconds windows, so that the last one isn't a partially covered one
+        long range = 360_000;
+        TimeSeries timeSeries = newTimeSeries();
+        try (TimeSeriesIngestionPipeline pipeline = timeSeries.getIngestionPipeline()) {
+            ingestSampledSeries(pipeline, Map.of("name", "tokens"), 0, (int) (range / SAMPLING_INTERVAL), 10);
+        }
+
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder()
+            .range(0, range)
+            // A multiple of the 5 seconds source resolution, but not of the 15 seconds sampling interval
+            .window(35_000)
+            .withSamplingInterval(SAMPLING_INTERVAL)
+            .withTimeAggregation(Aggregation.SAMPLED_AVG)
+            .groupBy(Set.of("name"), Aggregation.SUM)
+            .build());
+
+        assertEquals(30_000, response.getResolution());
+        Map<Long, Bucket> series = response.getFirstSeries();
+        assertEquals(12, series.size());
+        // Every window holds the 2 samples it expects: the series reads its value everywhere
+        series.forEach((begin, bucket) -> assertEquals("Bucket " + begin, 10, ((ScalarBucket) bucket).getValue()));
+    }
+
+    /**
+     * A shrunk response holds one single bucket spanning the whole range, which has to be a whole number of sampling
+     * intervals for the very same reason a resolution has. The requested range is rounded to the source resolution
+     * only and is therefore not one, as here where it exceeds the hour by 5 seconds.
+     */
+    @Test
+    public void shrunkRangeIsAlignedOnTheSamplingIntervalTest() {
+        TimeSeries timeSeries = newTimeSeries();
+        try (TimeSeriesIngestionPipeline pipeline = timeSeries.getIngestionPipeline()) {
+            // Half of the range, i.e. half of the value of the series
+            ingestSampledSeries(pipeline, Map.of("name", "tokens"), 0, 120, 10);
+        }
+
+        TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder()
+            .range(0, ONE_HOUR + 5_000)
+            .split(1)
+            .withSamplingInterval(SAMPLING_INTERVAL)
+            .withTimeAggregation(Aggregation.SAMPLED_AVG)
+            .groupBy(Set.of("name"), Aggregation.SUM)
+            .build());
+
+        // The hour and 5 seconds are expanded to the 241 sampling intervals covering them
+        assertEquals(241 * SAMPLING_INTERVAL, response.getResolution());
+        assertEquals(241 * SAMPLING_INTERVAL, response.getEnd());
+        Map<Long, Bucket> series = response.getFirstSeries();
+        assertEquals(1, series.size());
+        assertEquals(5, ((ScalarBucket) series.values().iterator().next()).getValue());
+    }
+
+    /**
+     * Only the sampled average constrains the response resolution, the other aggregations keep being resolved on the
+     * source resolution alone.
+     */
+    @Test
+    public void responseResolutionIsAlignedForTheSampledAverageOnlyTest() {
+        TimeSeries timeSeries = newTimeSeries();
+        try (TimeSeriesIngestionPipeline pipeline = timeSeries.getIngestionPipeline()) {
+            ingestSampledSeries(pipeline, Map.of("name", "tokens"), 0, 10, 10);
+        }
+
+        TimeSeriesAggregationQueryBuilder query = new TimeSeriesAggregationQueryBuilder()
+            .range(0, 350_000)
+            .window(35_000)
+            .withSamplingInterval(SAMPLING_INTERVAL)
+            .groupBy(Set.of("name"), Aggregation.SUM);
+
+        assertEquals(35_000, timeSeries.getAggregationPipeline()
+            .collect(query.withTimeAggregation(Aggregation.AVG).build()).getResolution());
+        assertEquals(30_000, timeSeries.getAggregationPipeline()
+            .collect(query.withTimeAggregation(Aggregation.SAMPLED_AVG).build()).getResolution());
+    }
+
+    /**
+     * A resolution below the sampling interval cannot be aligned on it without becoming finer than the samples
+     * themselves, it is therefore raised to one single sampling interval.
+     */
+    @Test
+    public void responseResolutionIsAtLeastOneSamplingIntervalTest() {
         TimeSeries timeSeries = newTimeSeries();
         try (TimeSeriesIngestionPipeline pipeline = timeSeries.getIngestionPipeline()) {
             ingestSampledSeries(pipeline, Map.of("name", "tokens"), 0, 4, 10);
@@ -166,15 +249,14 @@ public class TimeSeriesSampledAverageAggregationTest extends TimeSeriesBaseTest 
 
         TimeSeriesAggregationResponse response = timeSeries.getAggregationPipeline().collect(new TimeSeriesAggregationQueryBuilder()
             .range(0, 60_000)
-            // One third of the sampling interval
             .window(SOURCE_RESOLUTION)
             .withSamplingInterval(SAMPLING_INTERVAL)
             .withTimeAggregation(Aggregation.SAMPLED_AVG)
             .groupBy(Set.of("name"), Aggregation.SUM)
             .build());
 
+        assertEquals(SAMPLING_INTERVAL, response.getResolution());
         Map<Long, Bucket> series = response.getFirstSeries();
-        // Only the 4 buckets holding a sample are part of the response, the 8 others are simply absent
         assertEquals(4, series.size());
         series.forEach((begin, bucket) -> {
             assertEquals("Bucket " + begin, 10, ((ScalarBucket) bucket).getValue());
