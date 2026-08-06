@@ -5,11 +5,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import step.core.timeseries.TimeSeriesCollection;
 import step.core.timeseries.TimeSeriesUtils;
+import step.core.timeseries.bucket.Aggregation;
 import step.core.timeseries.bucket.Bucket;
 import step.core.timeseries.bucket.BucketAttributes;
 import step.core.timeseries.bucket.BucketBuilder;
 
-import java.util.*;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -82,35 +89,15 @@ public class TimeSeriesAggregationPipeline {
         long sourceResolution = idealAvailableCollection.getResolutionMs();
         TimeSeriesProcessedParams finalParams = processQueryParams(query, sourceResolution);
 
-        Map<BucketAttributes, Map<Long, BucketBuilder>> seriesBuilder = new HashMap<>();
-
-        LongAdder bucketCount = new LongAdder();
-        long t1 = System.currentTimeMillis();
-        try (Stream<Bucket> stream = idealAvailableCollection.queryTimeSeries(finalParams)) {
-            stream.forEach(bucket -> {
-                bucketCount.increment();
-                BucketAttributes bucketAttributes = bucket.getAttributes() != null ? bucket.getAttributes() : new BucketAttributes();
-
-                BucketAttributes seriesKey;
-                if (CollectionUtils.isNotEmpty(finalParams.getGroupDimensions())) {
-                    seriesKey = bucketAttributes.subset(finalParams.getGroupDimensions());
-                } else {
-                    seriesKey = new BucketAttributes();
-                }
-                Map<Long, BucketBuilder> series = seriesBuilder.computeIfAbsent(seriesKey, a -> new TreeMap<>());
-
-                long index = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
-                series.computeIfAbsent(index, i -> new BucketBuilder(i, i + getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), finalParams.getResolution()))
-                    .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit())).accumulate(bucket);
-            });
-        }
-        long t2 = System.currentTimeMillis();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Performed query in " + (t2 - t1) + "ms. Number of buckets processed: " + bucketCount.longValue());
+        Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder;
+        if (query.getTimeAggregation().isMerge() && query.getGroupAggregation().isMerge()) {
+            resultBuilder = collectByMerging(query, finalParams, idealAvailableCollection);
+        } else {
+            resultBuilder = collectByAggregating(query, finalParams, idealAvailableCollection);
         }
 
-        Map<BucketAttributes, Map<Long, Bucket>> result = seriesBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-            e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().build()))));
+        Map<BucketAttributes, Map<Long, Bucket>> result = resultBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
+            e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().buildAggregate()))));
 
         return new TimeSeriesAggregationResponseBuilder()
             .setSeries(result)
@@ -122,6 +109,116 @@ public class TimeSeriesAggregationPipeline {
             .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
             .setTtlCovered(ttlCovered)
             .build();
+    }
+
+    /**
+     * Collects the source buckets when both axes merge, i.e. when the whole aggregation amounts to one single merge
+     * of all the source buckets of a group falling into the same time bucket. A merge being associative and
+     * commutative, the source buckets can be merged directly into their resulting bucket, without materializing the
+     * series they belong to. The memory footprint is therefore driven by the number of groups and time buckets of the
+     * response, and not by the cardinality of the attributes of the source buckets.
+     */
+    private Map<BucketAttributes, Map<Long, BucketBuilder>> collectByMerging(TimeSeriesAggregationQuery query, TimeSeriesProcessedParams finalParams, TimeSeriesCollection collection) {
+        Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder = new HashMap<>();
+        LongAdder bucketCount = new LongAdder();
+        long t1 = System.currentTimeMillis();
+        try (Stream<Bucket> stream = collection.queryTimeSeries(finalParams)) {
+            stream.forEach(bucket -> {
+                bucketCount.increment();
+                BucketAttributes groupAttributes = getGroupAttributes(bucket, finalParams.getGroupDimensions());
+                long timeSliceIndex = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
+
+                Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
+                resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> newGroupBucketBuilder(query, finalParams, groupAttributes, i))
+                    .merge(bucket);
+            });
+        }
+        logAggregationDuration("merge aggregation", t1, bucketCount);
+        return resultBuilder;
+    }
+
+    /**
+     * Collects the source buckets when at least one of the axes reduces its inputs to a scalar. The time-window
+     * aggregation has then to be applied per series, before the group-by aggregation, which requires the series of
+     * each group to be materialized.
+     */
+    private Map<BucketAttributes, Map<Long, BucketBuilder>> collectByAggregating(TimeSeriesAggregationQuery query, TimeSeriesProcessedParams finalParams, TimeSeriesCollection collection) {
+        // Perform time-window aggregation and partition the time series:
+        // Aggregate each source series into the requested aligned time buckets and assign the resulting series to their respective groups (defined by the group dimensions).
+        // Do not perform any cross-series aggregation at this stage.
+        Map<Long, Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>>> timeBucketedSeriesByGroup = new HashMap<>();
+        LongAdder bucketCount = new LongAdder();
+        long t1 = System.currentTimeMillis();
+        try (Stream<Bucket> stream = collection.queryTimeSeries(finalParams)) {
+            stream.forEach(bucket -> {
+                bucketCount.increment();
+                // The attributes of the source series
+                BucketAttributes bucketAttributes = bucket.getAttributes() != null ? bucket.getAttributes() : new BucketAttributes();
+                // The subset of attributes corresponding to the requested group dimensions (group by)
+                BucketAttributes groupAttributes = getGroupAttributes(bucket, finalParams.getGroupDimensions());
+                // The time slice index on the result series
+                long timeSliceIndex = calculateBucketBeginAnchor(bucket.getBegin(), finalParams);
+                // Get or create the time slice corresponding to the time index of the current bucket on the result series (aligned)
+                Map<BucketAttributes, Map<BucketAttributes, BucketBuilder>> timeSlice = timeBucketedSeriesByGroup.computeIfAbsent(timeSliceIndex, a -> new HashMap<>());
+                // Get or create the group of builders corresponding to the current group (defined by the group dimensions)
+                Map<BucketAttributes, BucketBuilder> indexSeriesBuckets = timeSlice.computeIfAbsent(groupAttributes, a -> new HashMap<>());
+                // Get the builder for the attributes of the current bucket. The full attributes of the series are kept
+                // at this stage, so that the attribute collection can be performed on them during the group-by aggregation
+                BucketBuilder bucketBuilder = indexSeriesBuckets.computeIfAbsent(bucketAttributes, a -> new BucketBuilder(query.getTimeAggregation(), timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams))
+                    .withAttributes(bucketAttributes)
+                    // Required by the time aggregations reducing a series over the time window it is expected to
+                    // cover, and not over the samples it happens to hold
+                    .withSamplingInterval(finalParams.getSamplingIntervalMs()));
+                // Merge the current source bucket into the builder. The configured time-window aggregation is
+                // applied when the builder is reduced, at the group-by stage
+                bucketBuilder.merge(bucket);
+            });
+        }
+        logAggregationDuration("time-window aggregation", t1, bucketCount);
+
+        // Aggregate the grouped series:
+        // For each time bucket, apply the configured group-by aggregation across the aligned series in each group.
+        Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder = new HashMap<>();
+        // For each time slice
+        timeBucketedSeriesByGroup.forEach((timeSliceIndex, timeSlice) -> {
+            // For each group
+            timeSlice.forEach((groupAttributes, group) -> {
+                // For each series of the group
+                Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
+                BucketBuilder bucketBuilder = resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> newGroupBucketBuilder(query, finalParams, groupAttributes, i));
+                group.forEach((seriesAttributes, series) -> {
+                    // Aggregate the series into the group. How the series contributes is defined by the
+                    // time-window aggregation it was built with
+                    bucketBuilder.aggregate(series);
+                });
+            });
+        });
+        return resultBuilder;
+    }
+
+    private BucketAttributes getGroupAttributes(Bucket bucket, Set<String> groupDimensions) {
+        BucketAttributes bucketAttributes = bucket.getAttributes();
+        if (bucketAttributes == null || CollectionUtils.isEmpty(groupDimensions)) {
+            return new BucketAttributes();
+        }
+        return bucketAttributes.subset(groupDimensions);
+    }
+
+    private BucketBuilder newGroupBucketBuilder(TimeSeriesAggregationQuery query, TimeSeriesProcessedParams finalParams, BucketAttributes groupAttributes, long timeSliceIndex) {
+        return new BucketBuilder(query.getGroupAggregation(), timeSliceIndex, getBucketEnd(timeSliceIndex, finalParams))
+            // The group attributes are copied, so that collecting the attributes doesn't mutate the key of the response
+            .withAttributes(new BucketAttributes(groupAttributes))
+            .withAccumulateAttributes(query.getCollectAttributeKeys(), query.getCollectAttributesValuesLimit());
+    }
+
+    private void logAggregationDuration(String aggregationName, long startTime, LongAdder bucketCount) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Performed " + aggregationName + " in " + (System.currentTimeMillis() - startTime) + "ms. Number of buckets processed: " + bucketCount.longValue());
+        }
+    }
+
+    private long getBucketEnd(long i, TimeSeriesProcessedParams finalParams) {
+        return i + getBucketSize(finalParams.getFrom(), finalParams.getTo(), finalParams.isShrink(), finalParams.getResolution());
     }
 
     private long roundDownToAvailableResolution(long targetResolution) {
@@ -140,27 +237,28 @@ public class TimeSeriesAggregationPipeline {
         }
         // if 'to' parameter is not specified, we take the current time.
         long toParameter = query.getTo() != null ? query.getTo() : System.currentTimeMillis();
-        long resultResolution = sourceResolution;
 
-        long resultFrom = roundDownToMultiple(query.getFrom(), sourceResolution);
-        long resultTo = roundUpToMultiple(toParameter, sourceResolution);
+        long baseResolution = getBaseResolution(query, sourceResolution);
+        long resultFrom = roundDownToMultiple(query.getFrom(), baseResolution);
+        long resultTo = roundUpToMultiple(toParameter, baseResolution);
         long rangeDiff = resultTo - resultFrom;
 
+        long resultResolution;
         if (query.isShrink()) { // we expand the interval to the closest completed resolutions
+            // The single response bucket spans the whole range, which is a multiple of the granularity by construction
             resultResolution = rangeDiff;
         } else {
             Integer bucketsCount = query.getBucketsCount();
             if (bucketsCount != null && bucketsCount > 0) {
-                resultResolution = getResolutionBasedOnBucketsCount(sourceResolution, rangeDiff, bucketsCount);
+                resultResolution = getResolutionBasedOnBucketsCount(baseResolution, rangeDiff, bucketsCount);
             } else {
                 Long proposedResolution = query.getBucketsResolution();
                 if (proposedResolution != null && proposedResolution != 0) {
-                    resultResolution = Math.max(sourceResolution, roundDownToMultiple(proposedResolution, sourceResolution));
-                    resultResolution = roundDownToMultiple(resultResolution, sourceResolution);
+                    resultResolution = Math.max(baseResolution, roundDownToMultiple(proposedResolution, baseResolution));
                     rangeDiff = roundUpToMultiple(rangeDiff, resultResolution);
                     resultTo = resultFrom + rangeDiff;
                 } else { // no resolution settings specified
-                    resultResolution = getResolutionBasedOnBucketsCount(sourceResolution, rangeDiff, idealResponseIntervals);
+                    resultResolution = getResolutionBasedOnBucketsCount(baseResolution, rangeDiff, idealResponseIntervals);
                 }
             }
         }
@@ -171,18 +269,47 @@ public class TimeSeriesAggregationPipeline {
             .setGroupDimensions(query.getGroupDimensions())
             .setFilter(query.getFilter())
             .setShrink(query.isShrink())
+            .setSamplingIntervalMs(query.getSamplingIntervalMs())
             .setCollectAttributeKeys(query.getCollectAttributeKeys())
             .setCollectAttributesValuesLimit(query.getCollectAttributesValuesLimit());
     }
 
-    private static long getResolutionBasedOnBucketsCount(long sourceResolution, long rangeDiff, Integer bucketsCount) {
+    /**
+     * Return the base resolution to be used by the aggregation pipeline to determine the actual query time range (extends to) and the result solution which must be a multiple of that base resolution
+     * It is either the source resolution itself or for {@link Aggregation#SAMPLED_AVG} the least common multiple between source resolution and sampling interval.
+     *
+     * @return the base resolution to be used by the aggregation pipeline.
+     */
+    private static long getBaseResolution(TimeSeriesAggregationQuery query, long sourceResolution) {
+        if (query.getTimeAggregation() != Aggregation.SAMPLED_AVG) {
+            return sourceResolution;
+        }
+        return leastCommonMultiple(sourceResolution, query.getSamplingIntervalMs());
+    }
+
+
+    /**
+     * @return the smallest value both given values divide, 0 if either of them is 0
+     */
+    static long leastCommonMultiple(long number1, long number2) {
+        if (number1 == 0 || number2 == 0) {
+            return 0;
+        }
+        BigInteger bigInteger1 = BigInteger.valueOf(number1);
+        BigInteger bigInteger2 = BigInteger.valueOf(number2);
+        BigInteger gcd = bigInteger1.gcd(bigInteger2);
+        BigInteger absProduct = bigInteger1.multiply(bigInteger2).abs();
+        return absProduct.divide(gcd).longValue();
+    }
+
+    private static long getResolutionBasedOnBucketsCount(long baseResolution, long rangeDiff, Integer bucketsCount) {
         long resultResolution;
-        if (rangeDiff / sourceResolution <= bucketsCount) { // not enough buckets
-            resultResolution = sourceResolution;
+        if (rangeDiff / baseResolution <= bucketsCount) { // not enough buckets
+            resultResolution = baseResolution;
         } else {
             resultResolution = Math.round(rangeDiff / (double) bucketsCount);
-            // there are situation when resultResolution/sourceResolution is below 0.5, and that would end up rounded in 0.
-            resultResolution = Math.max(Math.round((double) resultResolution / sourceResolution), 1) * sourceResolution; // round to nearest multiple, up or down
+            // there are situation when resultResolution/baseResolution is below 0.5, and that would end up rounded in 0.
+            resultResolution = Math.max(Math.round((double) resultResolution / baseResolution), 1) * baseResolution; // round to nearest multiple, up or down
         }
         return resultResolution;
     }
@@ -196,6 +323,14 @@ public class TimeSeriesAggregationPipeline {
     }
 
     private void validateQuery(TimeSeriesAggregationQuery query) {
+        if (query.getGroupAggregation() == Aggregation.SAMPLED_AVG) {
+            // The group aggregation reduces the series of a group, not a time window, and dividing their values by
+            // the number of samples the window is expected to hold would be meaningless
+            throw new IllegalArgumentException(Aggregation.SAMPLED_AVG + " is only supported as a time aggregation");
+        }
+        if (query.getTimeAggregation() == Aggregation.SAMPLED_AVG && query.getSamplingIntervalMs() <= 0) {
+            throw new IllegalArgumentException(Aggregation.SAMPLED_AVG + " requires the sampling interval of the queried series to be specified");
+        }
         if (query.getBucketsCount() != null) {
             if (query.getFrom() == null || query.getTo() == null) {
                 throw new IllegalArgumentException("While splitting, from and to params must be set");
