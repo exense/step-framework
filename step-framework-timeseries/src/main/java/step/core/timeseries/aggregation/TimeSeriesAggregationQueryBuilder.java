@@ -3,8 +3,8 @@ package step.core.timeseries.aggregation;
 import step.core.collections.Filter;
 import step.core.collections.Filters;
 import step.core.timeseries.TimeSeriesFilterBuilder;
+import step.core.timeseries.bucket.Aggregation;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +13,9 @@ public class TimeSeriesAggregationQueryBuilder {
 
     private TimeSeriesOptimizationType optimizationType = TimeSeriesOptimizationType.MOST_EFFICIENT;
     private Set<String> groupDimensions = new HashSet<>();
+    private Aggregation groupAggregation = Aggregation.MERGE;
+    private Aggregation timeAggregation = Aggregation.MERGE;
+    private long samplingIntervalMs;
     private Filter filter = Filters.empty();
     private Long from;
     private Long to;
@@ -29,6 +32,42 @@ public class TimeSeriesAggregationQueryBuilder {
 
     public TimeSeriesAggregationQueryBuilder withGroupDimensions(Set<String> groupDimensions) {
         this.groupDimensions = groupDimensions;
+        return this;
+    }
+
+    /**
+     * Defines the group-by (series) aggregation, i.e. how the aligned buckets of the series belonging to the same
+     * group are reduced into one single bucket. Defaults to {@link Aggregation#MERGE}.
+     *
+     * @param groupDimensions    the attribute keys defining the groups
+     * @param groupAggregation the aggregation applied across the series of each group
+     */
+    public TimeSeriesAggregationQueryBuilder groupBy(Set<String> groupDimensions, Aggregation groupAggregation) {
+        this.groupDimensions = groupDimensions;
+        this.groupAggregation = groupAggregation;
+        return this;
+    }
+
+    /**
+     * Defines the time-window aggregation, i.e. how the successive buckets of one single series falling into the same
+     * time window are reduced into one single bucket. Independent of the group-by aggregation defined by
+     * {@link #groupBy(Set, Aggregation)}. Defaults to {@link Aggregation#MERGE}.
+     *
+     * @param timeAggregation the aggregation applied across the buckets of one series within a time window
+     */
+    public TimeSeriesAggregationQueryBuilder withTimeAggregation(Aggregation timeAggregation) {
+        this.timeAggregation = timeAggregation;
+        return this;
+    }
+
+    /**
+     * Defines the interval at which the queried series are sampled. Required by {@link Aggregation#SAMPLED_AVG},
+     * ignored by all the other aggregations.
+     *
+     * @param samplingIntervalMs the sampling interval in ms
+     */
+    public TimeSeriesAggregationQueryBuilder withSamplingInterval(long samplingIntervalMs) {
+        this.samplingIntervalMs = samplingIntervalMs;
         return this;
     }
 
@@ -88,7 +127,7 @@ public class TimeSeriesAggregationQueryBuilder {
      */
     public TimeSeriesAggregationQuery build() {
         this.from = this.from != null ? this.from : 0;
-        return new TimeSeriesAggregationQuery(filter, optimizationType, groupDimensions, this.proposedResolution, this.from, this.to, shrink, this.bucketsCount, collectAttributeKeys, collectAttributesValuesLimit);
+        return new TimeSeriesAggregationQuery(filter, optimizationType, groupDimensions, groupAggregation, timeAggregation, samplingIntervalMs, this.proposedResolution, this.from, this.to, shrink, this.bucketsCount, collectAttributeKeys, collectAttributesValuesLimit);
     }
 
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 import step.core.accessors.DefaultJacksonMapperProvider;
+import step.core.timeseries.bucket.Aggregation;
 import step.core.timeseries.metric.*;
 
 import java.util.*;
@@ -107,4 +108,11 @@ public class MetricTypeTest {
         Assert.assertEquals(MetricSamplingMode.SAMPLED, deserialized.getSamplingMode());
     }
 
+    @Test
+    public void testTwoPhaseAggregation() {
+        MetricAggregation metricAggregation = new MetricAggregation(Aggregation.AVG, Aggregation.SUM);
+        Assert.assertEquals(MetricAggregationType.TWO_STAGE, metricAggregation.getType());
+        Assert.assertEquals(Aggregation.AVG, metricAggregation.getTwoStageAggregation().getTimeAggregation());
+        Assert.assertEquals(Aggregation.SUM, metricAggregation.getTwoStageAggregation().getGroupAggregation());
+    }
 }

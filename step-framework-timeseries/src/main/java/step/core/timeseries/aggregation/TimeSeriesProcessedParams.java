@@ -13,6 +13,19 @@ public class TimeSeriesProcessedParams {
     private Set<String> groupDimensions;
     private Set<String> collectAttributeKeys;
     private int collectAttributesValuesLimit;
+    private long samplingIntervalMs;
+
+    /**
+     * @return the interval in ms at which the queried series are sampled, 0 if unknown
+     */
+    public long getSamplingIntervalMs() {
+        return samplingIntervalMs;
+    }
+
+    public TimeSeriesProcessedParams setSamplingIntervalMs(long samplingIntervalMs) {
+        this.samplingIntervalMs = samplingIntervalMs;
+        return this;
+    }
 
     public long getFrom() {
         return from;
