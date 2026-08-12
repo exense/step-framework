@@ -42,7 +42,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <!-- internal dependencies -->
-    <dependencies.version>2026.8.5</dependencies.version>
+    <dependencies.version>0.0.0-SED-4882-SNAPSHOT</dependencies.version>
     <exense-commons.version>2.2.2</exense-commons.version>
 
     <!-- external dependencies -->
