@@ -24,9 +24,21 @@
       <artifactId>step-framework-core</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- This reroutes apache commons-logging through slf4j -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+    </dependency>
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
+      <exclusions>
+        <exclusion>
+          <!-- rerouted as defined above, so ignore conflicting classes -->
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
