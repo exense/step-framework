@@ -52,10 +52,12 @@
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-json-org</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>jakarta.json</artifactId>
-    </dependency>
+    <!-- Disabled because it clashes with jakarta.json-api -->
+    <!-- In case we actually need it, apparently org.eclipse.parsson:jakarta.json is a clean, non-conflicting implementation -->
+    <!--    <dependency>-->
+    <!--      <groupId>org.glassfish</groupId>-->
+    <!--      <artifactId>jakarta.json</artifactId>-->
+    <!--    </dependency>-->
     <dependency>
       <groupId>org.antlr</groupId>
       <artifactId>antlr4</artifactId>
