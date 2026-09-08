@@ -18,8 +18,7 @@ public class TestService extends AbstractServices {
 
     @GET
     @Path("/serviceWithMultipleRights")
-    @Secured(right = "{prefix}-read")
-    @Secured(right = "test")
+    @Secured(rights = {"{prefix}-read", "test"})
     @Operation(operationId = "get{Entity}")
     public String serviceWithMultipleRights() {
         return "test";
@@ -27,8 +26,7 @@ public class TestService extends AbstractServices {
 
     @GET
     @Path("/serviceWithMultipleRightsNotAllowed")
-    @Secured(right = "{prefix}-read")
-    @Secured(right = "notAvailableRight")
+    @Secured(rights = {"{prefix}-read", "notAvailableRight"})
     @Operation(operationId = "get{Entity}")
     public String serviceWithMultipleRightsNotAllowed() {
         return "test";

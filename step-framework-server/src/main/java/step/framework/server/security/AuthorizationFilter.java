@@ -38,7 +38,10 @@ import step.framework.server.access.AuthorizationManager;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Authentication filters for secured services
@@ -65,49 +68,60 @@ public class AuthorizationFilter<U extends AbstractUser> extends AbstractService
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         Session<U> session = getSession();
-        // Check rights
         Invocable invocable = extendendUriInfo.getMatchedResourceMethod().getInvocable();
         Class<?> handlerClass = invocable.getHandler().getHandlerClass();
-        Secured[] securedAnnotations = invocable.getHandlingMethod().getAnnotationsByType(Secured.class);
-        if (securedAnnotations != null) {
-            // Check each right contained in the list
-            Arrays.stream(securedAnnotations)
-                .forEach(a -> checkRightsForAnnotation(requestContext, session, handlerClass, a));
-        }
-    }
 
-    private void checkRightsForAnnotation(ContainerRequestContext requestContext, Session<?> session, Class<?> handlerClass, Secured annotation) {
-        if (session.isAuthenticated()) {
-            // Session authenticated, checking right
-            String right = annotation.right();
-            if (right.length() > 0) {
-                // Replacing placeholders in right based on SecuredContext annotations
-                // Setting allowAllSignedInUsers flag based on secured context
-                boolean allowAllSignedInUsers = false;
-                Annotation[] handlerClassAnnotations = handlerClass.getAnnotations();
-                for (Annotation a : handlerClassAnnotations) {
-                    if (a instanceof SecuredContext) {
-                        SecuredContext securedContext = (SecuredContext) a;
-                        allowAllSignedInUsers = securedContext.allowAllSignedInUsers();
-                        right = right.replaceAll(Pattern.quote("{" + securedContext.key() + "}"), securedContext.value());
-                    }
-                }
-                // Check resolved right
-                boolean hasRight = allowAllSignedInUsers || authorizationManager.checkRightInContext(session, right);
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Checked right '" + right + "' for user '" + username(session) + "'. Result: " + hasRight);
-                }
-                if (!hasRight) {
-                    requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).build());
-                    logger.warn("User " + username(session) + " missing right " + right);
-                }
-            }
-        } else {
+        if (!session.isAuthenticated()) {
             // Session not authenticated
             if (logger.isDebugEnabled()) {
                 logger.debug("User '" + username(session) + "' not authenticated. Returning " + Response.Status.UNAUTHORIZED);
             }
             requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
+            return;
+        }
+
+        // Session authenticated, check each right required by the service
+        getRequiredRights(invocable, handlerClass)
+            .forEach(right -> checkRight(requestContext, session, handlerClass, right));
+    }
+
+    /**
+     * Collects the rights declared by the matched service. The annotation is looked up on the handling method first
+     * and on the handler class otherwise, matching the elements the filter can be name bound to.
+     */
+    private List<String> getRequiredRights(Invocable invocable, Class<?> handlerClass) {
+        Secured secured = invocable.getHandlingMethod().getAnnotation(Secured.class);
+        if (secured == null) {
+            secured = handlerClass.getAnnotation(Secured.class);
+        }
+        if (secured == null) {
+            return List.of();
+        }
+        return Stream.concat(Stream.of(secured.right()), Arrays.stream(secured.rights()))
+            .filter(right -> !right.isEmpty())
+            .collect(Collectors.toList());
+    }
+
+    private void checkRight(ContainerRequestContext requestContext, Session<?> session, Class<?> handlerClass, String right) {
+        // Replacing placeholders in right based on SecuredContext annotations
+        // Setting allowAllSignedInUsers flag based on secured context
+        boolean allowAllSignedInUsers = false;
+        Annotation[] handlerClassAnnotations = handlerClass.getAnnotations();
+        for (Annotation a : handlerClassAnnotations) {
+            if (a instanceof SecuredContext) {
+                SecuredContext securedContext = (SecuredContext) a;
+                allowAllSignedInUsers = securedContext.allowAllSignedInUsers();
+                right = right.replaceAll(Pattern.quote("{" + securedContext.key() + "}"), securedContext.value());
+            }
+        }
+        // Check resolved right
+        boolean hasRight = allowAllSignedInUsers || authorizationManager.checkRightInContext(session, right);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Checked right '" + right + "' for user '" + username(session) + "'. Result: " + hasRight);
+        }
+        if (!hasRight) {
+            requestContext.abortWith(Response.status(Response.Status.FORBIDDEN).build());
+            logger.warn("User " + username(session) + " missing right " + right);
         }
     }
 
