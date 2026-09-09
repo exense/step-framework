@@ -22,20 +22,12 @@ import jakarta.ws.rs.NameBinding;
 
 import java.lang.annotation.*;
 
-/**
- * Marks a service as secured: the security filters are bound to this annotation and only apply to annotated
- * services. Use {@link #rights()} to require several rights at once.
- * <p>
- * This annotation is deliberately not repeatable: a repeated annotation is replaced by its container annotation
- * at compile time, which would drop the JAX-RS name binding and silently disable all the security filters.
- */
 @NameBinding
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
+@Repeatable(value = SecuredList.class)
 public @interface Secured {
 
     String right() default "";
-
-    String[] rights() default {};
 
 }
