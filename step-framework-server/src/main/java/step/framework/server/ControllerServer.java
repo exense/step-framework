@@ -58,6 +58,7 @@ import step.core.scanner.CachedAnnotationScanner;
 import step.framework.server.audit.AuditLogger;
 import step.framework.server.audit.AuditResponseFilter;
 import step.framework.server.security.SecuredDynamicFeature;
+import step.framework.server.security.SecuredValidationFeature;
 import step.framework.server.security.SessionFilter;
 import step.framework.server.swagger.Swagger;
 
@@ -317,6 +318,7 @@ public class ControllerServer {
         resourceConfig.register(JacksonFeature.class);
         resourceConfig.register(SessionFilter.class);
         resourceConfig.register(SecuredDynamicFeature.class);
+        resourceConfig.register(SecuredValidationFeature.class);
         resourceConfig.register(CORSRequestResponseFilter.class);
         resourceConfig.register(AuditResponseFilter.class);
         resourceConfig.register(MultiPartFeature.class);
