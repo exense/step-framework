@@ -52,7 +52,7 @@ public class SecuredValidationFeature implements DynamicFeature {
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
         Method resourceMethod = resourceInfo.getResourceMethod();
-        if (!reportedMethods.add(resourceMethod)) {
+        if (resourceMethod == null || !reportedMethods.add(resourceMethod)) {
             return;
         }
         List<String> overriddenRights = findOverriddenRights(resourceMethod);

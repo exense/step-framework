@@ -49,7 +49,7 @@ public class SecuredDynamicFeature implements DynamicFeature {
 
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
-        if (!resourceInfo.getResourceMethod().isAnnotationPresent(SecuredList.class)) {
+        if (resourceInfo.getResourceMethod() == null || !resourceInfo.getResourceMethod().isAnnotationPresent(SecuredList.class)) {
             return;
         }
         // Bind the providers name bound to Secured to this service, as JAX-RS does for the services
