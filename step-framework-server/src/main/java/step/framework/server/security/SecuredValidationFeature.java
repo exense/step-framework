@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * <p>
  * Only the @Secured annotation of the invoked method is resolved, the one on the base method is ignored.
  * Not redeclaring the @Secured annotation means the service is not secured at all (unless the annotation is on the class),
- * in any case no rights are asserted, this is reported as warning.
+ * in any case no rights are asserted, this makes the application startup fail.
  * Likewise, defining a right different from the one on the base method might be unexpected and is reported as debug.
  */
 @Provider
@@ -62,18 +62,18 @@ public class SecuredValidationFeature implements DynamicFeature {
         }
         List<String> declaredRights = rightsOf(resourceMethod.getAnnotationsByType(Secured.class));
         if (declaredRights.isEmpty()) {
-            reportUndeclaredRights(resourceMethod, overriddenRights);
+            failOnUndeclaredRights(resourceMethod, overriddenRights);
         } else if (!declaredRights.containsAll(overriddenRights)) {
             reportDivergingRights(resourceMethod, declaredRights, overriddenRights);
         }
     }
 
     /**
-     * Reports when we suspect that the annotation is missing or that the right definition is missing
+     * Fails the application startup when the annotation or the right definition is missing
      */
-    private void reportUndeclaredRights(Method resourceMethod, List<String> overriddenRights) {
-        logger.warn("The service " + serviceName(resourceMethod) + " overrides a secured service without declaring " +
-            "the rights it requires. Declare the following annotation(s) on this service: " +
+    private void failOnUndeclaredRights(Method resourceMethod, List<String> overriddenRights) {
+        throw new IllegalStateException("The service " + serviceName(resourceMethod) + " overrides a secured service " +
+            "without declaring the rights it requires. Declare the following annotation(s) on this service: " +
             annotations(overriddenRights));
     }
 

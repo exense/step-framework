@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -74,13 +75,12 @@ public class SecuredValidationFeatureTest {
     }
 
     @Test
-    public void undeclaredRightsAreReportedWhenTheApplicationStarts() {
-        List<String> warnings = messages(Level.WARN, BareOverridingServices.class);
-        assertEquals(2, warnings.size());
-        assertTrue(warnings.stream().anyMatch(warning -> warning.contains("BareOverridingServices.get")
-            && warning.contains("@Secured(right = \"entity-read\")")));
-        assertTrue(warnings.stream().anyMatch(warning -> warning.contains("BareOverridingServices.restore")
-            && warning.contains("@Secured(right = \"entity-read\") @Secured(right = \"entity-write\")")));
+    public void undeclaredRightsMakeTheApplicationStartupFail() {
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+            () -> new ApplicationHandler(new ResourceConfig(JaxRsRedeclaringServices.class, SecuredValidationFeature.class)));
+        assertTrue(exception.getMessage().contains("JaxRsRedeclaringServices.get overrides a secured service without " +
+            "declaring the rights it requires"));
+        assertTrue(exception.getMessage().contains("@Secured(right = \"entity-read\")"));
     }
 
     @Test
@@ -93,8 +93,8 @@ public class SecuredValidationFeatureTest {
     }
 
     @Test
-    public void servicesDeclaringTheirRightsAreNotReportedWhenTheApplicationStarts() {
-        assertEquals(List.of(), messages(Level.WARN, RedeclaringServices.class));
+    public void servicesDeclaringTheirRightsDoNotMakeTheApplicationStartupFail() {
+        // The application starts, without reporting anything
         assertEquals(List.of(), messages(Level.DEBUG, RedeclaringServices.class));
     }
 
