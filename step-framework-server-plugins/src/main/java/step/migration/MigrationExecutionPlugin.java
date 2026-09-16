@@ -27,9 +27,9 @@ import step.core.Version;
 import step.core.collections.CollectionFactory;
 import step.core.plugins.Plugin;
 import step.framework.server.ServerPlugin;
-import step.versionmanager.ControllerLog;
 import step.versionmanager.VersionManager;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -61,15 +61,11 @@ public class MigrationExecutionPlugin<C extends AbstractContext> implements Serv
 
     private void checkVersion(C context) {
         MigrationManager migrationManager = context.get(MigrationManager.class);
-        VersionManager versionManager = context.get(VersionManager.class);
+        VersionManager<?> versionManager = context.get(VersionManager.class);
 
-        ControllerLog latestLog = versionManager.getLatestControllerLog();
-        if (latestLog != null) {
-            Version latestVersion = latestLog.getVersion();
-            // Version tracking has been introduced with 3.8.0 therefore assuming version 3.7.0 as latest version if null
-            if (latestVersion == null) {
-                latestVersion = new Version(3, 7, 0);
-            }
+        Optional<Version> previousVersion = versionManager.getPreviousVersion();
+        if (previousVersion.isPresent()) {
+            Version latestVersion = previousVersion.get();
             Version currentVersion = context.require(Version.class);
             if (currentVersion.compareTo(latestVersion) > 0) {
                 logger.info("Starting controller with a newer version. Current version is "

@@ -25,10 +25,15 @@ import step.core.Version;
 import step.core.collections.*;
 
 import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
 
 public class VersionManager<C extends AbstractContext> {
 
     private static final Logger logger = LoggerFactory.getLogger(VersionManager.class);
+
+    /** Version tracking was introduced in 3.8.0, so a start recorded before it carries no version. */
+    public static final Version VERSION_BEFORE_VERSION_TRACKING = new Version(3, 7, 0);
 
     private final C context;
 
@@ -57,6 +62,19 @@ public class VersionManager<C extends AbstractContext> {
 
     public ControllerLog getLatestControllerLog() {
         return latestControllerLog;
+    }
+
+    /**
+     * The version the data in the database was last used with, which is what the migration tasks of
+     * this start are selected against. Read before the current start is recorded, so it stays available
+     * for the whole startup.
+     *
+     * @return the version of the previous start, {@link #VERSION_BEFORE_VERSION_TRACKING} when that
+     * start predates version tracking, or empty when this is the first start against this database
+     */
+    public Optional<Version> getPreviousVersion() {
+        return Optional.ofNullable(latestControllerLog)
+                .map(log -> Objects.requireNonNullElse(log.getVersion(), VERSION_BEFORE_VERSION_TRACKING));
     }
 
     public void setLatestControllerLog(ControllerLog latestControllerLog) {

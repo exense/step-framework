@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -169,6 +169,21 @@ public class MigrationManager {
         });
     }
 
+    /**
+     * Whether a migration task created for the version {@code asOfVersion} should be executed when upgrading.
+     * The bounds are swapped by the caller for a downgrade.
+     *
+     * @param asOfVersion the version of the migration task
+     * @param from        the version the data was last used with, which is excluded
+     * @param to          the version being started, which is included
+     */
+    public static boolean isMigrationTaskInScope(Version asOfVersion, Version from, Version to) {
+        Objects.requireNonNull(asOfVersion, "The asOfVersion must not be null");
+        Objects.requireNonNull(from, "The from version must not be null");
+        Objects.requireNonNull(to, "The to version must not be null");
+        return asOfVersion.compareTo(from) >= 1 && asOfVersion.compareTo(to) <= 0;
+    }
+
     @SuppressWarnings("unchecked")
     private List<MigrationTask> getMatchedMigrationTasks(CollectionFactory collectionFactory, Version from, Version to, boolean upgrade) {
         try (MigrationContext migrationContext = new MigrationContext()) {
@@ -179,7 +194,7 @@ public class MigrationManager {
 
             List<MigrationTask> matched = new ArrayList<>();
             for (MigrationTask migrator : migrators) {
-                if (migrator.asOfVersion.compareTo(upgrade ? from : to) >= 1 && migrator.asOfVersion.compareTo(upgrade ? to : from) <= 0) {
+                if (isMigrationTaskInScope(migrator.asOfVersion, upgrade ? from : to, upgrade ? to : from)) {
                     matched.add(migrator);
                 }
             }
