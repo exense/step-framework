@@ -26,7 +26,6 @@ import javax.persistence.Id;
 
 import org.bson.types.ObjectId;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -44,19 +43,6 @@ public class AbstractIdentifiableObject {
     @JsonSerialize(using = MapSerializer.class)
     @JsonDeserialize(using = MapDeserializer.class)
     protected Map<String, Object> customFields;
-
-    /**
-     * Free-form metadata describing this object, which is stored as it is and never interpreted. It is meant for the
-     * tools around Step: they can annotate the objects they produce and read their notes back through the API.
-     * <p>
-     * Unlike {@link #customFields}, which is serialized with the type information needed to restore the exact Java
-     * types of its values, the metadata is serialized as a plain object. It therefore stays readable in the API and
-     * queryable in the database (as {@code metadata.<key>}), at the cost of its values coming back as plain maps,
-     * lists and scalars. The keys must not be empty, contain a dot or start with a dollar sign, since they become
-     * keys of the stored document.
-     */
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private Map<String, Object> metadata;
 
     public AbstractIdentifiableObject() {
         super();
@@ -76,14 +62,6 @@ public class AbstractIdentifiableObject {
      */
     public void setId(ObjectId _id) {
         this._id = _id;
-    }
-
-    public Map<String, Object> getMetadata() {
-        return metadata;
-    }
-
-    public void setMetadata(Map<String, Object> metadata) {
-        this.metadata = metadata;
     }
 
     public Map<String, Object> getCustomFields() {
