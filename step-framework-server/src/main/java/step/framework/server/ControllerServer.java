@@ -88,6 +88,8 @@ public class ControllerServer {
 
     public static final String UI_CONTEXT_ROOT_CFG_KEY = "ui.context.root";
     public static final String UI_CONTEXT_ROOT_DEFAULT_VALUE = "/";
+    private static final String PORT_PROPERTY = "port";
+    public static final int DEFAULT_PORT = 8080;
     private final String contextRoot;
     private final boolean defaultServlet;
     private final Configuration configuration;
@@ -134,11 +136,15 @@ public class ControllerServer {
     public ControllerServer(Configuration configuration) {
         super();
         this.configuration = configuration;
-        this.port = configuration.getPropertyAsInteger("port", 8080);
+        this.port = configuration.getPropertyAsInteger(PORT_PROPERTY, DEFAULT_PORT);
         this.defaultServlet = configuration.getPropertyAsBoolean("ui.defaultServlet", true);
         this.contextRoot = configuration.getProperty(UI_CONTEXT_ROOT_CFG_KEY, UI_CONTEXT_ROOT_DEFAULT_VALUE);
         this.webAppRoots = new LinkedHashSet<>();
         this.webAppRoots.add(configuration.getProperty("ui.resource.root", "dist/step-app"));
+    }
+
+    public Integer getPort() {
+        return port;
     }
 
     public void start() throws Exception {
