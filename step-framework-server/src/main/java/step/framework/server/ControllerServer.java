@@ -303,6 +303,8 @@ public class ControllerServer {
             Resource combinedResource = ResourceFactory.combine(resources);
             // 4. Set the combined resource as the base
             servletContextHandler.setBaseResource(combinedResource);
+            // 5. Serve the resources Jetty reports as aliases only because of their URI spelling (nested jars)
+            servletContextHandler.addAliasCheck(new UriSpellingAliasCheck());
         } else {
             logger.warn("Starting up without any WebApp resources");
         }
