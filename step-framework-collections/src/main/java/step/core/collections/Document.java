@@ -18,19 +18,17 @@
  ******************************************************************************/
 package step.core.collections;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.bson.types.ObjectId;
+import step.core.accessors.AbstractIdentifiableObject;
 
 import javax.persistence.Id;
-
-import org.bson.types.ObjectId;
-
-import step.core.accessors.AbstractIdentifiableObject;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class Document extends DocumentObject {
 
     public Document() {
-        super(new HashMap<>());
+        super(new LinkedHashMap<>());
     }
 
     public Document(Map<String, Object> m) {
