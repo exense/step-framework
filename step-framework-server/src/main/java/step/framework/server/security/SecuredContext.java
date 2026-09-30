@@ -25,14 +25,33 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Declares the value of a placeholder used in the rights required by the services, allowing generic services to
+ * declare the rights of the entity they are used for. The right {@code {entity}-read} declared by a service of a
+ * class annotated with {@code @SecuredContext(key = "entity", value = "plan")} resolves to {@code plan-read}.
+ * <p>
+ * The context is declared on a service class and applies to all its services. A service requiring the rights of
+ * another entity than the one of its class declares that right explicitly rather than using a placeholder.
+ *
+ * @see Secured
+ */
 @NameBinding
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface SecuredContext {
 
+    /**
+     * The name of the placeholder, i.e. {@code entity} for the placeholder {@code {entity}}.
+     */
     String key();
 
+    /**
+     * The value replacing the placeholder in the rights required by the services.
+     */
     String value();
 
+    /**
+     * Whether all the signed in users are allowed to call the services, i.e. their rights are not checked.
+     */
     boolean allowAllSignedInUsers() default false;
 }

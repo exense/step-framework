@@ -19,8 +19,10 @@
 package step.migration;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Properties;
 
@@ -66,6 +68,47 @@ public class MigrationManagerTest {
         MigrationManager m = getMigrationManager();
         m.migrate(null, new Version(1, 2, 4), new Version(1, 2, 2));
         assertEquals("-1.2.4,-1.2.3,", s.toString());
+    }
+
+    // -------------------------------------------------------------------------
+    // Selection rule, as exposed to callers needing to know beforehand whether
+    // a given migration applies to a startup
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testIsExecutedOnUpgradeAgreesWithTheTasksActuallyRun() {
+        Version asOfVersion = new Version(1, 2, 4);
+
+        // The lower bound is exclusive and the upper bound inclusive
+        assertTrue(MigrationManager.isMigrationTaskInScope(asOfVersion, new Version(1, 2, 3), asOfVersion));
+        assertTrue(MigrationManager.isMigrationTaskInScope(asOfVersion, new Version(1, 0, 0), new Version(2, 0, 0)));
+        assertFalse(MigrationManager.isMigrationTaskInScope(asOfVersion, asOfVersion, asOfVersion));
+        assertFalse(MigrationManager.isMigrationTaskInScope(asOfVersion, asOfVersion, new Version(1, 2, 5)));
+        assertFalse(MigrationManager.isMigrationTaskInScope(asOfVersion, new Version(1, 2, 2), new Version(1, 2, 3)));
+
+        // And it says the same as running them: 1.2.4 is among the tasks of this range, and not of that one
+        MigrationManager m = getMigrationManager();
+        m.migrate(null, new Version(1, 2, 3), asOfVersion);
+        assertEquals("1.2.4,", s.toString());
+    }
+
+    /** A missing version says which one, rather than failing in the comparison. */
+    @Test
+    public void testIsMigrationTaskInScopeRejectsNullVersions() {
+        Version version = new Version(1, 2, 4);
+
+        assertEquals("The asOfVersion must not be null", nullMessageOf(null, version, version));
+        assertEquals("The from version must not be null", nullMessageOf(version, null, version));
+        assertEquals("The to version must not be null", nullMessageOf(version, version, null));
+    }
+
+    private String nullMessageOf(Version asOfVersion, Version from, Version to) {
+        try {
+            MigrationManager.isMigrationTaskInScope(asOfVersion, from, to);
+            return null;
+        } catch (NullPointerException e) {
+            return e.getMessage();
+        }
     }
 
     // -------------------------------------------------------------------------
