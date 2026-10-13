@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
@@ -20,7 +19,12 @@ import step.core.accessors.AbstractIdentifiableObject;
 public class PojoUtils {
 
     private static BeanUtilsBean beanUtilsBean;
-    private static final Map<Class<?>, Optional<TypeIdResolver>> typeIdResolvers = new ConcurrentHashMap<>();
+    private static final ClassValue<Optional<TypeIdResolver>> typeIdResolvers = new ClassValue<>() {
+        @Override
+        protected Optional<TypeIdResolver> computeValue(Class<?> type) {
+            return createTypeIdResolver(type);
+        }
+    };
 
     public static Object getProperty(Object bean, String propertyName) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         try {
@@ -48,25 +52,44 @@ public class PojoUtils {
      * {@link JsonTypeIdResolver} of the bean if it declares one, its class name otherwise
      */
     private static String getTypeId(Object bean) {
-        return typeIdResolvers.computeIfAbsent(bean.getClass(), PojoUtils::createTypeIdResolver)
+        return typeIdResolvers.get(bean.getClass())
             .map(resolver -> resolver.idFromValue(bean))
             .orElseGet(() -> bean.getClass().getName());
     }
 
     private static Optional<TypeIdResolver> createTypeIdResolver(Class<?> beanClass) {
-        for (Class<?> c = beanClass; c != null; c = c.getSuperclass()) {
-            JsonTypeIdResolver annotation = c.getAnnotation(JsonTypeIdResolver.class);
-            if (annotation != null) {
-                try {
-                    TypeIdResolver resolver = annotation.value().getDeclaredConstructor().newInstance();
-                    resolver.init(TypeFactory.defaultInstance().constructType(c));
-                    return Optional.of(resolver);
-                } catch (ReflectiveOperationException e) {
-                    throw new IllegalStateException("Unable to create the type id resolver of " + beanClass.getName(), e);
-                }
+        Class<?> annotatedClass = findClassWithTypeIdResolver(beanClass);
+        if (annotatedClass == null) {
+            return Optional.empty();
+        }
+        JsonTypeIdResolver annotation = annotatedClass.getAnnotation(JsonTypeIdResolver.class);
+        try {
+            TypeIdResolver resolver = annotation.value().getDeclaredConstructor().newInstance();
+            resolver.init(TypeFactory.defaultInstance().constructType(annotatedClass));
+            return Optional.of(resolver);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to create the type id resolver of " + beanClass.getName(), e);
+        }
+    }
+
+    /**
+     * @return the class itself, or the closest of its interfaces and superclasses, declaring a {@link JsonTypeIdResolver},
+     * null if there is none
+     */
+    private static Class<?> findClassWithTypeIdResolver(Class<?> clazz) {
+        if (clazz == null) {
+            return null;
+        }
+        if (clazz.isAnnotationPresent(JsonTypeIdResolver.class)) {
+            return clazz;
+        }
+        for (Class<?> implementedInterface : clazz.getInterfaces()) {
+            Class<?> found = findClassWithTypeIdResolver(implementedInterface);
+            if (found != null) {
+                return found;
             }
         }
-        return Optional.empty();
+        return findClassWithTypeIdResolver(clazz.getSuperclass());
     }
 
     public static class SearchOrderComparator<T> implements Comparator<T> {
