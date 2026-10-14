@@ -4,7 +4,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.beanutils.ConvertUtilsBean;
 import org.apache.commons.beanutils.NestedNullException;
@@ -15,6 +19,12 @@ import step.core.accessors.AbstractIdentifiableObject;
 public class PojoUtils {
 
     private static BeanUtilsBean beanUtilsBean;
+    private static final ClassValue<Optional<TypeIdResolver>> typeIdResolvers = new ClassValue<>() {
+        @Override
+        protected Optional<TypeIdResolver> computeValue(Class<?> type) {
+            return createTypeIdResolver(type);
+        }
+    };
 
     public static Object getProperty(Object bean, String propertyName) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         try {
@@ -35,6 +45,51 @@ public class PojoUtils {
 
     private static Object getField(Object bean, String propertyName) throws NoSuchFieldException, IllegalAccessException {
         return bean == null ? null : bean.getClass().getField(propertyName).get(bean);
+    }
+
+    /**
+     * @return the type id of the bean as serialized to the "_class" property: the id given by the
+     * {@link JsonTypeIdResolver} of the bean if it declares one, its class name otherwise
+     */
+    private static String getTypeId(Object bean) {
+        return typeIdResolvers.get(bean.getClass())
+            .map(resolver -> resolver.idFromValue(bean))
+            .orElseGet(() -> bean.getClass().getName());
+    }
+
+    private static Optional<TypeIdResolver> createTypeIdResolver(Class<?> beanClass) {
+        Class<?> annotatedClass = findClassWithTypeIdResolver(beanClass);
+        if (annotatedClass == null) {
+            return Optional.empty();
+        }
+        JsonTypeIdResolver annotation = annotatedClass.getAnnotation(JsonTypeIdResolver.class);
+        try {
+            TypeIdResolver resolver = annotation.value().getDeclaredConstructor().newInstance();
+            resolver.init(TypeFactory.defaultInstance().constructType(annotatedClass));
+            return Optional.of(resolver);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to create the type id resolver of " + beanClass.getName(), e);
+        }
+    }
+
+    /**
+     * @return the class itself, or the closest of its interfaces and superclasses, declaring a {@link JsonTypeIdResolver},
+     * null if there is none
+     */
+    private static Class<?> findClassWithTypeIdResolver(Class<?> clazz) {
+        if (clazz == null) {
+            return null;
+        }
+        if (clazz.isAnnotationPresent(JsonTypeIdResolver.class)) {
+            return clazz;
+        }
+        for (Class<?> implementedInterface : clazz.getInterfaces()) {
+            Class<?> found = findClassWithTypeIdResolver(implementedInterface);
+            if (found != null) {
+                return found;
+            }
+        }
+        return findClassWithTypeIdResolver(clazz.getSuperclass());
     }
 
     public static class SearchOrderComparator<T> implements Comparator<T> {
@@ -83,7 +138,7 @@ public class PojoUtils {
             public Object getSimpleProperty(Object bean, String name)
                 throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
                 if (name.equals("_class")) {
-                    return bean.getClass().getName();
+                    return getTypeId(bean);
                 } else if (name.equals("_id")) {
                     return super.getSimpleProperty(bean, "id");
                 } else {
