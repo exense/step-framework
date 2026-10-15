@@ -3,6 +3,7 @@ package step.core.timeseries.aggregation;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import step.core.timeseries.TimeSeriesAggregationConfig;
 import step.core.timeseries.TimeSeriesCollection;
 import step.core.timeseries.TimeSeriesUtils;
 import step.core.timeseries.bucket.Aggregation;
@@ -33,10 +34,21 @@ public class TimeSeriesAggregationPipeline {
     private final List<TimeSeriesCollection> collections;
     private final int responseMaxIntervals;
     private final int idealResponseIntervals;
+    private final boolean excludeEmptyBuckets;
     private boolean ttlEnabled;
 
+    public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, TimeSeriesAggregationConfig config) {
+        this(collections, config.getResponseMaxIntervals(), config.getIdealResponseIntervals(), config.isTtlEnabled(),
+            config.isExcludeEmptyBuckets());
+    }
+
     public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, int responseMaxIntervals, int idealResponseIntervals, boolean ttlEnabled) {
+        this(collections, responseMaxIntervals, idealResponseIntervals, ttlEnabled, false);
+    }
+
+    public TimeSeriesAggregationPipeline(List<TimeSeriesCollection> collections, int responseMaxIntervals, int idealResponseIntervals, boolean ttlEnabled, boolean excludeEmptyBuckets) {
         this.ttlEnabled = ttlEnabled;
+        this.excludeEmptyBuckets = excludeEmptyBuckets;
         if (responseMaxIntervals <= 0) {
             throw new IllegalArgumentException("responseMaxIntervals must be greater than 0");
         }
@@ -96,8 +108,7 @@ public class TimeSeriesAggregationPipeline {
             resultBuilder = collectByAggregating(query, finalParams, idealAvailableCollection);
         }
 
-        Map<BucketAttributes, Map<Long, Bucket>> result = resultBuilder.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e ->
-            e.getValue().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, i -> i.getValue().buildAggregate()))));
+        Map<BucketAttributes, Map<Long, Bucket>> result = buildResultSeries(resultBuilder);
 
         return new TimeSeriesAggregationResponseBuilder()
             .setSeries(result)
@@ -109,6 +120,32 @@ public class TimeSeriesAggregationPipeline {
             .setHigherResolutionUsed(fallbackToHigherResolutionWithValidTTL)
             .setTtlCovered(ttlCovered)
             .build();
+    }
+
+    /**
+     * Builds the resulting bucket of each time window of each series.
+     * <p>
+     * When the time series is configured to exclude the empty buckets, the buckets holding no sample are left out, as
+     * well as the series left without any bucket. Only the time series using compensation can hold such buckets, see
+     * {@link step.core.timeseries.ingestion.TimeSeriesIngestionPipeline#compensatePoint(Map, long, long)}, and they
+     * are reported as any other window without data, i.e. by the absence of a bucket. The exclusion is based on the
+     * number of samples held by the builder, which is the only place where it is known: a scalar aggregate always
+     * reports one single sample, see {@link step.core.timeseries.bucket.ScalarBucket}
+     */
+    private Map<BucketAttributes, Map<Long, Bucket>> buildResultSeries(Map<BucketAttributes, Map<Long, BucketBuilder>> resultBuilder) {
+        Map<BucketAttributes, Map<Long, Bucket>> result = new HashMap<>();
+        resultBuilder.forEach((seriesAttributes, seriesBuilder) -> {
+            Map<Long, Bucket> series = new HashMap<>();
+            seriesBuilder.forEach((timeSliceIndex, bucketBuilder) -> {
+                if (!excludeEmptyBuckets || bucketBuilder.getCount() > 0) {
+                    series.put(timeSliceIndex, bucketBuilder.buildAggregate());
+                }
+            });
+            if (!series.isEmpty()) {
+                result.put(seriesAttributes, series);
+            }
+        });
+        return result;
     }
 
     /**
@@ -187,9 +224,13 @@ public class TimeSeriesAggregationPipeline {
                 Map<Long, BucketBuilder> resultSeriesBuilder = resultBuilder.computeIfAbsent(groupAttributes, a -> new TreeMap<>());
                 BucketBuilder bucketBuilder = resultSeriesBuilder.computeIfAbsent(timeSliceIndex, i -> newGroupBucketBuilder(query, finalParams, groupAttributes, i));
                 group.forEach((seriesAttributes, series) -> {
-                    // Aggregate the series into the group. How the series contributes is defined by the
-                    // time-window aggregation it was built with
-                    bucketBuilder.aggregate(series);
+                    // A series holding no sample in this time window doesn't contribute to its group when the empty
+                    // buckets are excluded, see buildResultSeries
+                    if (!excludeEmptyBuckets || series.getCount() > 0) {
+                        // Aggregate the series into the group. How the series contributes is defined by the
+                        // time-window aggregation it was built with
+                        bucketBuilder.aggregate(series);
+                    }
                 });
             });
         });

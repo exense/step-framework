@@ -131,6 +131,46 @@ public class TimeSeriesIngestionNullAttributesTest extends TimeSeriesBaseTest {
     }
 
     /**
+     * A point ingested or compensated without any attribute must be handled as a series with no attribute. The
+     * attributes are used as key of the series queue, which doesn't support null keys.
+     */
+    @Test
+    public void pointsWithoutAnyAttributeAreIngestedTest() {
+        TimeSeriesCollection collection = getCollection(RESOLUTION);
+        TimeSeries timeSeries = new TimeSeriesBuilder().registerCollection(collection).build();
+
+        timeSeries.getIngestionPipeline().ingestPoint(null, 1L, 10L);
+        timeSeries.getIngestionPipeline().ingestPoint(null, 2L, 20L);
+        timeSeries.getIngestionPipeline().compensatePoint(null, 1L, 10L);
+        timeSeries.getIngestionPipeline().flush();
+
+        Bucket bucket = singlePersistedBucket(collection);
+        assertEquals(new BucketAttributes(), bucket.getAttributes());
+        assertEquals(1, bucket.getCount());
+        assertEquals(20, bucket.getSum());
+    }
+
+    /**
+     * A bucket ingested without any attribute must be handled as a series with no attribute, see
+     * {@link #pointsWithoutAnyAttributeAreIngestedTest()}
+     */
+    @Test
+    public void bucketsWithoutAnyAttributeAreIngestedTest() {
+        TimeSeriesCollection collection = getCollection(RESOLUTION);
+        TimeSeries timeSeries = new TimeSeriesBuilder().registerCollection(collection).build();
+
+        Bucket sourceBucket = getRandomBucket();
+        sourceBucket.setBegin(1);
+        sourceBucket.setAttributes(null);
+        timeSeries.getIngestionPipeline().ingestBucket(sourceBucket);
+        timeSeries.getIngestionPipeline().flush();
+
+        Bucket bucket = singlePersistedBucket(collection);
+        assertEquals(new BucketAttributes(), bucket.getAttributes());
+        assertEquals(sourceBucket.getCount(), bucket.getCount());
+    }
+
+    /**
      * The attributes provided by the caller must not be mutated by the removal, as they may be reused by the caller
      * or forwarded to the next pipeline.
      */
