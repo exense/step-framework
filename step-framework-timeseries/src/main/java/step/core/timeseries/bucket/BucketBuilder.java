@@ -137,10 +137,28 @@ public class BucketBuilder {
         sumAdder.add(value);
         min.accumulate(value);
         max.accumulate(value);
-        // The distribution is indexed by integer values, a fractional sample is therefore held by the bracket of the
-        // closest integer
+        distribution.computeIfAbsent(distributionBracket(value), k -> new LongAdder()).increment();
+    }
+
+    /**
+     * Removes one single raw sample from this builder, i.e. the opposite of {@link #ingest(long)}: the count, the sum
+     * and the distribution bracket of the given value are decremented. The min and the max can not be restored and
+     * are left untouched, they therefore keep including the compensated sample.
+     */
+    public BucketBuilder compensate(long value) {
+        countAdder.decrement();
+        sumAdder.add(-value);
+        distribution.computeIfAbsent(distributionBracket(value), k -> new LongAdder()).decrement();
+        return this;
+    }
+
+    /**
+     * @return the distribution bracket holding the given sample. The distribution is indexed by integer values, a
+     * fractional sample is therefore held by the bracket of the closest integer
+     */
+    private long distributionBracket(double value) {
         long bracketedValue = Math.round(value);
-        distribution.computeIfAbsent(bracketedValue - bracketedValue % pclPrecision, k -> new LongAdder()).increment();
+        return bracketedValue - bracketedValue % pclPrecision;
     }
 
     /**

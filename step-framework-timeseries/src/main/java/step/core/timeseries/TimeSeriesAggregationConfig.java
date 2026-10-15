@@ -17,6 +17,13 @@ public class TimeSeriesAggregationConfig {
 
     private boolean ttlEnabled;
 
+    /**
+     * Excludes the buckets holding no sample from the results, as well as the series left without any bucket. Only
+     * the time series using compensation can hold such buckets, see
+     * {@link step.core.timeseries.ingestion.TimeSeriesIngestionPipeline#compensatePoint(java.util.Map, long, long)}
+     */
+    private boolean excludeEmptyBuckets;
+
     public int getResponseMaxIntervals() {
         return responseMaxIntervals;
     }
@@ -41,6 +48,15 @@ public class TimeSeriesAggregationConfig {
 
     public TimeSeriesAggregationConfig setTtlEnabled(boolean ttlEnabled) {
         this.ttlEnabled = ttlEnabled;
+        return this;
+    }
+
+    public boolean isExcludeEmptyBuckets() {
+        return excludeEmptyBuckets;
+    }
+
+    public TimeSeriesAggregationConfig setExcludeEmptyBuckets(boolean excludeEmptyBuckets) {
+        this.excludeEmptyBuckets = excludeEmptyBuckets;
         return this;
     }
 }
