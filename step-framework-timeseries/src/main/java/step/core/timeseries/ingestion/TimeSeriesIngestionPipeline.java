@@ -102,10 +102,12 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
      * creating it if the series has no bucket queued for that time window yet
      */
     private BucketBuilder queuedBucketBuilder(BucketAttributes bucketAttributes, long timestamp) {
+        // The attributes are used as key of the series queue, which doesn't support null keys
+        BucketAttributes attributes = (bucketAttributes != null) ? bucketAttributes : new BucketAttributes();
         long index = timestampToBucketTimestamp(timestamp, sourceResolution);
         Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-        return bucketsForTimestamp.computeIfAbsent(bucketAttributes, k ->
-            BucketBuilder.create(index).withAttributes(bucketAttributes));
+        return bucketsForTimestamp.computeIfAbsent(attributes, k ->
+            BucketBuilder.create(index).withAttributes(attributes));
     }
 
     private BucketAttributes removeIgnoredAttributes(Map<String, Object> bucketAttributes) {
@@ -128,7 +130,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
 
     public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
         if (logger.isTraceEnabled()) {
-            logger.trace("Ingesting point. Attributes=" + attributes.toString() + ", Timestamp=" + timestamp + ", Value=" + value);
+            logger.trace("Ingesting point. Attributes=" + attributes + ", Timestamp=" + timestamp + ", Value=" + value);
         }
         BucketAttributes bucketAttributes = removeIgnoredAttributes(attributes);
         lock.readLock().lock();
@@ -154,7 +156,7 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
      */
     public void compensatePoint(Map<String, Object> attributes, long timestamp, long value) {
         if (logger.isTraceEnabled()) {
-            logger.trace("Compensating point. Attributes=" + attributes.toString() + ", Timestamp=" + timestamp + ", Value=" + value);
+            logger.trace("Compensating point. Attributes=" + attributes + ", Timestamp=" + timestamp + ", Value=" + value);
         }
         BucketAttributes bucketAttributes = removeIgnoredAttributes(attributes);
         lock.readLock().lock();
