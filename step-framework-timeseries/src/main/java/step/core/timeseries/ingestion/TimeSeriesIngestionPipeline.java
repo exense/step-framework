@@ -88,18 +88,26 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
         }
         lock.readLock().lock();
         try {
-            long index = timestampToBucketTimestamp(bucket.getBegin(), sourceResolution);
-            BucketAttributes bucketAttributes = removeIgnoredAttributes(bucket.getAttributes());
-            Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-            bucketsForTimestamp.computeIfAbsent(bucketAttributes, k ->
-                    BucketBuilder.create(index).withAttributes(bucketAttributes))
-                .merge(bucket);
+            queuedBucketBuilder(removeIgnoredAttributes(bucket.getAttributes()), bucket.getBegin()).merge(bucket);
             if (nextPipeline != null) {
                 nextPipeline.ingestBucket(bucket);
             }
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    /**
+     * @return the builder of the bucket the given timestamp falls into, for the series of the given attributes,
+     * creating it if the series has no bucket queued for that time window yet
+     */
+    private BucketBuilder queuedBucketBuilder(BucketAttributes bucketAttributes, long timestamp) {
+        // The attributes are used as key of the series queue, which doesn't support null keys
+        BucketAttributes attributes = (bucketAttributes != null) ? bucketAttributes : new BucketAttributes();
+        long index = timestampToBucketTimestamp(timestamp, sourceResolution);
+        Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
+        return bucketsForTimestamp.computeIfAbsent(attributes, k ->
+            BucketBuilder.create(index).withAttributes(attributes));
     }
 
     private BucketAttributes removeIgnoredAttributes(Map<String, Object> bucketAttributes) {
@@ -122,18 +130,40 @@ public class TimeSeriesIngestionPipeline implements AutoCloseable {
 
     public void ingestPoint(Map<String, Object> attributes, long timestamp, long value) {
         if (logger.isTraceEnabled()) {
-            logger.trace("Ingesting point. Attributes=" + attributes.toString() + ", Timestamp=" + timestamp + ", Value=" + value);
+            logger.trace("Ingesting point. Attributes=" + attributes + ", Timestamp=" + timestamp + ", Value=" + value);
         }
         BucketAttributes bucketAttributes = removeIgnoredAttributes(attributes);
         lock.readLock().lock();
         try {
-            long index = timestampToBucketTimestamp(timestamp, sourceResolution);
-            Map<Map<String, Object>, BucketBuilder> bucketsForTimestamp = seriesQueue.computeIfAbsent(index, k -> new ConcurrentHashMap<>());
-            bucketsForTimestamp.computeIfAbsent(bucketAttributes, k ->
-                    BucketBuilder.create(index).withAttributes(bucketAttributes))
-                .ingest(value);
+            queuedBucketBuilder(bucketAttributes, timestamp).ingest(value);
             if (nextPipeline != null) {
                 nextPipeline.ingestPoint(attributes, timestamp, value);
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Compensates one single point previously ingested by {@link #ingestPoint(Map, long, long)}, i.e. removes its
+     * contribution from the bucket it was ingested into, at every resolution. The compensation is reported with the
+     * same attributes and at the same timestamp as the ingestion, so that both land in the same bucket, whether that
+     * bucket is still queued or already saved, in which case the compensation is saved as an additional bucket which
+     * the queries merge with the original one.
+     * <p>
+     * The count, the sum and the distribution of the compensated buckets are exact. Their min and their max can not
+     * be restored and keep including the compensated points, see {@link BucketBuilder#compensate(long)}
+     */
+    public void compensatePoint(Map<String, Object> attributes, long timestamp, long value) {
+        if (logger.isTraceEnabled()) {
+            logger.trace("Compensating point. Attributes=" + attributes + ", Timestamp=" + timestamp + ", Value=" + value);
+        }
+        BucketAttributes bucketAttributes = removeIgnoredAttributes(attributes);
+        lock.readLock().lock();
+        try {
+            queuedBucketBuilder(bucketAttributes, timestamp).compensate(value);
+            if (nextPipeline != null) {
+                nextPipeline.compensatePoint(attributes, timestamp, value);
             }
         } finally {
             lock.readLock().unlock();
