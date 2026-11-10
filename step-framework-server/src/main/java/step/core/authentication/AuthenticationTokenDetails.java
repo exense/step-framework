@@ -16,11 +16,14 @@
 package step.core.authentication;
 
 import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Map;
 
 public class AuthenticationTokenDetails {
     private final String id;
     private final String username;
     private final String role;
+    private final Map<String, List<String>> projectMemberships;
     private final String issuer;
     private final String audience;
     private final ZonedDateTime issuedDate;
@@ -29,12 +32,14 @@ public class AuthenticationTokenDetails {
     private final int refreshCount;
     private final int refreshLimit;
 
-    private AuthenticationTokenDetails(String id, String username, String role, String issuer, String audience,
+    private AuthenticationTokenDetails(String id, String username, String role, Map<String, List<String>> projectMemberships,
+                                       String issuer, String audience,
                                        ZonedDateTime notBeforeDate, ZonedDateTime issuedDate, ZonedDateTime expirationDate,
                                        int refreshCount, int refreshLimit) {
         this.id = id;
         this.username = username;
         this.role = role;
+        this.projectMemberships = projectMemberships;
         this.issuer = issuer;
         this.audience = audience;
         this.notBeforeDate = notBeforeDate;
@@ -54,6 +59,15 @@ public class AuthenticationTokenDetails {
 
     public String getRole() {
         return role;
+    }
+
+    /**
+     * @return for each project, the roles granted by the token, ordered from the highest to the lowest priority. Null
+     * if the project memberships weren't extracted from the token: they must then not be synchronized. Empty if the
+     * token grants no membership.
+     */
+    public Map<String, List<String>> getProjectMemberships() {
+        return projectMemberships;
     }
 
     public String getIssuer() {
@@ -101,6 +115,7 @@ public class AuthenticationTokenDetails {
         private String id;
         private String username;
         private String role;
+        private Map<String, List<String>> projectMemberships;
         private String issuer;
         private String audience;
         private ZonedDateTime notBeforeDate;
@@ -121,6 +136,11 @@ public class AuthenticationTokenDetails {
 
         public Builder withRole(String role) {
             this.role = role;
+            return this;
+        }
+
+        public Builder withProjectMemberships(Map<String, List<String>> projectMemberships) {
+            this.projectMemberships = projectMemberships;
             return this;
         }
 
@@ -161,7 +181,7 @@ public class AuthenticationTokenDetails {
         }
 
         public AuthenticationTokenDetails build() {
-            return new AuthenticationTokenDetails(id, username, role, issuer, audience, notBeforeDate, issuedDate, expirationDate, refreshCount, refreshLimit);
+            return new AuthenticationTokenDetails(id, username, role, projectMemberships, issuer, audience, notBeforeDate, issuedDate, expirationDate, refreshCount, refreshLimit);
         }
 
     }
@@ -172,6 +192,7 @@ public class AuthenticationTokenDetails {
             "id='" + id + '\'' +
             ", username='" + username + '\'' +
             ", role='" + role + '\'' +
+            ", projectMemberships=" + projectMemberships +
             ", issuer='" + issuer + '\'' +
             ", audience='" + audience + '\'' +
             ", issuedDate=" + issuedDate +
