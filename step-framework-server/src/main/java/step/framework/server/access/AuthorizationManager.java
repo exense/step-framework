@@ -54,6 +54,12 @@ public interface AuthorizationManager<U extends AbstractUser, S extends Session<
 
     boolean checkRightInRole(String role, String right);
 
+    /**
+     * @param roleName the name of the role
+     * @return true if a role with this name exists
+     */
+    boolean isRoleDefined(String roleName);
+
     Role getRoleInContext(S session);
 
 }
