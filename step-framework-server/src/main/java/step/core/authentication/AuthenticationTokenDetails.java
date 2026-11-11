@@ -16,6 +16,8 @@
 package step.core.authentication;
 
 import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +41,7 @@ public class AuthenticationTokenDetails {
         this.id = id;
         this.username = username;
         this.role = role;
-        this.projectMemberships = projectMemberships;
+        this.projectMemberships = unmodifiableCopy(projectMemberships);
         this.issuer = issuer;
         this.audience = audience;
         this.notBeforeDate = notBeforeDate;
@@ -47,6 +49,19 @@ public class AuthenticationTokenDetails {
         this.expirationDate = expirationDate;
         this.refreshCount = refreshCount;
         this.refreshLimit = refreshLimit;
+    }
+
+    /**
+     * @return an unmodifiable copy of the given memberships, keeping the order of the projects and of their roles. Null
+     * if the given memberships are null.
+     */
+    private static Map<String, List<String>> unmodifiableCopy(Map<String, List<String>> projectMemberships) {
+        if (projectMemberships == null) {
+            return null;
+        }
+        Map<String, List<String>> copy = new LinkedHashMap<>();
+        projectMemberships.forEach((project, roles) -> copy.put(project, List.copyOf(roles)));
+        return Collections.unmodifiableMap(copy);
     }
 
     public String getId() {
@@ -64,7 +79,7 @@ public class AuthenticationTokenDetails {
     /**
      * @return for each project, the roles granted by the token, ordered from the highest to the lowest priority. Null
      * if the project memberships weren't extracted from the token: they must then not be synchronized. Empty if the
-     * token grants no membership.
+     * token grants no membership. The map and the lists are unmodifiable.
      */
     public Map<String, List<String>> getProjectMemberships() {
         return projectMemberships;
