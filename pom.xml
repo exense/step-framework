@@ -10,7 +10,6 @@
   <version>0.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <!-- required metadata for maven central -->
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Step Framework</description>
   <url>https://github.com/exense/step-framework</url>
@@ -52,6 +51,14 @@
   </properties>
 
   <repositories>
+    <!-- production exense OSS releases -->
+    <repository>
+      <id>exense-oss</id>
+      <url>https://repository.exense.ch/maven-oss/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
     <!-- staging nexus -->
     <repository>
       <id>nexus-staging</id>
@@ -250,11 +257,6 @@
           <groupId>com.googlecode.maven-download-plugin</groupId>
           <artifactId>download-maven-plugin</artifactId>
           <version>1.2.1</version>
-        </plugin>
-        <plugin>
-          <groupId>org.sonatype.central</groupId>
-          <artifactId>central-publishing-maven-plugin</artifactId>
-          <version>0.8.0</version>
         </plugin>
         <plugin>
           <groupId>org.owasp</groupId>
@@ -490,25 +492,6 @@
                 </configuration>
               </execution>
             </executions>
-          </plugin>
-
-          <!-- Disable old maven-deploy plugin -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-deploy-plugin</artifactId>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-
-          <!-- Publish directly to central instead -->
-          <plugin>
-            <groupId>org.sonatype.central</groupId>
-            <artifactId>central-publishing-maven-plugin</artifactId>
-            <extensions>true</extensions>
-            <configuration>
-              <publishingServerId>sonatype</publishingServerId>
-            </configuration>
           </plugin>
         </plugins>
       </build>
