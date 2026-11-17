@@ -18,10 +18,13 @@
  ******************************************************************************/
 package step.core.accessors;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Spliterator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bson.types.ObjectId;
@@ -58,11 +61,19 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
     }
 
     /**
-     * Reloads all the entities from the underlying {@link Accessor}
+     * Reloads all the entities from the underlying {@link Accessor}, and removes from the cache the entities that
+     * don't exist anymore in it (e.g. deleted without this accessor)
      */
     public void reloadCache() {
-        // Load cache
-        underlyingAccessor.getAll().forEachRemaining(e -> cache.save(e));
+        Set<ObjectId> loadedIds = new HashSet<>();
+        underlyingAccessor.getAll().forEachRemaining(e -> {
+            cache.save(e);
+            loadedIds.add(e.getId());
+        });
+        // The entities that doesn't exist  anymore in the underlying data source are removed after the reload, so that the cache is never empty while it is reloaded
+        List<ObjectId> deletedIds = cache.stream().map(AbstractIdentifiableObject::getId)
+            .filter(id -> !loadedIds.contains(id)).collect(Collectors.toList());
+        deletedIds.forEach(cache::remove);
     }
 
     @Override
