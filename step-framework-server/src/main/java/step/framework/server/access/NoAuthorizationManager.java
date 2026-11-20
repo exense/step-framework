@@ -31,6 +31,11 @@ public class NoAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public boolean isRoleDefined(String roleName) {
+        return true;
+    }
+
+    @Override
     public Role getRoleInContext(Session session) {
         Role role = new Role();
         role.addAttribute("name", "admin");
