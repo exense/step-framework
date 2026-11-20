@@ -70,7 +70,8 @@ public class CachedAccessor<T extends AbstractIdentifiableObject> implements Acc
             cache.save(e);
             loadedIds.add(e.getId());
         });
-        // The entities that doesn't exist  anymore in the underlying data source are removed after the reload, so that the cache is never empty while it is reloaded
+        // The entities that don't exist anymore in the underlying data source are removed after the reload, so that
+        // the cache is never empty while it is reloaded
         List<ObjectId> deletedIds = cache.stream().map(AbstractIdentifiableObject::getId)
             .filter(id -> !loadedIds.contains(id)).collect(Collectors.toList());
         deletedIds.forEach(cache::remove);
