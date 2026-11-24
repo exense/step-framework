@@ -151,8 +151,9 @@ public class InMemoryCollection<T> extends AbstractCollection<T> implements Coll
     }
 
     @Override
-    public void remove(Filter filter) {
-        filteredStream(filter).forEach(f -> entities.remove(getId(f)));
+    public long remove(Filter filter) {
+        // Safe while streaming: entities is a ConcurrentHashMap
+        return filteredStream(filter).mapToLong(f -> entities.remove(getId(f)) != null ? 1 : 0).sum();
     }
 
     @Override

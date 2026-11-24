@@ -243,8 +243,8 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
     }
 
     @Override
-    public void remove(Filter filter) {
-        executeUpdateQuery("DELETE FROM " + collectionNameStr +
+    public long remove(Filter filter) {
+        return executeUpdateQuery("DELETE FROM " + collectionNameStr +
             " WHERE " + filterToWhereClause(filter));
     }
 
@@ -476,10 +476,10 @@ public class PostgreSQLCollection<T> extends AbstractCollection<T> implements Co
         executeUpdateQuery("DROP INDEX IF EXISTS " + indexName);
     }
 
-    private void executeUpdateQuery(String query) {
+    private int executeUpdateQuery(String query) {
         try (Connection connection = ds.getConnection();
              Statement statement = connection.createStatement()) {
-            statement.executeUpdate(query);
+            return statement.executeUpdate(query);
         } catch (SQLException e) {
             throw toRuntimeException(e, query, null);
         }
