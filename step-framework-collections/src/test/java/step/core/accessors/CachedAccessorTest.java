@@ -53,6 +53,34 @@ public class CachedAccessorTest extends AbstractAccessorTest {
     }
 
     @Test
+    public void testReloadCache() {
+        AbstractIdentifiableObject unchanged = new AbstractIdentifiableObject();
+        AbstractOrganizableObject changed = new AbstractOrganizableObject();
+        changed.addAttribute(AbstractOrganizableObject.NAME, "before");
+        AbstractIdentifiableObject deleted = new AbstractIdentifiableObject();
+        accessor.save(unchanged);
+        accessor.save(changed);
+        accessor.save(deleted);
+
+        // Changes done without the cached accessor
+        AbstractOrganizableObject changedUnderlying = new AbstractOrganizableObject();
+        changedUnderlying.setId(changed.getId());
+        changedUnderlying.addAttribute(AbstractOrganizableObject.NAME, "after");
+        underlyingAccessor.save(changedUnderlying);
+        underlyingAccessor.remove(deleted.getId());
+        AbstractIdentifiableObject added = new AbstractIdentifiableObject();
+        underlyingAccessor.save(added);
+
+        ((CachedAccessor<?>) accessor).reloadCache();
+
+        assertEquals(unchanged, accessor.get(unchanged.getId()));
+        assertEquals("after", ((AbstractOrganizableObject) accessor.get(changed.getId())).getAttribute(AbstractOrganizableObject.NAME));
+        assertNull(accessor.get(deleted.getId()));
+        assertEquals(added, accessor.get(added.getId()));
+        assertEquals(3, accessor.stream().count());
+    }
+
+    @Test
     public void testCachingWithExistingAccessor() {
 
         InMemoryAccessor<AbstractIdentifiableObject> underlyingBeanAccessor2 = new InMemoryAccessor<>(false);
