@@ -215,8 +215,8 @@ public class MongoDBCollection<T> extends AbstractCollection<T> implements Colle
     }
 
     @Override
-    public void remove(Filter filter) {
-        collection.deleteMany(filterToQuery(filter));
+    public long remove(Filter filter) {
+        return collection.deleteMany(filterToQuery(filter)).getDeletedCount();
     }
 
     @Override

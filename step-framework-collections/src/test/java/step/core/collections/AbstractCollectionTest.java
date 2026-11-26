@@ -630,11 +630,19 @@ public abstract class AbstractCollectionTest {
         beanCollection.remove(Filters.empty());
 
         beanCollection.save(new Bean(VALUE1));
+        beanCollection.save(new Bean(VALUE1));
+        beanCollection.save(new Bean("other value"));
 
-        beanCollection.remove(Filters.equals(PROPERTY1, VALUE1));
+        // Returns the number of removed entities
+        assertEquals(2, beanCollection.remove(Filters.equals(PROPERTY1, VALUE1)));
 
         assertNull(beanCollection.find(Filters.equals(PROPERTY1, VALUE1), new SearchOrder("property", 1), null, null, 0)
             .findFirst().orElse(null));
+        assertEquals(1, beanCollection.count(Filters.empty(), null));
+
+        // Nothing matching
+        assertEquals(0, beanCollection.remove(Filters.equals(PROPERTY1, VALUE1)));
+        assertEquals(1, beanCollection.remove(Filters.empty()));
     }
 
     @Test

@@ -80,7 +80,12 @@ public interface Collection<T> {
      */
     List<String> distinct(String columnName, Filter filter);
 
-    void remove(Filter filter);
+    /**
+     * Remove the entities matching the filter
+     * @param filter the query filter
+     * @return the number of removed entities
+     */
+    long remove(Filter filter);
 
     T save(T entity);
 

@@ -148,10 +148,8 @@ public class FilesystemCollection<T> extends AbstractCollection<T> implements Co
     }
 
     @Override
-    public void remove(Filter filter) {
-        filteredStream(filter).forEach(f -> {
-            f.getFile().delete();
-        });
+    public long remove(Filter filter) {
+        return filteredStream(filter).mapToLong(f -> f.getFile().delete() ? 1 : 0).sum();
     }
 
     @Override
